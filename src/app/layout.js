@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -12,14 +13,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "TaskBoard - SHE Department | ExxonMobil",
-  description: "Safety, Health & Environment task management system for ExxonMobil",
+  title: "ExxonMobil SSHE - Safety Management Portal",
+  description: "Safety, Security, Health & Environment Management System",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}</body>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

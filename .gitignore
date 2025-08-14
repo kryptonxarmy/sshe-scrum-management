@@ -33,9 +33,35 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# prisma
+/prisma/migrations/*
+!/prisma/migrations/migration_lock.toml
+/src/generated/prisma
+
+# database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# uploads
+/uploads/*
+!/uploads/.gitkeep
+
+# logs
+/logs/*
+!/logs/.gitkeep
+*.log
+
+# backup files
+/backups/*
+!/backups/.gitkeep
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma

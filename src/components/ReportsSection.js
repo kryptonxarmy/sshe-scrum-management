@@ -1,23 +1,10 @@
 import { BarChart3, Download, RefreshCw, CheckCircle2, Clock, AlertTriangle, Calendar, PieChart, Users, TableIcon, Search, Plus, Edit, Trash2, ChevronRight } from "lucide-react";
 import { useState } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ReportsSection = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -211,13 +198,7 @@ const ReportsSection = () => {
           <div className="flex items-center gap-4">
             <div className="relative">
               <Search size={16} className="absolute left-3 top-3 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Search tasks..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-48"
-              />
+              <Input type="text" placeholder="Search tasks..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 w-48" />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-40">
@@ -274,7 +255,9 @@ const ReportsSection = () => {
                 <TableCell colSpan={9}>
                   <div className="flex items-center">
                     <ChevronRight size={16} className={`mr-2 transition-transform duration-200 ${expandedEpics.epic1 ? "rotate-90" : ""}`} />
-                    <Badge variant="secondary" className="mr-2">Process Safety</Badge>
+                    <Badge variant="secondary" className="mr-2">
+                      Process Safety
+                    </Badge>
                     <span className="font-semibold text-slate-800">Epic 1: Pengembangan Tempat Warga Darurat Geometrik</span>
                   </div>
                 </TableCell>
@@ -295,7 +278,9 @@ const ReportsSection = () => {
                       <Badge variant="destructive">High</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="default" className="bg-green-600 hover:bg-green-700">DONE</Badge>
+                      <Badge variant="default" className="bg-green-600 hover:bg-green-700">
+                        DONE
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-gray-600">Dec 10, 2024</TableCell>
                     <TableCell>
@@ -326,7 +311,9 @@ const ReportsSection = () => {
                       <Badge variant="destructive">High</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="default" className="bg-amber-500 hover:bg-amber-600">IN PROGRESS</Badge>
+                      <Badge variant="default" className="bg-amber-500 hover:bg-amber-600">
+                        IN PROGRESS
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-gray-600">Dec 11, 2024</TableCell>
                     <TableCell>

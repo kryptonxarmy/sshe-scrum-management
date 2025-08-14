@@ -31,10 +31,7 @@ const FunctionSection = ({ functionId, activeTab, openCreateTaskModal }) => {
             {functionTitles[functionId].split(" ")[0]} {functionTitles[functionId].split(" ")[1]}
           </span>
         </h2>
-        <Button
-          onClick={() => openCreateTaskModal(functionId)}
-          className="w-full sm:w-auto justify-center"
-        >
+        <Button onClick={() => openCreateTaskModal(functionId)} className="w-full sm:w-auto justify-center">
           <Plus size={20} />
           Create Task
         </Button>
