@@ -53,7 +53,7 @@ const Dashboard = () => {
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-slate-800">ExxonMobil SSHE</h1>
+            <h1 className="text-2xl font-bold text-slate-800">Pertamina HSE</h1>
             <Badge variant={getRoleBadgeVariant(user.role)}>{getRoleLabel(user.role)}</Badge>
           </div>
 
@@ -77,7 +77,7 @@ const Dashboard = () => {
                 </Button>
               )}
 
-              <Button variant={activeView === "reports" ? "default" : "ghost"} onClick={() => setActiveView("reports")} className="flex items-center gap-2">
+              <Button variant="ghost" onClick={() => router.push("/reports")} className="flex items-center gap-2">
                 <BarChart3 size={16} />
                 Reports
               </Button>
@@ -116,7 +116,6 @@ const Dashboard = () => {
         {activeView === "projects" && <ProjectsView />}
         {activeView === "tasks" && <TasksView />}
         {activeView === "users" && <UsersView />}
-        {activeView === "reports" && <ReportsView />}
       </main>
     </div>
   );
@@ -170,23 +169,6 @@ const UsersView = () => {
       <Card>
         <CardContent className="p-6">
           <p className="text-center text-slate-600 py-8">User management interface will be implemented here.</p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-// Reports View
-const ReportsView = () => {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-slate-800">Reports & Analytics</h2>
-      </div>
-
-      <Card>
-        <CardContent className="p-6">
-          <p className="text-center text-slate-600 py-8">Reports and analytics interface will be implemented here.</p>
         </CardContent>
       </Card>
     </div>
