@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, MoreVertical, Eye, Edit, Trash2, Users, Calendar, AlertTriangle } from "lucide-react";
+import { Plus, MoreVertical, Edit, Trash2, Users, Calendar, AlertTriangle } from "lucide-react";
 import ModalManageMember from "@/components/project/_partials/ModalManageMember";
 
 const ProjectManagement = () => {
@@ -22,6 +22,12 @@ const ProjectManagement = () => {
   const [projectList, setProjectList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Permission Rules:
+  // - SUPERADMIN: Can manage all projects and members
+  // - PROJECT_OWNER: Can edit/delete their own projects and manage members
+  // - SCRUM_MASTER: Can only manage members if they are a member of the project
+  // - TEAM_MEMBER: Can only view projects they are assigned to
 
   // Fetch projects from API
   useEffect(() => {
@@ -196,6 +202,21 @@ const ProjectManagement = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {getVisibleProjects().map((project) => {
           const stats = getProjectStats(project.id);
+          const canManageProjectActions = canManageProject(project.ownerId);
+          const canManageMembers = canManageProjectMembers(project.ownerId, project);
+          
+          // Debug logging for Scrum Master member management
+          if (user.role === "SCRUM_MASTER") {
+            console.log(`Project: ${project.name}`, {
+              userId: user.id,
+              userRole: user.role,
+              projectOwnerId: project.ownerId,
+              projectMembers: project.members,
+              canManageMembers,
+              canManageProjectActions
+            });
+          }
+          
           return (
             <Card key={project.id} className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
@@ -205,7 +226,7 @@ const ProjectManagement = () => {
                     <p className="text-sm text-slate-600">Owner: {getProjectOwnerName(project.owner)}</p>
                   </div>
 
-                  {(canManageProject(project.ownerId) || canManageProjectMembers(project.ownerId)) && (
+                  {(canManageProjectActions || canManageMembers) && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm">
@@ -213,21 +234,19 @@ const ProjectManagement = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem className="flex items-center gap-2">
-                          <Eye size={14} />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="flex items-center gap-2">
-                          <Edit size={14} />
-                          Edit Project
-                        </DropdownMenuItem>
-                        {canManageProjectMembers(project.ownerId) && (
+                        {canManageProjectActions && (
+                          <DropdownMenuItem className="flex items-center gap-2">
+                            <Edit size={14} />
+                            Edit Project
+                          </DropdownMenuItem>
+                        )}
+                        {canManageMembers && (
                           <DropdownMenuItem onClick={() => handleManageMembers(project)} className="flex items-center gap-2">
                             <Users size={14} />
                             Manage Members
                           </DropdownMenuItem>
                         )}
-                        {canManageProject(project.ownerId) && (
+                        {canManageProjectActions && (
                           <DropdownMenuItem className="flex items-center gap-2 text-red-600">
                             <Trash2 size={14} />
                             Delete Project

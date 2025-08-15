@@ -12,9 +12,11 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "node prisma/seed.js",
+    "db:seed2": "node prisma/seed2.js",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset --force",
     "db:setup": "npm run db:push && npm run db:seed",
+    "db:setup-full": "npm run db:push && npm run db:seed && npm run db:seed2",
     "postinstall": "prisma generate"
   },
   "prisma": {
