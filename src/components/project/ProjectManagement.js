@@ -85,13 +85,14 @@ const ProjectManagement = () => {
     return owner ? owner.name : "Unknown";
   };
 
-  const getPriorityBadgeVariant = (priority) => {
-    const variants = {
-      high: "destructive",
-      medium: "default",
-      low: "secondary",
+  const getPriorityBadgeStyle = (priority) => {
+    const styles = {
+      HIGH: "bg-red-500 text-white border-transparent hover:bg-red-600",
+      MEDIUM: "bg-yellow-500 text-white border-transparent hover:bg-yellow-600",
+      LOW: "bg-blue-500 text-white border-transparent hover:bg-blue-600",
+      CRITICAL: "bg-purple-500 text-white border-transparent hover:bg-purple-600"
     };
-    return variants[priority] || "outline";
+    return styles[priority] || styles.MEDIUM;
   };
 
   const getStatusBadgeVariant = (status) => {
@@ -105,6 +106,13 @@ const ProjectManagement = () => {
     return variants[status] || "outline";
   };
 
+  const getStatusDisplay = (status, department) => {
+    if (status === "PLANNING" || status === "ACTIVE") {
+      return department;
+    }
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  };
+
   const getPriorityDisplay = (priority) => {
     const priorityMap = {
       LOW: "Low",
@@ -113,17 +121,6 @@ const ProjectManagement = () => {
       CRITICAL: "Critical",
     };
     return priorityMap[priority] || "Medium";
-  };
-
-  const getStatusDisplay = (status) => {
-    const statusMap = {
-      PLANNING: "Planning",
-      ACTIVE: "Active",
-      ON_HOLD: "On Hold",
-      COMPLETED: "Completed",
-      CANCELLED: "Cancelled",
-    };
-    return statusMap[status] || "Active";
   };
 
   if (loading) {
@@ -262,8 +259,8 @@ const ProjectManagement = () => {
                 <p className="text-sm text-slate-600 line-clamp-2">{project.description}</p>
 
                 <div className="flex items-center justify-between">
-                  <Badge variant={getPriorityBadgeVariant(project.priority)}>{getPriorityDisplay(project.priority)}</Badge>
-                  <Badge variant={getStatusBadgeVariant(project.status)}>{getStatusDisplay(project.status)}</Badge>
+                  <Badge className={getPriorityBadgeStyle(project.priority)}>{getPriorityDisplay(project.priority)}</Badge>
+                  <Badge variant={getStatusBadgeVariant(project.status)}>{getStatusDisplay(project.status, project.department)}</Badge>
                 </div>
 
                 <div className="space-y-2">
@@ -413,10 +410,10 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
         </div>
 
         <div className="space-y-2">
-          <Label>Department</Label>
+          <Label>Functions</Label>
           <Select value={formData.department} onValueChange={(value) => handleSelectChange("department", value)} disabled={loading}>
             <SelectTrigger>
-              <SelectValue placeholder="Select department" />
+              <SelectValue placeholder="Select function" />
             </SelectTrigger>
             <SelectContent>
               {departments.map((dept) => (
