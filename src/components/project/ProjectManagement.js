@@ -273,6 +273,16 @@ const ProjectManagement = () => {
                     <span>{project._count?.members || 0} members</span>
                   </div>
                 </div>
+
+                <div className="pt-4 flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.location.href = `/tasks?projectId=${project.id}`}
+                  >
+                    View Tasks
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           );
