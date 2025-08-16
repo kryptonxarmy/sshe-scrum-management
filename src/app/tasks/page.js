@@ -61,29 +61,21 @@ export default function TasksPage() {
                 {project && (
                   <>
                     <p className="text-slate-600 mb-4">{project.description}</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="flex flex-col">
-                        <span className="text-xs text-slate-500">Department</span>
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-slate-500">Department:</span>
                         <span className="font-medium text-slate-700">{project.department || '-'}</span>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-xs text-slate-500">Status</span>
-                        <span className={`font-medium ${
-                          project.status === 'ACTIVE' ? 'text-green-600' :
-                          project.status === 'ON_HOLD' ? 'text-yellow-600' :
-                          'text-slate-700'
-                        }`}>
-                          {project.status || '-'}
-                        </span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-xs text-slate-500">Start Date</span>
+                      <span className="text-slate-300">|</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-slate-500">Start:</span>
                         <span className="font-medium text-slate-700">
                           {project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}
                         </span>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-xs text-slate-500">Due Date</span>
+                      <span className="text-slate-300">|</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-slate-500">Due:</span>
                         <span className="font-medium text-slate-700">
                           {project.endDate ? new Date(project.endDate).toLocaleDateString() : '-'}
                         </span>
