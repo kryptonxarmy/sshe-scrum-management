@@ -16,6 +16,7 @@ export default function TasksPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [project, setProject] = useState(null);
   const [filter, setFilter] = useState("all");
+  const [refreshTasks, setRefreshTasks] = useState(0);
 
   useEffect(() => {
     if (!projectId) return;
@@ -123,9 +124,18 @@ export default function TasksPage() {
           </div>
 
           {/* Kanban Board */}
-          <KanbanBoard functionId={projectId} filter={filter} />
+          <KanbanBoard 
+            functionId={projectId} 
+            filter={filter} 
+            key={refreshTasks} // Force re-render when tasks change
+          />
         </div>
-        <CreateTaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+        <CreateTaskModal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          projectId={projectId}
+          onTaskCreated={() => setRefreshTasks(prev => prev + 1)}
+        />
       </div>
     </ProtectedRoute>
   );

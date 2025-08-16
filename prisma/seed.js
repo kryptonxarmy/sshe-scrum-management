@@ -123,6 +123,18 @@ const projectsData = [
     endDate: new Date("2024-08-31"),
     progress: 15,
   },
+  {
+    id: "project-4",
+    name: "Tier 3 Classification",
+    description: "Tier 3 process safety classification and compliance project",
+    department: "Process Safety",
+    ownerId: "user-2",
+    status: "ACTIVE",
+    priority: "HIGH",
+    startDate: new Date("2025-01-01"),
+    endDate: new Date("2025-12-31"),
+    progress: 0,
+  },
 ];
 
 const projectMembersData = [
@@ -139,6 +151,11 @@ const projectMembersData = [
   // Project 3 members
   { projectId: "project-3", userId: "user-4" }, // Alice Brown
   { projectId: "project-3", userId: "user-7" }, // Lisa Garcia
+
+  // Project 4 members
+  { projectId: "project-4", userId: "user-2" }, // John Doe (owner)
+  { projectId: "project-4", userId: "user-4" }, // Alice Brown
+  { projectId: "project-4", userId: "user-6" }, // David Johnson
 ];
 
 const projectSettingsData = [
@@ -258,6 +275,53 @@ const tasksData = [
     progress: 80,
     timeSpent: 20,
     estimatedTime: 25,
+  },
+
+  // Project 4 Tasks
+  {
+    id: "task-10",
+    projectId: "project-4",
+    title: "Initial Risk Assessment",
+    description: "Perform initial risk assessment for Tier 3 units.",
+    type: "STORY",
+    priority: "HIGH",
+    status: "TODO",
+    assigneeId: "user-4",
+    createdById: "user-2",
+    dueDate: new Date("2025-02-15"),
+    progress: 0,
+    timeSpent: 0,
+    estimatedTime: 20,
+  },
+  {
+    id: "task-11",
+    projectId: "project-4",
+    title: "Documentation Review",
+    description: "Review all Tier 3 documentation for compliance.",
+    type: "TASK",
+    priority: "MEDIUM",
+    status: "IN_PROGRESS",
+    assigneeId: "user-6",
+    createdById: "user-2",
+    dueDate: new Date("2025-03-10"),
+    progress: 40,
+    timeSpent: 8,
+    estimatedTime: 20,
+  },
+  {
+    id: "task-12",
+    projectId: "project-4",
+    title: "Training Session",
+    description: "Conduct Tier 3 safety training for all team members.",
+    type: "STORY",
+    priority: "LOW",
+    status: "TODO",
+    assigneeId: "user-4",
+    createdById: "user-2",
+    dueDate: new Date("2025-04-01"),
+    progress: 0,
+    timeSpent: 0,
+    estimatedTime: 10,
   },
 ];
 

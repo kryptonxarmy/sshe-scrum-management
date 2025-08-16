@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/contexts/AuthContext";
 
-const CreateTaskModal = ({ isOpen, onClose }) => {
+const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -15,20 +17,71 @@ const CreateTaskModal = ({ isOpen, onClose }) => {
     assignee: "",
     dueDate: "",
   });
+  const [projectMembers, setProjectMembers] = useState([]);
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    const fetchProjectMembers = async () => {
+      if (!projectId) return;
+      try {
+        const response = await fetch(`/api/projects/${projectId}/members`);
+        if (!response.ok) throw new Error('Failed to fetch project members');
+        const data = await response.json();
+        setProjectMembers(data.members || []);
+      } catch (error) {
+        console.error('Error fetching project members:', error);
+      }
+    };
+
+    if (isOpen) {
+      fetchProjectMembers();
+    }
+  }, [isOpen, projectId]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log("Task created:", formData);
-    onClose();
-    setFormData({
-      title: "",
-      description: "",
-      type: "story",
-      priority: "medium",
-      assignee: "",
-      dueDate: "",
-    });
+    try {
+      const requestBody = {
+        ...formData,
+        type: formData.type ? formData.type.toUpperCase() : 'TASK',
+        assigneeId: formData.assignee || null,
+        projectId: projectId,
+        createdById: user?.id,
+        status: 'TODO',
+      };
+      console.log('Submitting task:', requestBody);
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg = errorData.error || 'Failed to create task';
+        alert(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      // Reset form
+      setFormData({
+        title: "",
+        description: "",
+        type: "story",
+        priority: "medium",
+        assignee: "",
+        dueDate: "",
+      });
+      // Notify parent component about the new task
+      if (onTaskCreated) {
+        onTaskCreated();
+      }
+      // Close modal
+      onClose();
+    } catch (error) {
+      console.error('Error creating task:', error);
+    }
   };
 
   const handleChange = (e) => {
@@ -75,9 +128,10 @@ const CreateTaskModal = ({ isOpen, onClose }) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="story">Story</SelectItem>
+                  <SelectItem value="bug">Bug</SelectItem>
+                  <SelectItem value="task">Task</SelectItem>
                   <SelectItem value="spike">Spike</SelectItem>
-                  <SelectItem value="sprint">Sprint</SelectItem>
-                  <SelectItem value="qa">QA</SelectItem>
+                  <SelectItem value="epic">Epic</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -101,7 +155,18 @@ const CreateTaskModal = ({ isOpen, onClose }) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="assignee">Assignee</Label>
-              <Input id="assignee" name="assignee" value={formData.assignee} onChange={handleChange} placeholder="Enter name" />
+              <Select value={formData.assignee} onValueChange={(value) => handleSelectChange("assignee", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select team member" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projectMembers.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
