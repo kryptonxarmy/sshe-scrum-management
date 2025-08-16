@@ -214,6 +214,11 @@ const ModalManageMember = ({ isOpen, onClose, project }) => {
             <Users size={20} />
             Manage Project Members - {project.name}
           </DialogTitle>
+          {user.role === "SCRUM_MASTER" && (
+            <p className="text-sm text-blue-600 mt-1">
+              As a Scrum Master and project member, you can add and remove team members.
+            </p>
+          )}
         </DialogHeader>
 
         {error && (

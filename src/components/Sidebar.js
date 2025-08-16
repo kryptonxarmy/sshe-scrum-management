@@ -1,8 +1,11 @@
 "use client";
 
+import { useRouter, usePathname } from "next/navigation";
 import { Settings, HardHat, AlertTriangle, Calendar, BarChart3, Users, CalendarDays, User, Cog } from "lucide-react";
 
 const Sidebar = ({ currentFunction, setCurrentFunction, isSidebarOpen, setIsSidebarOpen }) => {
+  const router = useRouter();
+  const pathname = usePathname();
   const functions = [
     { id: "process-safety", name: "Process Safety", icon: Settings, count: 8 },
     { id: "personnel-safety", name: "Personnel Safety", icon: HardHat, count: 6 },
@@ -18,10 +21,7 @@ const Sidebar = ({ currentFunction, setCurrentFunction, isSidebarOpen, setIsSide
   };
 
   const showReports = () => {
-    setCurrentFunction("reports");
-    if (window.innerWidth < 768) {
-      setIsSidebarOpen(false);
-    }
+    router.push("/reports");
   };
 
   const showTeam = () => {
@@ -52,8 +52,8 @@ const Sidebar = ({ currentFunction, setCurrentFunction, isSidebarOpen, setIsSide
       {/* Header */}
       <div className="bg-gradient-to-br from-blue-600 to-blue-800 text-white p-6 text-center">
         <h1 className="text-xl font-bold mb-1">TaskBoard</h1>
-        <div className="text-sm opacity-90 mb-1">SHE Department</div>
-        <div className="text-xs opacity-80">ExxonMobil</div>
+        <div className="text-sm opacity-90 mb-1">HSE Department</div>
+        <div className="text-xs opacity-80">Pertamina</div>
       </div>
 
       {/* Navigation */}
@@ -91,7 +91,14 @@ const Sidebar = ({ currentFunction, setCurrentFunction, isSidebarOpen, setIsSide
         {/* Management Section */}
         <div className="mb-6">
           <div className="px-6 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Management</div>
-          <div onClick={showReports} className="flex items-center px-6 py-3 text-gray-700 cursor-pointer border-l-3 border-l-transparent transition-all duration-200 hover:bg-slate-50 hover:text-blue-600">
+          <div 
+            onClick={showReports} 
+            className={`
+              flex items-center px-6 py-3 cursor-pointer border-l-3 transition-all duration-200
+              hover:bg-slate-50 hover:text-blue-600
+              ${pathname === "/reports" || currentFunction === "reports" ? "bg-blue-50 text-blue-600 border-l-blue-600 font-medium" : "text-gray-700 border-l-transparent"}
+            `}
+          >
             <BarChart3 size={18} className="mr-3" />
             Reports
           </div>
