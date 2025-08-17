@@ -35,10 +35,10 @@ const LoginPage = () => {
   };
 
   const demoUsers = [
-    { email: "superadmin@exxonmobil.com", password: "admin123", role: "Super Admin" },
-    { email: "john.doe@exxonmobil.com", password: "john123", role: "Project Owner" },
-    { email: "alice.brown@exxonmobil.com", password: "alice123", role: "Scrum Master" },
-    { email: "david.johnson@exxonmobil.com", password: "david123", role: "Team Member" },
+    { email: "superadmin@exxonmobil.com", password: "password123", role: "Super Admin", name: "Super Admin" },
+    { email: "ahmadmuslih@exxonmobil.com", password: "password123", role: "Project Owner", name: "Ahmad Muslih" },
+    { email: "alfaroq@exxonmobil.com", password: "password123", role: "Scrum Master", name: "Alfaroq" },
+    { email: "amrina@exxonmobil.com", password: "password123", role: "Team Member", name: "Amrina" },
   ];
 
   const fillDemoCredentials = (email, password) => {
@@ -94,12 +94,20 @@ const LoginPage = () => {
           <CardContent>
             <div className="space-y-2">
               {demoUsers.map((user, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => fillDemoCredentials(user.email, user.password)}>
-                  <div>
-                    <p className="text-sm font-medium">{user.role}</p>
+                <div 
+                  key={index} 
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border border-gray-200" 
+                  onClick={() => fillDemoCredentials(user.email, user.password)}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-sm font-medium text-slate-800">{user.name}</p>
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">{user.role}</span>
+                    </div>
                     <p className="text-xs text-gray-600">{user.email}</p>
+                    <p className="text-xs text-gray-500">Password: {user.password}</p>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="ml-2">
                     Use
                   </Button>
                 </div>

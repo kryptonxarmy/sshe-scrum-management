@@ -38,14 +38,6 @@ enum TaskStatus {
   BLOCKED
 }
 
-enum TaskType {
-  STORY
-  BUG
-  TASK
-  SPIKE
-  EPIC
-}
-
 enum Priority {
   LOW
   MEDIUM
@@ -208,11 +200,9 @@ model Task {
   id            String     @id @default(cuid())
   title         String
   description   String?    @db.Text
-  type          TaskType   @default(TASK)
   status        TaskStatus @default(TODO)
   priority      Priority   @default(MEDIUM)
   storyPoints   Int?       // For estimation
-  estimatedTime Float?     // Hours
   timeSpent     Float      @default(0) // Hours
   progress      Int        @default(0) // 0-100
   dueDate       DateTime?

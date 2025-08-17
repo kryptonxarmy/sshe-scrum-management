@@ -18,11 +18,11 @@ const usersData = [
   // Project Owners
   {
     id: "user-2",
-    email: "john.doe@exxonmobil.com",
-    name: "John Doe",
+    email: "ahmadmuslih@exxonmobil.com",
+    name: "Ahmad Muslih",
     role: "PROJECT_OWNER",
     department: "Process Safety",
-    avatar: "JD",
+    avatar: "AM",
   },
   {
     id: "user-3",
@@ -36,11 +36,11 @@ const usersData = [
   // Scrum Masters
   {
     id: "user-4",
-    email: "alice.brown@exxonmobil.com",
-    name: "Alice Brown",
+    email: "alfaroq@exxonmobil.com",
+    name: "Alfaroq",
     role: "SCRUM_MASTER",
     department: "Process Safety",
-    avatar: "AB",
+    avatar: "AF",
   },
   {
     id: "user-5",
@@ -54,11 +54,11 @@ const usersData = [
   // Team Members
   {
     id: "user-6",
-    email: "david.johnson@exxonmobil.com",
-    name: "David Johnson",
+    email: "amrina@exxonmobil.com",
+    name: "Amrina",
     role: "TEAM_MEMBER",
     department: "Process Safety",
-    avatar: "DJ",
+    avatar: "AR",
   },
   {
     id: "user-7",
@@ -127,8 +127,8 @@ const projectsData = [
 
 const projectMembersData = [
   // Project 1 members
-  { projectId: "project-1", userId: "user-4" }, // Alice Brown
-  { projectId: "project-1", userId: "user-6" }, // David Johnson
+  { projectId: "project-1", userId: "user-4" }, // Alfaroq
+  { projectId: "project-1", userId: "user-6" }, // Amrina
   { projectId: "project-1", userId: "user-7" }, // Lisa Garcia
 
   // Project 2 members
@@ -137,7 +137,7 @@ const projectMembersData = [
   { projectId: "project-2", userId: "user-9" }, // Emily Davis
 
   // Project 3 members
-  { projectId: "project-3", userId: "user-4" }, // Alice Brown
+  { projectId: "project-3", userId: "user-4" }, // Alfaroq
   { projectId: "project-3", userId: "user-7" }, // Lisa Garcia
 ];
 
@@ -169,7 +169,6 @@ const tasksData = [
     projectId: "project-1",
     title: "HAZOP Study Implementation",
     description: "Conduct HAZOP study for Unit A production facility",
-    type: "STORY",
     priority: "HIGH",
     status: "DONE",
     assigneeId: "user-6",
@@ -177,7 +176,6 @@ const tasksData = [
     dueDate: new Date("2024-04-15"),
     progress: 100,
     timeSpent: 40,
-    estimatedTime: 35,
     completedAt: new Date("2024-04-10"),
   },
   {
@@ -185,7 +183,6 @@ const tasksData = [
     projectId: "project-1",
     title: "Risk Assessment Framework",
     description: "Develop comprehensive risk assessment framework",
-    type: "STORY",
     priority: "HIGH",
     status: "IN_PROGRESS",
     assigneeId: "user-7",
@@ -193,14 +190,12 @@ const tasksData = [
     dueDate: new Date("2024-05-01"),
     progress: 65,
     timeSpent: 28,
-    estimatedTime: 45,
   },
   {
     id: "task-3",
     projectId: "project-1",
     title: "Safety Documentation Update",
     description: "Update all safety documentation based on HAZOP findings",
-    type: "STORY",
     priority: "MEDIUM",
     status: "TODO",
     assigneeId: "user-4",
@@ -208,7 +203,6 @@ const tasksData = [
     dueDate: new Date("2024-05-15"),
     progress: 0,
     timeSpent: 0,
-    estimatedTime: 30,
   },
 
   // Project 2 Tasks
@@ -217,7 +211,6 @@ const tasksData = [
     projectId: "project-2",
     title: "Training Material Development",
     description: "Create comprehensive training materials for emergency response",
-    type: "STORY",
     priority: "HIGH",
     status: "IN_PROGRESS",
     assigneeId: "user-8",
@@ -225,14 +218,12 @@ const tasksData = [
     dueDate: new Date("2024-04-30"),
     progress: 70,
     timeSpent: 35,
-    estimatedTime: 50,
   },
   {
     id: "task-5",
     projectId: "project-2",
     title: "Drill Scenario Planning",
     description: "Plan emergency drill scenarios for different departments",
-    type: "STORY",
     priority: "MEDIUM",
     status: "TODO",
     assigneeId: "user-9",
@@ -240,7 +231,6 @@ const tasksData = [
     dueDate: new Date("2024-05-10"),
     progress: 0,
     timeSpent: 0,
-    estimatedTime: 25,
   },
 
   // Project 3 Tasks
@@ -249,7 +239,6 @@ const tasksData = [
     projectId: "project-3",
     title: "Survey Design",
     description: "Design safety culture assessment survey",
-    type: "STORY",
     priority: "HIGH",
     status: "IN_PROGRESS",
     assigneeId: "user-7",
@@ -257,7 +246,47 @@ const tasksData = [
     dueDate: new Date("2024-04-20"),
     progress: 80,
     timeSpent: 20,
-    estimatedTime: 25,
+  },
+
+  // Additional tasks for better testing
+  {
+    id: "task-7",
+    projectId: "project-1",
+    title: "Safety Equipment Inspection",
+    description: "Conduct monthly safety equipment inspection",
+    priority: "MEDIUM",
+    status: "TODO",
+    assigneeId: "user-6",
+    createdById: "user-4",
+    dueDate: new Date("2024-05-20"),
+    progress: 0,
+    timeSpent: 0,
+  },
+  {
+    id: "task-8",
+    projectId: "project-2",
+    title: "Emergency Contact List Update",
+    description: "Update emergency contact list for all departments",
+    priority: "LOW",
+    status: "TODO",
+    assigneeId: "user-9",
+    createdById: "user-5",
+    dueDate: new Date("2024-05-25"),
+    progress: 0,
+    timeSpent: 0,
+  },
+  {
+    id: "task-9",
+    projectId: "project-1",
+    title: "Process Safety Training",
+    description: "Conduct process safety training for new employees",
+    priority: "HIGH",
+    status: "IN_PROGRESS",
+    assigneeId: "user-7",
+    createdById: "user-4",
+    dueDate: new Date("2024-05-30"),
+    progress: 30,
+    timeSpent: 12,
   },
 ];
 
@@ -320,8 +349,8 @@ const functionsData = [
 
 const systemSettingsData = {
   id: "default-settings",
-  siteName: "SSHE Scrum",
-  siteDescription: "Safety, Security, Health & Environment Scrum Management",
+  siteName: "ExxonMobil SSHE Scrum",
+  siteDescription: "Safety, Security, Health & Environment Scrum Management System",
   primaryColor: "#3B82F6",
   secondaryColor: "#10B981",
   allowUserRegistration: false,
@@ -449,7 +478,7 @@ async function main() {
         },
         {
           type: 'TASK_ASSIGNED',
-          description: 'Task "HAZOP Study Implementation" was assigned to David Johnson',
+          description: 'Task "HAZOP Study Implementation" was assigned to Amrina',
           userId: 'user-2',
           projectId: 'project-1',
           taskId: 'task-1',
@@ -513,9 +542,9 @@ async function main() {
     
     console.log('\n🔐 Default login credentials:');
     console.log('  Superadmin: superadmin@exxonmobil.com / password123');
-    console.log('  Project Owner: john.doe@exxonmobil.com / password123');
-    console.log('  Scrum Master: alice.brown@exxonmobil.com / password123');
-    console.log('  Team Member: david.johnson@exxonmobil.com / password123');
+    console.log('  Project Owner: ahmadmuslih@exxonmobil.com / password123');
+    console.log('  Scrum Master: alfaroq@exxonmobil.com / password123');
+    console.log('  Team Member: amrina@exxonmobil.com / password123');
 
   } catch (error) {
     console.error('❌ Error seeding database:', error);

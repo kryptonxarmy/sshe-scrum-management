@@ -8,7 +8,6 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { User, LogOut, Settings, FolderOpen, Users, BarChart3, Plus, Eye, Edit, Trash2 } from "lucide-react";
-import TaskBoard from "@/components/TaskBoard";
 import ProjectManagement from "@/components/project/ProjectManagement";
 
 const Dashboard = () => {
@@ -53,7 +52,7 @@ const Dashboard = () => {
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-slate-800">ExxonMobil SSHE</h1>
+            <h1 className="text-2xl font-bold text-slate-800">Pertamina HSE</h1>
             <Badge variant={getRoleBadgeVariant(user.role)}>{getRoleLabel(user.role)}</Badge>
           </div>
 
@@ -65,11 +64,6 @@ const Dashboard = () => {
                 Projects
               </Button>
 
-              <Button variant={activeView === "tasks" ? "default" : "ghost"} onClick={() => setActiveView("tasks")} className="flex items-center gap-2">
-                <BarChart3 size={16} />
-                Tasks
-              </Button>
-
               {hasPermission("canManageUsers") && (
                 <Button variant={activeView === "users" ? "default" : "ghost"} onClick={() => setActiveView("users")} className="flex items-center gap-2">
                   <Users size={16} />
@@ -77,7 +71,7 @@ const Dashboard = () => {
                 </Button>
               )}
 
-              <Button variant={activeView === "reports" ? "default" : "ghost"} onClick={() => setActiveView("reports")} className="flex items-center gap-2">
+              <Button variant="ghost" onClick={() => router.push("/reports")} className="flex items-center gap-2">
                 <BarChart3 size={16} />
                 Reports
               </Button>
@@ -114,9 +108,7 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="p-6">
         {activeView === "projects" && <ProjectsView />}
-        {activeView === "tasks" && <TasksView />}
         {activeView === "users" && <UsersView />}
-        {activeView === "reports" && <ReportsView />}
       </main>
     </div>
   );
@@ -134,17 +126,6 @@ const ProjectsView = () => {
 };
 
 // Tasks View Component
-const TasksView = () => {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-slate-800">Task Board</h2>
-      </div>
-      <TaskBoard />
-    </div>
-  );
-};
-
 // Users Management View
 const UsersView = () => {
   const { hasPermission } = useAuth();
@@ -170,23 +151,6 @@ const UsersView = () => {
       <Card>
         <CardContent className="p-6">
           <p className="text-center text-slate-600 py-8">User management interface will be implemented here.</p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-// Reports View
-const ReportsView = () => {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-slate-800">Reports & Analytics</h2>
-      </div>
-
-      <Card>
-        <CardContent className="p-6">
-          <p className="text-center text-slate-600 py-8">Reports and analytics interface will be implemented here.</p>
         </CardContent>
       </Card>
     </div>

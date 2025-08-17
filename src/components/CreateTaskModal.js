@@ -1,4 +1,8 @@
-import { useState } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSearchParams } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,29 +10,112 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const CreateTaskModal = ({ isOpen, onClose }) => {
+const CreateTaskModal = ({ isOpen, onClose, onTaskCreated }) => {
+  const { user, canCreateTask } = useAuth();
+  const searchParams = useSearchParams();
+  const projectId = searchParams.get("projectId");
+  
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    type: "story",
-    priority: "medium",
-    assignee: "",
+    type: "TASK",
+    priority: "MEDIUM",
+    assigneeId: "unassigned",
     dueDate: "",
+    estimatedTime: "",
   });
 
-  const handleSubmit = (e) => {
+  const [projectMembers, setProjectMembers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Fetch project members when modal opens
+  useEffect(() => {
+    const fetchProjectMembers = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/projects/${projectId}/members`);
+        if (response.ok) {
+          const data = await response.json();
+          setProjectMembers(data.members || []);
+        }
+      } catch (error) {
+        console.error('Error fetching project members:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isOpen && projectId) {
+      fetchProjectMembers();
+    }
+  }, [isOpen, projectId]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log("Task created:", formData);
-    onClose();
-    setFormData({
-      title: "",
-      description: "",
-      type: "story",
-      priority: "medium",
-      assignee: "",
-      dueDate: "",
-    });
+    
+    if (!canCreateTask()) {
+      alert("You don't have permission to create tasks");
+      return;
+    }
+
+    if (!projectId) {
+      alert("Project ID is required");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      
+      const taskData = {
+        title: formData.title,
+        description: formData.description,
+        type: formData.type,
+        priority: formData.priority,
+        assigneeId: (formData.assigneeId && formData.assigneeId !== "unassigned") ? formData.assigneeId : null,
+        dueDate: formData.dueDate || null,
+        estimatedTime: formData.estimatedTime ? parseFloat(formData.estimatedTime) : null,
+        projectId,
+        createdById: user.id,
+        status: 'TODO'
+      };
+
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(taskData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Reset form
+        setFormData({
+          title: "",
+          description: "",
+          type: "TASK",
+          priority: "MEDIUM",
+          assigneeId: "unassigned",
+          dueDate: "",
+          estimatedTime: "",
+        });
+        
+        // Close modal and trigger refresh
+        onClose();
+        if (onTaskCreated) {
+          onTaskCreated(data.task);
+        }
+      } else {
+        alert(data.error || 'Failed to create task');
+      }
+    } catch (error) {
+      console.error('Error creating task:', error);
+      alert('Failed to create task');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -44,6 +131,10 @@ const CreateTaskModal = ({ isOpen, onClose }) => {
       [name]: value,
     });
   };
+
+  if (!canCreateTask()) {
+    return null;
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -74,10 +165,10 @@ const CreateTaskModal = ({ isOpen, onClose }) => {
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="story">Story</SelectItem>
-                  <SelectItem value="spike">Spike</SelectItem>
-                  <SelectItem value="sprint">Sprint</SelectItem>
-                  <SelectItem value="qa">QA</SelectItem>
+                  <SelectItem value="TASK">Task</SelectItem>
+                  <SelectItem value="STORY">Story</SelectItem>
+                  <SelectItem value="BUG">Bug</SelectItem>
+                  <SelectItem value="SPIKE">Spike</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -89,9 +180,10 @@ const CreateTaskModal = ({ isOpen, onClose }) => {
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="LOW">Low</SelectItem>
+                  <SelectItem value="MEDIUM">Medium</SelectItem>
+                  <SelectItem value="HIGH">High</SelectItem>
+                  <SelectItem value="CRITICAL">Critical</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -100,8 +192,20 @@ const CreateTaskModal = ({ isOpen, onClose }) => {
           {/* Assignee and Due Date */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="assignee">Assignee</Label>
-              <Input id="assignee" name="assignee" value={formData.assignee} onChange={handleChange} placeholder="Enter name" />
+              <Label htmlFor="assigneeId">Assignee</Label>
+              <Select value={formData.assigneeId} onValueChange={(value) => handleSelectChange("assigneeId", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select assignee" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {projectMembers.map((member) => (
+                    <SelectItem key={member.user?.id || member.id} value={member.user?.id || member.id}>
+                      {member.user?.name || member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -110,12 +214,29 @@ const CreateTaskModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
+          {/* Estimated Time */}
+          <div className="space-y-2">
+            <Label htmlFor="estimatedTime">Estimated Time (hours)</Label>
+            <Input 
+              id="estimatedTime" 
+              name="estimatedTime" 
+              type="number" 
+              step="0.5" 
+              min="0"
+              value={formData.estimatedTime} 
+              onChange={handleChange} 
+              placeholder="e.g., 2.5" 
+            />
+          </div>
+
           {/* Form Buttons */}
           <div className="flex gap-3 justify-end pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
               Cancel
             </Button>
-            <Button type="submit">Create Task</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? 'Creating...' : 'Create Task'}
+            </Button>
           </div>
         </form>
       </DialogContent>

@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { useAuth } from "@/contexts/AuthContext";
 
 import KanbanBoard from "@/components/KanbanBoard";
 import Navbar from "@/components/Navbar";
@@ -11,11 +12,13 @@ import CreateTaskModal from "@/components/CreateTaskModal";
 
 
 export default function TasksPage() {
+  const { canCreateTask } = useAuth();
   const searchParams = useSearchParams();
   const projectId = searchParams.get("projectId");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [project, setProject] = useState(null);
   const [filter, setFilter] = useState("all");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     if (!projectId) return;
@@ -30,6 +33,11 @@ export default function TasksPage() {
     };
     fetchProject();
   }, [projectId]);
+
+  const handleTaskCreated = (newTask) => {
+    // Trigger refresh of KanbanBoard
+    setRefreshTrigger(prev => prev + 1);
+  };
 
 
   if (!projectId) {
@@ -94,16 +102,24 @@ export default function TasksPage() {
               </div>
               
               <div className="flex flex-col gap-2 min-w-[200px]">
-                <button
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-sm"
-                  onClick={() => setIsModalOpen(true)}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  Create Task
-                </button>
+                {canCreateTask() && (
+                  <button
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                    onClick={() => setIsModalOpen(true)}
+                    disabled={!project}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Create Task
+                  </button>
+                )}
+                {!canCreateTask() && (
+                  <div className="text-sm text-slate-500 text-center py-2">
+                    Only Scrum Masters and Project Owners can create tasks
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -131,9 +147,9 @@ export default function TasksPage() {
           </div>
 
           {/* Kanban Board */}
-          <KanbanBoard functionId={projectId} filter={filter} />
+          <KanbanBoard functionId={projectId} filter={filter} refreshTrigger={refreshTrigger} />
         </div>
-        <CreateTaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+        <CreateTaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onTaskCreated={handleTaskCreated} />
       </div>
     </ProtectedRoute>
   );
