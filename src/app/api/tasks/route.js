@@ -3,8 +3,25 @@ import { taskOperations, activityOperations, notificationOperations } from '@/li
 
 // GET /api/tasks - Get tasks
 export async function GET(request) {
+  const url = new URL(request.url);
+  
+  // Check if this is /api/tasks/all
+  if (url.pathname.endsWith('/all')) {
+    try {
+      const tasks = await taskOperations.getAll();
+      return NextResponse.json({ tasks });
+    } catch (error) {
+      console.error('Get all tasks error:', error);
+      return NextResponse.json(
+        { error: 'Internal server error' },
+        { status: 500 }
+      );
+    }
+  }
+
+  // Original GET logic for /api/tasks
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = url;
     const projectId = searchParams.get('projectId');
     const userId = searchParams.get('userId');
     const status = searchParams.get('status');
@@ -23,10 +40,8 @@ export async function GET(request) {
     } else if (userId) {
       tasks = await taskOperations.getByUserId(userId, filters);
     } else {
-      return NextResponse.json(
-        { error: 'Project ID or User ID is required' },
-        { status: 400 }
-      );
+      // Fallback: return empty array (for legacy GET)
+      return NextResponse.json({ tasks: [] });
     }
 
     return NextResponse.json({ tasks });

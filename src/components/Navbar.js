@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { User, LogOut, Settings, FolderOpen, Users, BarChart3 } from "lucide-react";
+import { User, LogOut, Settings, FolderOpen, Users, BarChart3, Calendar } from "lucide-react";
 
-export default function Navbar({ active = "tasks" }) {
+export default function Navbar({ active = "tasks", showTasks = false }) {
   const { user, logout, hasPermission } = useAuth();
   const router = useRouter();
 
@@ -50,9 +50,14 @@ export default function Navbar({ active = "tasks" }) {
             <Button variant={active === "projects" ? "default" : "ghost"} onClick={() => router.push("/dashboard")} className="flex items-center gap-2">
               <FolderOpen size={16} /> Projects
             </Button>
-            <Button variant={active === "tasks" ? "default" : "ghost"} onClick={() => router.push("/tasks?projectId=" + (user?.ownedProjects?.[0]?.id || ""))} className="flex items-center gap-2">
-              <BarChart3 size={16} /> Tasks
+            <Button variant={active === "tasks" ? "default" : "ghost"} onClick={() => router.push("/dashboard")} className="flex items-center gap-2">
+              <Calendar size={16} /> Calendar
             </Button>
+            {showTasks && (
+              <Button variant={active === "kanban" ? "default" : "ghost"} onClick={() => router.push("/tasks?projectId=" + (user?.ownedProjects?.[0]?.id || ""))} className="flex items-center gap-2">
+                <BarChart3 size={16} /> Tasks
+              </Button>
+            )}
             {hasPermission && hasPermission("canManageUsers") && (
               <Button variant={active === "users" ? "default" : "ghost"} onClick={() => router.push("/users")} className="flex items-center gap-2">
                 <Users size={16} /> Users

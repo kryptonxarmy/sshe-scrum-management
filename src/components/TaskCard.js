@@ -47,11 +47,16 @@ const TaskCard = ({ task }) => {
         <div className="font-semibold text-slate-800 mb-3 mr-16 leading-tight text-sm">{task.title || "Untitled Task"}</div>
 
         {/* Task Meta */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs text-slate-600">
-          <Badge variant={getPriorityBadgeVariant(task.priority)} className="text-xs">
+        <div className="flex flex-col gap-1 text-xs text-slate-600">
+          <Badge variant={getPriorityBadgeVariant(task.priority)} className="text-xs mb-1">
             {getDisplayPriority()}
           </Badge>
-          <span className="text-xs text-slate-500">{task.status === "done" ? "Completed" : `Due: ${task.dueDate || "No due date"}`}</span>
+          <span className="text-xs text-slate-500">
+            Assignee: {task.assignee?.name || "-"}
+          </span>
+          <span className="text-xs text-slate-500">
+            Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric" }) : "No due date"}
+          </span>
         </div>
       </CardContent>
     </Card>

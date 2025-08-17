@@ -124,14 +124,12 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
               <Label htmlFor="type">Task Type</Label>
               <Select value={formData.type} onValueChange={(value) => handleSelectChange("type", value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder="Sprint" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="story">Story</SelectItem>
-                  <SelectItem value="bug">Bug</SelectItem>
-                  <SelectItem value="task">Task</SelectItem>
-                  <SelectItem value="spike">Spike</SelectItem>
-                  <SelectItem value="epic">Epic</SelectItem>
+                  <SelectItem value="SPIKE">Spike</SelectItem>
+                  <SelectItem value="SPRINT">Sprint</SelectItem>
+                  <SelectItem value="QA">QA</SelectItem>
                 </SelectContent>
               </Select>
             </div>

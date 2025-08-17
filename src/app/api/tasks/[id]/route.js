@@ -33,9 +33,12 @@ export async function PUT(request, { params }) {
     const body = await request.json();
     const { userId, ...updateData } = body;
 
+    console.log('PUT /api/tasks/[id] called:', { id, updateData });
+
     // Get current task
     const currentTask = await taskOperations.findById(id);
     if (!currentTask) {
+      console.log('Task not found:', id);
       return NextResponse.json(
         { error: 'Task not found' },
         { status: 404 }
@@ -44,7 +47,6 @@ export async function PUT(request, { params }) {
 
     // Prepare update data
     const processedUpdateData = {};
-    
     Object.keys(updateData).forEach(key => {
       if (updateData[key] !== undefined) {
         if (key === 'dueDate' && updateData[key]) {
@@ -58,6 +60,7 @@ export async function PUT(request, { params }) {
         }
       }
     });
+    console.log('Processed update data:', processedUpdateData);
 
     // Add completion timestamp if status changed to DONE
     if (processedUpdateData.status === 'DONE' && currentTask.status !== 'DONE') {

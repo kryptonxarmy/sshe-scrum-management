@@ -44,6 +44,8 @@ enum TaskType {
   TASK
   SPIKE
   EPIC
+  SPRINT
+  QA
 }
 
 enum Priority {

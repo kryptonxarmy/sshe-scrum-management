@@ -66,24 +66,37 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
     // Add task to destination list
     destList.splice(destination.index, 0, { ...movedTask, status: newStatus });
 
-    // Update state
+    // Update state (optimistic)
     setTasks({
       ...tasks,
       [source.droppableId]: sourceList,
       [destination.droppableId]: destList
     });
 
-    // Update task status in backend
+    // Update task status and order in backend
     try {
       await fetch(`/api/tasks/${movedTask.id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          status: newStatus
+          status: newStatus.toUpperCase()
         })
       });
+      // Refetch tasks from backend to ensure sync
+      if (functionId) {
+        const response = await fetch(`/api/tasks?projectId=${functionId}`);
+        if (response.ok) {
+          const data = await response.json();
+          const organizedTasks = {
+            todo: data.tasks.filter(task => task.status === 'TODO'),
+            progress: data.tasks.filter(task => task.status === 'IN_PROGRESS'),
+            done: data.tasks.filter(task => task.status === 'DONE')
+          };
+          setTasks(organizedTasks);
+        }
+      }
     } catch (error) {
       console.error('Failed to update task status:', error);
     }

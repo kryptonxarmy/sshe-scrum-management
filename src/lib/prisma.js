@@ -461,37 +461,53 @@ export const notificationOperations = {
     });
   },
 
-  async markAsRead(id) {
-    return prisma.notification.update({
+  async findById(id) {
+    return prisma.task.findUnique({
       where: { id },
-      data: {
-        isRead: true,
-        readAt: new Date(),
+      include: {
+        project: {
+          include: {
+            owner: true,
+          },
+        },
+        assignee: true,
+        createdBy: true,
+        function: true,
+        sprint: true,
+        comments: {
+          include: {
+            author: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+        activityLogs: true,
+        taskAttachments: true,
+        dependencies: true,
+        dependents: true,
       },
     });
   },
 
-  async markAllAsRead(userId) {
-    return prisma.notification.updateMany({
-      where: {
-        userId,
-        isRead: false,
+  async getAll() {
+    return prisma.task.findMany({
+      include: {
+        assignee: true,
+        createdBy: true,
+        function: true,
+        _count: {
+          select: {
+            comments: true,
+            taskAttachments: true,
+          },
+        },
       },
-      data: {
-        isRead: true,
-        readAt: new Date(),
-      },
-    });
-  },
-
-  async getUnreadCount(userId) {
-    return prisma.notification.count({
-      where: {
-        userId,
-        isRead: false,
+      orderBy: {
+        createdAt: 'desc',
       },
     });
-  },
+  }
 };
 
 // System settings operations

@@ -2,14 +2,16 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { User, LogOut, Settings, FolderOpen, Users, BarChart3, Plus, Eye, Edit, Trash2 } from "lucide-react";
+import { User, LogOut, Settings, FolderOpen, Users, BarChart3, Plus, Eye, Edit, Trash2, Calendar } from "lucide-react";
 import TaskBoard from "@/components/TaskBoard";
 import ProjectManagement from "@/components/project/ProjectManagement";
+import CalendarDashboardData from "@/components/dashboard/CalendarDashboardData";
+import ReportsPageFixed from "@/components/reports/ReportsPageFixed";
 
 const Dashboard = () => {
   const { user, logout, hasPermission } = useAuth();
@@ -66,8 +68,8 @@ const Dashboard = () => {
               </Button>
 
               <Button variant={activeView === "tasks" ? "default" : "ghost"} onClick={() => setActiveView("tasks")} className="flex items-center gap-2">
-                <BarChart3 size={16} />
-                Tasks
+                <Calendar size={16} />
+                Calendar
               </Button>
 
               {hasPermission("canManageUsers") && (
@@ -116,7 +118,7 @@ const Dashboard = () => {
         {activeView === "projects" && <ProjectsView />}
         {activeView === "tasks" && <TasksView />}
         {activeView === "users" && <UsersView />}
-        {activeView === "reports" && <ReportsView />}
+        {activeView === "reports" && <ReportsPageFixed />}
       </main>
     </div>
   );
@@ -138,9 +140,9 @@ const TasksView = () => {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-slate-800">Task Board</h2>
+        <h2 className="text-xl font-semibold text-slate-800">Calendar</h2>
       </div>
-      <TaskBoard />
+      <CalendarDashboardData />
     </div>
   );
 };
@@ -170,23 +172,6 @@ const UsersView = () => {
       <Card>
         <CardContent className="p-6">
           <p className="text-center text-slate-600 py-8">User management interface will be implemented here.</p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-// Reports View
-const ReportsView = () => {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-slate-800">Reports & Analytics</h2>
-      </div>
-
-      <Card>
-        <CardContent className="p-6">
-          <p className="text-center text-slate-600 py-8">Reports and analytics interface will be implemented here.</p>
         </CardContent>
       </Card>
     </div>

@@ -17,6 +17,24 @@ export default function TasksPage() {
   const [project, setProject] = useState(null);
   const [filter, setFilter] = useState("all");
   const [refreshTasks, setRefreshTasks] = useState(0);
+  const [teamMembers, setTeamMembers] = useState([]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    const fetchMembers = async () => {
+      try {
+        const res = await fetch(`/api/projects/${projectId}/members`);
+        const data = await res.json();
+        setTeamMembers([
+          ...(data.owner ? [{ ...data.owner }] : []),
+          ...(data.members || [])
+        ]);
+      } catch {
+        setTeamMembers([]);
+      }
+    };
+    fetchMembers();
+  }, [projectId]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -40,7 +58,7 @@ export default function TasksPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-slate-50">
-        <Navbar active="tasks" />
+        <Navbar active="kanban" showTasks={true} />
         <div className="max-w-7xl mx-auto p-4">
           {/* Project Header Card */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 mb-6">
@@ -80,6 +98,22 @@ export default function TasksPage() {
                         <span className="font-medium text-slate-700">
                           {project.endDate ? new Date(project.endDate).toLocaleDateString() : '-'}
                         </span>
+                      </div>
+                    </div>
+                    {/* Team Members List */}
+                    <div className="mt-4">
+                      <h3 className="font-semibold text-base mb-2">Team Members</h3>
+                      <div className="flex flex-wrap gap-3">
+                        {teamMembers.length === 0 ? (
+                          <span className="text-slate-400 text-sm">No team members found.</span>
+                        ) : (
+                          teamMembers.map((member) => (
+                            <div key={member.id} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 flex flex-col items-start min-w-[120px]">
+                              <span className="font-medium text-slate-700 text-sm">{member.name}</span>
+                              <span className="text-xs text-slate-500">{member.role.replace('_', ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
+                            </div>
+                          ))
+                        )}
                       </div>
                     </div>
                   </>
