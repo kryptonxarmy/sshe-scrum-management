@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -24,6 +24,13 @@ const Dashboard = () => {
     logout();
     router.push("/login");
   };
+
+  // Redirect superadmin to admin panel
+  useEffect(() => {
+    if (user && user.role === 'SUPERADMIN') {
+      router.push("/admin");
+    }
+  }, [user, router]);
 
   const getRoleBadgeVariant = (role) => {
     const variants = {
@@ -77,6 +84,14 @@ const Dashboard = () => {
                 <Button variant={activeView === "users" ? "default" : "ghost"} onClick={() => setActiveView("users")} className="flex items-center gap-2">
                   <Users size={16} />
                   Users
+                </Button>
+              )}
+
+              {user?.role === 'SUPERADMIN' && (
+               
+                <Button variant="ghost" onClick={() => router.push("/admin")} className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50">
+                  <Settings size={16} />
+                  Admin Panel
                 </Button>
               )}
 

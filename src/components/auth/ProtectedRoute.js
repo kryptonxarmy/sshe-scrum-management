@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-const ProtectedRoute = ({ children, requiredPermission = null }) => {
+const ProtectedRoute = ({ children, requiredPermission = null, requiredRole = null }) => {
   const { user, hasPermission, loading } = useAuth();
   const router = useRouter();
 
@@ -19,8 +19,13 @@ const ProtectedRoute = ({ children, requiredPermission = null }) => {
         router.push("/unauthorized");
         return;
       }
+
+      if (requiredRole && user.role !== requiredRole) {
+        router.push("/unauthorized");
+        return;
+      }
     }
-  }, [user, loading, requiredPermission, hasPermission, router]);
+  }, [user, loading, requiredPermission, requiredRole, hasPermission, router]);
 
   if (loading) {
     return (
@@ -38,6 +43,10 @@ const ProtectedRoute = ({ children, requiredPermission = null }) => {
   }
 
   if (requiredPermission && !hasPermission(requiredPermission)) {
+    return null;
+  }
+
+  if (requiredRole && user.role !== requiredRole) {
     return null;
   }
 
