@@ -358,6 +358,7 @@ export const taskOperations = {
         assignee: true,
         createdBy: true,
         function: true,
+        sprint: true, // Include sprint data
         _count: {
           select: {
             comments: true,

@@ -9,9 +9,30 @@ const KanbanBoard = ({ functionId }) => {
     progress: [],
     done: []
   });
+
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch(`/api/tasks?projectId=${functionId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch tasks');
+      }
+      const data = await response.json();
+      
+      // Organize tasks by status
+      const organizedTasks = {
+        todo: data.tasks.filter(task => task.status === 'TODO'),
+        progress: data.tasks.filter(task => task.status === 'IN_PROGRESS'),
+        done: data.tasks.filter(task => task.status === 'DONE')
+      };
+      
+      setTasks(organizedTasks);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    }
+  };
   
   useEffect(() => {
-    const fetchTasks = async () => {
+    const fetchTasksData = async () => {
       try {
         const response = await fetch(`/api/tasks?projectId=${functionId}`);
         if (!response.ok) {
@@ -33,9 +54,14 @@ const KanbanBoard = ({ functionId }) => {
     };
 
     if (functionId) {
-      fetchTasks();
+      fetchTasksData();
     }
   }, [functionId]);
+
+  const handleTaskUpdated = () => {
+    // Refresh tasks after update
+    fetchTasks();
+  };
 
   const columns = [
     { 
@@ -76,7 +102,7 @@ const KanbanBoard = ({ functionId }) => {
           {column.tasks.length > 0 ? (
             <div className="space-y-4">
               {column.tasks.map((task) => (
-                <TaskCard key={task.id} task={task} />
+                <TaskCard key={task.id} task={task} onTaskUpdated={handleTaskUpdated} />
               ))}
             </div>
           ) : (
