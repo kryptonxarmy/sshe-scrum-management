@@ -12,12 +12,19 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    type: "story",
+    sprint: "Sprint 1",
     priority: "medium",
     assignee: "",
     dueDate: "",
   });
   const [projectMembers, setProjectMembers] = useState([]);
+  const [availableSprints, setAvailableSprints] = useState([
+    "Sprint 1",
+    "Sprint 2", 
+    "Sprint 3",
+    "Sprint 4",
+    "Sprint 5"
+  ]);
 
   useEffect(() => {
     const fetchProjectMembers = async () => {
@@ -42,11 +49,12 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
     try {
       const requestBody = {
         ...formData,
-        type: formData.type ? formData.type.toUpperCase() : 'TASK',
+        sprintName: formData.sprint,
         assigneeId: formData.assignee || null,
         projectId: projectId,
         createdById: user?.id,
         status: 'TODO',
+        type: 'TASK', // Default task type
       };
       console.log('Submitting task:', requestBody);
       const response = await fetch('/api/tasks', {
@@ -68,7 +76,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
       setFormData({
         title: "",
         description: "",
-        type: "story",
+        sprint: "Sprint 1",
         priority: "medium",
         assignee: "",
         dueDate: "",
@@ -96,6 +104,21 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
       ...formData,
       [name]: value,
     });
+
+    // Auto-expand sprints if user selects the last 2 sprints
+    if (name === "sprint") {
+      const currentSprintNumber = parseInt(value.split(" ")[1]);
+      const maxSprintNumber = Math.max(...availableSprints.map(s => parseInt(s.split(" ")[1])));
+      
+      // If user selects Sprint n-1 or Sprint n (last 2 sprints), add 2 more sprints
+      if (currentSprintNumber >= maxSprintNumber - 1) {
+        const newSprints = [];
+        for (let i = maxSprintNumber + 1; i <= maxSprintNumber + 2; i++) {
+          newSprints.push(`Sprint ${i}`);
+        }
+        setAvailableSprints(prev => [...prev, ...newSprints]);
+      }
+    }
   };
 
   return (
@@ -118,18 +141,20 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
             <Textarea id="description" name="description" value={formData.description} onChange={handleChange} placeholder="Enter task description" rows={3} />
           </div>
 
-          {/* Task Type and Priority */}
+          {/* Sprint and Priority */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="type">Task Type</Label>
-              <Select value={formData.type} onValueChange={(value) => handleSelectChange("type", value)}>
+              <Label htmlFor="sprint">Sprint</Label>
+              <Select value={formData.sprint} onValueChange={(value) => handleSelectChange("sprint", value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sprint" />
+                  <SelectValue placeholder="Select Sprint" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="SPIKE">Spike</SelectItem>
-                  <SelectItem value="SPRINT">Sprint</SelectItem>
-                  <SelectItem value="QA">QA</SelectItem>
+                  {availableSprints.map((sprint) => (
+                    <SelectItem key={sprint} value={sprint}>
+                      {sprint}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

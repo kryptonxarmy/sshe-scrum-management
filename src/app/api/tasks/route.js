@@ -72,6 +72,7 @@ export async function POST(request) {
       estimatedTime,
       functionId,
       sprintId,
+      sprintName, // New field for sprint name
     } = body;
 
     // Validate required fields
@@ -80,6 +81,43 @@ export async function POST(request) {
         { error: 'Title, project ID, and creator ID are required' },
         { status: 400 }
       );
+    }
+
+    let finalSprintId = sprintId;
+
+    // Handle sprint creation if sprintName is provided
+    if (sprintName && !sprintId) {
+      const { prisma } = require('@/lib/prisma');
+      
+      // Check if sprint already exists
+      let sprint = await prisma.sprint.findFirst({
+        where: {
+          name: sprintName,
+          projectId: projectId
+        }
+      });
+
+      // Create sprint if it doesn't exist
+      if (!sprint) {
+        // Calculate dates for the sprint (14 days duration)
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setDate(startDate.getDate() + 14);
+
+        sprint = await prisma.sprint.create({
+          data: {
+            name: sprintName,
+            goal: `Goals for ${sprintName}`,
+            startDate: startDate,
+            endDate: endDate,
+            projectId: projectId,
+            isActive: false,
+            isCompleted: false
+          }
+        });
+      }
+      
+      finalSprintId = sprint.id;
     }
 
     const taskData = {
@@ -94,7 +132,7 @@ export async function POST(request) {
       dueDate: dueDate ? new Date(dueDate) : null,
       estimatedTime: estimatedTime ? parseFloat(estimatedTime) : null,
       functionId,
-      sprintId,
+      sprintId: finalSprintId,
     };
 
     const task = await taskOperations.create(taskData);
