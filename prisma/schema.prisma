@@ -107,6 +107,7 @@ model User {
   activityLogs      ActivityLog[]
   notifications     Notification[]
   userSettings      UserSettings?
+  createdEvents     Event[]
 
   @@map("users")
 }
@@ -162,6 +163,7 @@ model Project {
   comments     Comment[]
   activityLogs ActivityLog[]
   settings     ProjectSettings?
+  events       Event[]
 
   @@map("projects")
 }
@@ -452,4 +454,31 @@ model AuditLog {
   timestamp  DateTime @default(now())
 
   @@map("audit_logs")
+}
+
+// =====================================
+// EVENT MODELS
+// =====================================
+
+model Event {
+  id                  String    @id @default(cuid())
+  title               String
+  description         String?   @db.Text
+  startDate           DateTime
+  endDate             DateTime
+  isRecurring         Boolean   @default(false)
+  recurringType       String?   // "weekly" or "biweekly"
+  recurringDayOfWeek  Int?      // 0 = Sunday, 1 = Monday, etc.
+  recurringEndDate    DateTime?
+  parentEventId       String?   // For recurring event instances
+  parentEvent         Event?    @relation("EventRecurrence", fields: [parentEventId], references: [id])
+  childEvents         Event[]   @relation("EventRecurrence")
+  projectId           String?
+  project             Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdById         String
+  createdBy           User      @relation(fields: [createdById], references: [id])
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@map("events")
 }

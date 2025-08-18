@@ -25,10 +25,28 @@ export default function TasksPage() {
       try {
         const res = await fetch(`/api/projects/${projectId}/members`);
         const data = await res.json();
-        setTeamMembers([
-          ...(data.owner ? [{ ...data.owner }] : []),
-          ...(data.members || [])
-        ]);
+        
+        // Create a Set to track unique user IDs and avoid duplicates
+        const uniqueMembers = [];
+        const seenIds = new Set();
+        
+        // Add owner if exists
+        if (data.owner) {
+          uniqueMembers.push({ ...data.owner });
+          seenIds.add(data.owner.id);
+        }
+        
+        // Add members that are not already in the list
+        if (data.members) {
+          data.members.forEach(member => {
+            if (!seenIds.has(member.userId)) {
+              uniqueMembers.push({ ...member.user, role: member.role || member.user.role });
+              seenIds.add(member.userId);
+            }
+          });
+        }
+        
+        setTeamMembers(uniqueMembers);
       } catch {
         setTeamMembers([]);
       }
@@ -107,8 +125,8 @@ export default function TasksPage() {
                         {teamMembers.length === 0 ? (
                           <span className="text-slate-400 text-sm">No team members found.</span>
                         ) : (
-                          teamMembers.map((member) => (
-                            <div key={member.id} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 flex flex-col items-start min-w-[120px]">
+                          teamMembers.map((member, index) => (
+                            <div key={`member-${member.id || member.userId || index}`} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 flex flex-col items-start min-w-[120px]">
                               <span className="font-medium text-slate-700 text-sm">{member.name}</span>
                               <span className="text-xs text-slate-500">{member.role.replace('_', ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
                             </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import CalendarDashboard from "./CalendarDashboard";
+import CalendarDashboard from "./CalendarDashboardNew";
 
 const CalendarDashboardData = () => {
   const [tasks, setTasks] = useState([]);
