@@ -2,6 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import { TrendingUp, TrendingDown, Minus, Star, Clock, AlertTriangle, CheckCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import dynamic from 'next/dynamic';
 
 // Dynamic import for recharts to avoid SSR issues
@@ -21,64 +26,348 @@ const Tooltip = dynamic(() => import('recharts').then(mod => mod.Tooltip), { ssr
 const Legend = dynamic(() => import('recharts').then(mod => mod.Legend), { ssr: false });
 const ResponsiveContainer = dynamic(() => import('recharts').then(mod => mod.ResponsiveContainer), { ssr: false });
 
+// Assignee Performance Component
+const AssigneePerformance = () => {
+  const { user } = useAuth();
+  const [assigneeData, setAssigneeData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAssigneePerformance = React.useCallback(async () => {
+    if (!user?.id) return;
+    
+    try {
+      const response = await fetch(`/api/reports/project-owner?userId=${user.id}`);
+      const data = await response.json();
+      
+      if (data.data?.assigneePerformance) {
+        setAssigneeData(data.data.assigneePerformance);
+      }
+    } catch (error) {
+      console.error('Error fetching assignee performance:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchAssigneePerformance();
+  }, [fetchAssigneePerformance]);
+
+  const getTrendIcon = (trend) => {
+    switch (trend) {
+      case 'up':
+        return <TrendingUp className="w-4 h-4 text-green-600" />;
+      case 'down':
+        return <TrendingDown className="w-4 h-4 text-red-600" />;
+      default:
+        return <Minus className="w-4 h-4 text-gray-600" />;
+    }
+  };
+
+  const getPerformanceColor = (rating) => {
+    switch (rating) {
+      case 'Excellent':
+        return 'bg-green-500';
+      case 'Good':
+        return 'bg-blue-500';
+      case 'Average':
+        return 'bg-yellow-500';
+      case 'Below Average':
+        return 'bg-orange-500';
+      default:
+        return 'bg-red-500';
+    }
+  };
+
+  const getPerformanceBadgeColor = (rating) => {
+    switch (rating) {
+      case 'Excellent':
+        return 'bg-green-100 text-green-800';
+      case 'Good':
+        return 'bg-blue-100 text-blue-800';
+      case 'Average':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Below Average':
+        return 'bg-orange-100 text-orange-800';
+      default:
+        return 'bg-red-100 text-red-800';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-1/4 mb-4">WKWKWKWKWK</div>
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-20 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (assigneeData.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        <div className="text-4xl mb-4">📊</div>
+        <p>No assignee performance data available</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-gray-800">Team Performance Overview</h3>
+        <Badge variant="outline" className="text-sm">
+          {assigneeData.length} Team Members
+        </Badge>
+      </div>
+
+      <div className="grid gap-4">
+        {assigneeData.map((member, index) => (
+          <Card key={member.assignee.id} className="p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg">
+                    {member.assignee.name.charAt(0)}
+                  </div>
+                  {index === 0 && (
+                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                      <Star className="w-3 h-3 text-white" />
+                    </div>
+                  )}
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold text-gray-900">{member.assignee.name}</h4>
+                  <p className="text-sm text-gray-600">{member.assignee.email}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge className={`text-xs ${getPerformanceBadgeColor(member.performance.rating)}`}>
+                      {member.performance.rating}
+                    </Badge>
+                    {getTrendIcon(member.performance.trend)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <div className="text-2xl font-bold text-gray-900">
+                  {member.metrics.productivityScore}
+                </div>
+                <div className="text-sm text-gray-600">Score</div>
+              </div>
+            </div>
+
+            {/* Performance Metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="text-center p-3 bg-blue-50 rounded-lg">
+                <div className="flex items-center justify-center mb-1">
+                  <CheckCircle className="w-4 h-4 text-blue-600 mr-1" />
+                  <span className="text-sm font-medium text-blue-900">Completed</span>
+                </div>
+                <div className="text-xl font-bold text-blue-600">
+                  {member.metrics.completedTasks}
+                </div>
+                <div className="text-xs text-blue-700">
+                  {member.metrics.completionRate}% rate
+                </div>
+              </div>
+
+              <div className="text-center p-3 bg-green-50 rounded-lg">
+                <div className="flex items-center justify-center mb-1">
+                  <Clock className="w-4 h-4 text-green-600 mr-1" />
+                  <span className="text-sm font-medium text-green-900">Avg Time</span>
+                </div>
+                <div className="text-xl font-bold text-green-600">
+                  {member.metrics.avgCompletionDays}
+                </div>
+                <div className="text-xs text-green-700">days</div>
+              </div>
+
+              <div className="text-center p-3 bg-purple-50 rounded-lg">
+                <div className="flex items-center justify-center mb-1">
+                  <Star className="w-4 h-4 text-purple-600 mr-1" />
+                  <span className="text-sm font-medium text-purple-900">Story Points</span>
+                </div>
+                <div className="text-xl font-bold text-purple-600">
+                  {member.metrics.completedStoryPoints}
+                </div>
+                <div className="text-xs text-purple-700">
+                  of {member.metrics.totalStoryPoints}
+                </div>
+              </div>
+
+              <div className="text-center p-3 bg-orange-50 rounded-lg">
+                <div className="flex items-center justify-center mb-1">
+                  <AlertTriangle className="w-4 h-4 text-orange-600 mr-1" />
+                  <span className="text-sm font-medium text-orange-900">Overdue</span>
+                </div>
+                <div className="text-xl font-bold text-orange-600">
+                  {member.metrics.overdueTasks}
+                </div>
+                <div className="text-xs text-orange-700">tasks</div>
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="mb-4">
+              <div className="flex justify-between text-sm text-gray-600 mb-1">
+                <span>Task Completion Progress</span>
+                <span>{member.metrics.completionRate}%</span>
+              </div>
+              <Progress 
+                value={member.metrics.completionRate} 
+                className="h-2"
+              />
+            </div>
+
+            {/* Strengths and Improvements */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <h5 className="font-medium text-green-700 mb-2 flex items-center">
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  Strengths
+                </h5>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  {member.performance.strengths.slice(0, 2).map((strength, idx) => (
+                    <li key={idx} className="flex items-start">
+                      <span className="w-1 h-1 bg-green-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                      {strength}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-medium text-blue-700 mb-2 flex items-center">
+                  <TrendingUp className="w-4 h-4 mr-1" />
+                  Focus Areas
+                </h5>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  {member.performance.improvements.slice(0, 2).map((improvement, idx) => (
+                    <li key={idx} className="flex items-start">
+                      <span className="w-1 h-1 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                      {improvement}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Summary Stats */}
+      <Card className="p-6 bg-gradient-to-r from-gray-50 to-gray-100">
+        <h4 className="font-semibold text-gray-800 mb-4">Team Summary</h4>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-900">
+              {assigneeData.reduce((sum, member) => sum + member.metrics.totalTasks, 0)}
+            </div>
+            <div className="text-sm text-gray-600">Total Tasks</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600">
+              {assigneeData.reduce((sum, member) => sum + member.metrics.completedTasks, 0)}
+            </div>
+            <div className="text-sm text-gray-600">Completed</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600">
+              {Math.round(assigneeData.reduce((sum, member) => sum + member.metrics.productivityScore, 0) / assigneeData.length)}
+            </div>
+            <div className="text-sm text-gray-600">Avg Score</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-orange-600">
+              {assigneeData.reduce((sum, member) => sum + member.metrics.overdueTasks, 0)}
+            </div>
+            <div className="text-sm text-gray-600">Overdue</div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
 const ReportsPageFixed = () => {
+  const { user } = useAuth();
   const [reportData, setReportData] = useState({
     projectProgress: [],
     sprintBurndown: [],
     velocity: [],
     releaseTracking: [],
-    memberContribution: []
+    memberContribution: [],
+    performanceMetrics: {},
+    projectOverview: [],
+    taskDistribution: [],
+    teamProductivity: [],
+    priorityBreakdown: [],
+    completionTrends: []
   });
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Fetch report data from API
-    fetchReportData();
-  }, []);
-
-  const fetchReportData = async () => {
+  const fetchReportData = React.useCallback(async () => {
+    if (!user?.id) return;
+    
     try {
-      const mockData = {
-        projectProgress: [
-          { name: 'To Do', value: 35, color: '#ef4444' },
-          { name: 'In Progress', value: 45, color: '#3b82f6' },
-          { name: 'Done', value: 89, color: '#10b981' }
-        ],
-        sprintBurndown: [
-          { date: '2024-01-01', remainingTasks: 100 },
-          { date: '2024-01-08', remainingTasks: 85 },
-          { date: '2024-01-15', remainingTasks: 70 },
-          { date: '2024-01-22', remainingTasks: 45 },
-          { date: '2024-01-29', remainingTasks: 20 },
-          { date: '2024-02-05', remainingTasks: 5 },
-          { date: '2024-02-12', remainingTasks: 0 }
-        ],
-        velocity: [
-          { sprint: 'Sprint 1', completed: 23 },
-          { sprint: 'Sprint 2', completed: 34 },
-          { sprint: 'Sprint 3', completed: 28 },
-          { sprint: 'Sprint 4', completed: 41 },
-          { sprint: 'Sprint 5', completed: 37 }
-        ],
-        releaseTracking: [
-          { date: '2024-01-01', planned: 0, actual: 0 },
-          { date: '2024-01-15', planned: 25, actual: 20 },
-          { date: '2024-02-01', planned: 50, actual: 45 },
-          { date: '2024-02-15', planned: 75, actual: 65 },
-          { date: '2024-03-01', planned: 100, actual: 85 }
-        ],
-        memberContribution: [
-          { member: 'John Doe', completed: 28 },
-          { member: 'Jane Smith', completed: 32 },
-          { member: 'Mike Johnson', completed: 21 },
-          { member: 'Sarah Wilson', completed: 35 },
-          { member: 'David Brown', completed: 29 }
-        ]
-      };
-      setReportData(mockData);
+      const response = await fetch(`/api/reports/project-owner?userId=${user.id}`);
+      const data = await response.json();
+      
+      if (data.data) {
+        // Use real API data directly
+        const transformedData = {
+          // Task distribution for pie chart
+          projectProgress: data.data.taskDistribution || [],
+          
+          // Real sprint burndown data
+          sprintBurndown: data.data.sprintBurndown || [],
+          
+          // Team productivity as velocity (transform to sprint format)
+          velocity: (data.data.teamProductivity || []).map((team, index) => ({
+            sprint: team.projectName || `Sprint ${index + 1}`,
+            completed: team.completedTasks,
+            productivity: team.productivity
+          })),
+          
+          // Real release tracking data
+          releaseTracking: data.data.releaseTracking || [],
+          
+          // Team member contribution from assignee performance
+          memberContribution: (data.data.assigneePerformance || []).map(assignee => ({
+            member: assignee.assignee?.name || 'Unknown',
+            completed: assignee.metrics?.completedTasks || 0,
+            productivityScore: assignee.metrics?.productivityScore || 0
+          })),
+          
+          // Store all original data for other components
+          performanceMetrics: data.data.performanceMetrics || {},
+          projectOverview: data.data.projectOverview || [],
+          taskDistribution: data.data.taskDistribution || [],
+          teamProductivity: data.data.teamProductivity || [],
+          priorityBreakdown: data.data.priorityBreakdown || [],
+          completionTrends: data.data.completionTrends || [],
+          assigneePerformance: data.data.assigneePerformance || []
+        };
+        
+        setReportData(transformedData);
+      }
     } catch (error) {
       console.error('Error fetching report data:', error);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchReportData();
+  }, [fetchReportData]);
 
   const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
 
@@ -121,10 +410,13 @@ const ReportsPageFixed = () => {
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   </div>
                 </div>
-                <h3 className="text-4xl font-black text-slate-800 mb-2 tracking-tight">124</h3>
+                <h3 className="text-4xl font-black text-slate-800 mb-2 tracking-tight">
+                  {loading ? '...' : (reportData.performanceMetrics.totalTasks || 0)}
+                </h3>
                 <p className="text-purple-600 font-medium">Total Tasks</p>
                 <div className="mt-4 flex items-center text-green-600 text-sm">
-                  <span className="mr-1">↗</span> +12% from last month
+                  <span className="mr-1">↗</span> 
+                  {loading ? 'Loading...' : `${reportData.performanceMetrics.totalProjects || 0} projects`}
                 </div>
               </CardContent>
             </Card>
@@ -142,10 +434,13 @@ const ReportsPageFixed = () => {
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   </div>
                 </div>
-                <h3 className="text-4xl font-black text-slate-800 mb-2 tracking-tight">89</h3>
+                <h3 className="text-4xl font-black text-slate-800 mb-2 tracking-tight">
+                  {loading ? '...' : (reportData.performanceMetrics.completedTasks || 0)}
+                </h3>
                 <p className="text-emerald-600 font-medium">Completed</p>
                 <div className="mt-4 flex items-center text-green-600 text-sm">
-                  <span className="mr-1">↗</span> +8% efficiency
+                  <span className="mr-1">↗</span> 
+                  {loading ? 'Loading...' : `${reportData.performanceMetrics.completionRate || 0}% efficiency`}
                 </div>
               </CardContent>
             </Card>
@@ -163,10 +458,13 @@ const ReportsPageFixed = () => {
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   </div>
                 </div>
-                <h3 className="text-4xl font-black text-slate-800 mb-2 tracking-tight">72%</h3>
+                <h3 className="text-4xl font-black text-slate-800 mb-2 tracking-tight">
+                  {loading ? '...' : `${reportData.performanceMetrics.completionRate || 0}%`}
+                </h3>
                 <p className="text-orange-600 font-medium">Completion Rate</p>
                 <div className="mt-4 flex items-center text-green-600 text-sm">
-                  <span className="mr-1">↗</span> Above target
+                  <span className="mr-1">↗</span> 
+                  {loading ? 'Loading...' : (reportData.performanceMetrics.completionRate >= 70 ? 'Above target' : 'Below target')}
                 </div>
               </CardContent>
             </Card>
@@ -184,10 +482,13 @@ const ReportsPageFixed = () => {
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   </div>
                 </div>
-                <h3 className="text-4xl font-black text-slate-800 mb-2 tracking-tight">15</h3>
+                <h3 className="text-4xl font-black text-slate-800 mb-2 tracking-tight">
+                  {loading ? '...' : (reportData.performanceMetrics.activeProjects || 0)}
+                </h3>
                 <p className="text-cyan-600 font-medium">Active Projects</p>
                 <div className="mt-4 flex items-center text-green-600 text-sm">
-                  <span className="mr-1">→</span> On schedule
+                  <span className="mr-1">→</span> 
+                  {loading ? 'Loading...' : 'On schedule'}
                 </div>
               </CardContent>
             </Card>
@@ -299,18 +600,29 @@ const ReportsPageFixed = () => {
                       />
                       <Area 
                         type="monotone" 
-                        dataKey="remainingTasks" 
+                        dataKey="remaining" 
                         stroke="#ef4444" 
                         fill="url(#burndownGradient)"
                         strokeWidth={3}
+                        name="Remaining Tasks"
                       />
                       <Line 
                         type="monotone" 
-                        dataKey="remainingTasks" 
+                        dataKey="ideal" 
+                        stroke="#8b5cf6" 
+                        strokeWidth={2}
+                        strokeDasharray="5 5"
+                        dot={false}
+                        name="Ideal"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="remaining" 
                         stroke="#ef4444" 
                         strokeWidth={3}
-                        dot={{ fill: '#ef4444', strokeWidth: 2, r: 6 }}
-                        activeDot={{ r: 8, stroke: '#ef4444', strokeWidth: 2, fill: '#fff' }}
+                        dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6, stroke: '#ef4444', strokeWidth: 2, fill: '#fff' }}
+                        name="Actual"
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -371,9 +683,10 @@ const ReportsPageFixed = () => {
                       <Bar 
                         dataKey="completed" 
                         fill="url(#velocityGradient)" 
-                        radius={[12, 12, 0, 0]}
+                        radius={[8, 8, 0, 0]}
                         stroke="#10b981"
                         strokeWidth={1}
+                        name="Completed Tasks"
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -522,6 +835,161 @@ const ReportsPageFixed = () => {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Assignee Performance Section */}
+        <div className="mb-8">
+          <div className="group relative">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-200 via-purple-200 to-pink-200 rounded-3xl blur opacity-30 group-hover:opacity-50 transition duration-500"></div>
+            <Card className="relative bg-white/80 backdrop-blur-xl border border-slate-200 rounded-3xl overflow-hidden shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-t-3xl">
+                <CardTitle className="text-xl font-bold flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                    👤
+                  </div>
+                  Team Performance Analysis
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-8">
+                <AssigneePerformance />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Project Overview and Priority Breakdown */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Project Overview */}
+          <div className="group relative">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-200 via-cyan-200 to-blue-200 rounded-3xl blur opacity-30 group-hover:opacity-50 transition duration-500"></div>
+            <Card className="relative bg-white/80 backdrop-blur-xl border border-slate-200 rounded-3xl overflow-hidden shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-slate-50 to-indigo-50 border-b border-slate-200">
+                <div className="flex items-center justify-between">
+                  <div className="text-left">
+                    <CardTitle className="text-2xl font-black text-slate-800 flex items-center gap-3">
+                      <div className="w-3 h-3 bg-teal-500 rounded-full animate-pulse"></div>
+                      Projects Overview
+                    </CardTitle>
+                    <p className="text-slate-600 mt-2 font-light">Project status and completion</p>
+                  </div>
+                  <div className="px-3 py-1 bg-teal-100 rounded-full text-teal-700 text-xs font-medium">
+                    {loading ? '...' : reportData.projectOverview.length} Projects
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4 max-h-80 overflow-y-auto">
+                  {loading ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="animate-pulse">
+                          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                          <div className="h-2 bg-gray-200 rounded w-full"></div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : reportData.projectOverview.length > 0 ? (
+                    reportData.projectOverview.map((project, index) => (
+                      <div key={project.id || index} className="p-4 bg-slate-50 rounded-xl border border-slate-200 hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-slate-800">{project.name}</h4>
+                          <Badge 
+                            variant={project.status === 'ACTIVE' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {project.status}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between text-sm text-slate-600 mb-2">
+                          <span>{project.completedTasks}/{project.totalTasks} tasks</span>
+                          <span className="font-medium">{project.completionRate}%</span>
+                        </div>
+                        <Progress value={project.completionRate} className="h-2" />
+                        <div className="mt-2 text-xs text-slate-500">
+                          {project.department && (
+                            <span className="inline-block bg-slate-200 px-2 py-1 rounded mr-2">
+                              {project.department}
+                            </span>
+                          )}
+                          Priority: {project.priority || 'Medium'}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-slate-500">
+                      <div className="text-4xl mb-4">📁</div>
+                      <p>No projects data available</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Priority Breakdown */}
+          <div className="group relative">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-200 via-pink-200 to-purple-200 rounded-3xl blur opacity-30 group-hover:opacity-50 transition duration-500"></div>
+            <Card className="relative bg-white/80 backdrop-blur-xl border border-slate-200 rounded-3xl overflow-hidden shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-slate-50 to-indigo-50 border-b border-slate-200">
+                <div className="flex items-center justify-between">
+                  <div className="text-left">
+                    <CardTitle className="text-2xl font-black text-slate-800 flex items-center gap-3">
+                      <div className="w-3 h-3 bg-rose-500 rounded-full animate-pulse"></div>
+                      Priority Distribution
+                    </CardTitle>
+                    <p className="text-slate-600 mt-2 font-light">Task priority breakdown</p>
+                  </div>
+                  <div className="px-3 py-1 bg-rose-100 rounded-full text-rose-700 text-xs font-medium">
+                    Priority
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-8">
+                <div className="h-80">
+                  {loading ? (
+                    <div className="animate-pulse flex space-x-4 justify-center items-center h-full">
+                      <div className="w-32 h-32 bg-gray-200 rounded-full"></div>
+                    </div>
+                  ) : reportData.priorityBreakdown.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={reportData.priorityBreakdown}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {reportData.priorityBreakdown.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'white', 
+                            border: '1px solid rgb(203 213 225)',
+                            borderRadius: '12px',
+                            color: 'rgb(51 65 85)',
+                            boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'
+                          }}
+                        />
+                        <Legend 
+                          wrapperStyle={{ paddingTop: '20px', color: 'rgb(51 65 85)' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="text-center py-8 text-slate-500 h-full flex flex-col justify-center">
+                      <div className="text-4xl mb-4">⚡</div>
+                      <p>No priority data available</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

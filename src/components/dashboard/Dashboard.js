@@ -12,6 +12,7 @@ import TaskBoard from "@/components/TaskBoard";
 import ProjectManagement from "@/components/project/ProjectManagement";
 import CalendarDashboardData from "@/components/dashboard/CalendarDashboardData";
 import ReportsPageFixed from "@/components/reports/ReportsPageFixed";
+import ProjectOwnerReports from "@/components/reports/ProjectOwnerReports";
 
 const Dashboard = () => {
   const { user, logout, hasPermission } = useAuth();
@@ -118,7 +119,7 @@ const Dashboard = () => {
         {activeView === "projects" && <ProjectsView />}
         {activeView === "tasks" && <TasksView />}
         {activeView === "users" && <UsersView />}
-        {activeView === "reports" && <ReportsPageFixed />}
+        {activeView === "reports" && <ReportsView />}
       </main>
     </div>
   );
@@ -176,6 +177,19 @@ const UsersView = () => {
       </Card>
     </div>
   );
+};
+
+// Reports View Component
+const ReportsView = () => {
+  const { user } = useAuth();
+
+  // Determine which report component to show based on user role
+  if (user?.role === 'PROJECT_OWNER') {
+    return <ProjectOwnerReports />;
+  }
+
+  // For other roles, show the general reports page
+  return <ReportsPageFixed />;
 };
 
 export default Dashboard;

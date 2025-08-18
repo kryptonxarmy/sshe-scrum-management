@@ -183,6 +183,32 @@ export const projectOperations = {
     });
   },
 
+  async getByOwnerId(ownerId) {
+    return prisma.project.findMany({
+      where: {
+        ownerId: ownerId,
+        isArchived: false,
+      },
+      include: {
+        owner: true,
+        members: {
+          include: {
+            user: true,
+          },
+        },
+        _count: {
+          select: {
+            tasks: true,
+            members: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  },
+
   async getByUserId(userId, filters = {}) {
     const where = {
       OR: [
@@ -345,6 +371,42 @@ export const taskOperations = {
     });
   },
 
+  async getByProjectIds(projectIds) {
+    return prisma.task.findMany({
+      where: {
+        projectId: {
+          in: projectIds,
+        },
+        isArchived: false,
+      },
+      include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+            department: true,
+          },
+        },
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  },
+
   async getByUserId(userId, filters = {}) {
     const where = {
       OR: [
@@ -396,6 +458,25 @@ export const taskOperations = {
       include: {
         project: true,
         assignee: true,
+      },
+    });
+  },
+
+  async getAll() {
+    return prisma.task.findMany({
+      include: {
+        assignee: true,
+        createdBy: true,
+        function: true,
+        _count: {
+          select: {
+            comments: true,
+            taskAttachments: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   },
@@ -462,52 +543,10 @@ export const notificationOperations = {
   },
 
   async findById(id) {
-    return prisma.task.findUnique({
+    return prisma.notification.findUnique({
       where: { id },
-      include: {
-        project: {
-          include: {
-            owner: true,
-          },
-        },
-        assignee: true,
-        createdBy: true,
-        function: true,
-        sprint: true,
-        comments: {
-          include: {
-            author: true,
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-        },
-        activityLogs: true,
-        taskAttachments: true,
-        dependencies: true,
-        dependents: true,
-      },
     });
   },
-
-  async getAll() {
-    return prisma.task.findMany({
-      include: {
-        assignee: true,
-        createdBy: true,
-        function: true,
-        _count: {
-          select: {
-            comments: true,
-            taskAttachments: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-  }
 };
 
 // System settings operations
