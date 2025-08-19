@@ -191,6 +191,14 @@ export const projectOperations = {
       },
       include: {
         owner: true,
+        scrumMaster: true,
+        tasks: {
+          select: {
+            id: true,
+            status: true,
+            priority: true,
+          },
+        },
         members: {
           include: {
             user: true,
@@ -236,6 +244,14 @@ export const projectOperations = {
       where,
       include: {
         owner: true,
+        scrumMaster: true,
+        tasks: {
+          select: {
+            id: true,
+            status: true,
+            priority: true,
+          },
+        },
         members: {
           include: {
             user: true,

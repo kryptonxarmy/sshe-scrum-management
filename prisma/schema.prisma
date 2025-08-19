@@ -100,6 +100,7 @@ model User {
 
   // Relationships
   ownedProjects     Project[]         @relation("ProjectOwner")
+  scrumMasterProjects Project[]       @relation("ProjectScrumMaster")
   projectMemberships ProjectMember[]
   assignedTasks     Task[]            @relation("TaskAssignee")
   createdTasks      Task[]            @relation("TaskCreator")
@@ -154,6 +155,10 @@ model Project {
   // Owner relationship
   ownerId String
   owner   User   @relation("ProjectOwner", fields: [ownerId], references: [id])
+
+  // Scrum Master relationship
+  scrumMasterId String?
+  scrumMaster   User?   @relation("ProjectScrumMaster", fields: [scrumMasterId], references: [id])
 
   // Relationships
   members      ProjectMember[]

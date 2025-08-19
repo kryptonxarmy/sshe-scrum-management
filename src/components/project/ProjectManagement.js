@@ -70,19 +70,40 @@ const ProjectManagement = () => {
     return projectList.filter((project) => canViewProject(project));
   };
 
-  const getProjectStats = (projectId) => {
-    // This will be replaced with API call later
-    // For now, return mock data
+  const getProjectStats = (project) => {
+    const tasks = project.tasks || [];
+    const total = tasks.length;
+    
+    if (total === 0) {
+      return {
+        total: 0,
+        todo: 0,
+        inProgress: 0,
+        completed: 0,
+        completionRate: 0,
+      };
+    }
+
+    const completed = tasks.filter(task => task.status === 'DONE').length;
+    const inProgress = tasks.filter(task => task.status === 'IN_PROGRESS').length;
+    const todo = tasks.filter(task => task.status === 'TODO').length;
+    const completionRate = Math.round((completed / total) * 100);
+
     return {
-      total: 0,
-      completed: 0,
-      inProgress: 0,
-      completionRate: 0,
+      total,
+      todo,
+      inProgress,
+      completed,
+      completionRate,
     };
   };
 
   const getProjectOwnerName = (owner) => {
     return owner ? owner.name : "Unknown";
+  };
+
+  const getScrumMasterName = (scrumMaster) => {
+    return scrumMaster ? scrumMaster.name : null;
   };
 
   const getPriorityBadgeStyle = (priority) => {
@@ -198,7 +219,7 @@ const ProjectManagement = () => {
       {/* Projects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {getVisibleProjects().map((project) => {
-          const stats = getProjectStats(project.id);
+          const stats = getProjectStats(project);
           const canManageProjectActions = canManageProject(project.ownerId);
           const canManageMembers = canManageProjectMembers(project.ownerId, project);
           
@@ -220,7 +241,6 @@ const ProjectManagement = () => {
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <CardTitle className="text-lg">{project.name}</CardTitle>
-                    <p className="text-sm text-slate-600">Owner: {getProjectOwnerName(project.owner)}</p>
                   </div>
 
                   {(canManageProjectActions || canManageMembers) && (
@@ -258,6 +278,18 @@ const ProjectManagement = () => {
               <CardContent className="space-y-4">
                 <p className="text-sm text-slate-600 line-clamp-2">{project.description}</p>
 
+                {/* Owner and Scrum Master Info */}
+                <div className="space-y-1">
+                  <p className="text-sm text-slate-600">
+                    <span className="font-medium">Owner:</span> {getProjectOwnerName(project.owner)}
+                  </p>
+                  {getScrumMasterName(project.scrumMaster) && (
+                    <p className="text-sm text-slate-600">
+                      <span className="font-medium">Scrum Master:</span> {getScrumMasterName(project.scrumMaster)}
+                    </p>
+                  )}
+                </div>
+
                 <div className="flex items-center justify-between">
                   <Badge className={getPriorityBadgeStyle(project.priority)}>{getPriorityDisplay(project.priority)}</Badge>
                   <Badge variant={getStatusBadgeVariant(project.status)}>{getStatusDisplay(project.status, project.department)}</Badge>
@@ -271,11 +303,30 @@ const ProjectManagement = () => {
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${stats.completionRate}%` }} />
                   </div>
+                  
+                  {/* Enhanced Task Statistics */}
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="text-center p-2 bg-gray-50 rounded">
+                      <div className="font-semibold text-gray-600">{stats.todo}</div>
+                      <div className="text-gray-500">To Do</div>
+                    </div>
+                    <div className="text-center p-2 bg-blue-50 rounded">
+                      <div className="font-semibold text-blue-600">{stats.inProgress}</div>
+                      <div className="text-gray-500">In Progress</div>
+                    </div>
+                    <div className="text-center p-2 bg-green-50 rounded">
+                      <div className="font-semibold text-green-600">{stats.completed}</div>
+                      <div className="text-gray-500">Done</div>
+                    </div>
+                  </div>
+                  
                   <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>
-                      {stats.completed}/{stats.total} tasks completed
-                    </span>
-                    <span>{stats.inProgress} in progress</span>
+                    <span>Total: {stats.total} tasks</span>
+                    {stats.total > 0 && (
+                      <span>
+                        {stats.completed}/{stats.total} completed
+                      </span>
+                    )}
                   </div>
                 </div>
 
