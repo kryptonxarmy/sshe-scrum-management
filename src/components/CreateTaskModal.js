@@ -28,6 +28,22 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
   ]);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showAssigneeDropdown && !event.target.closest('.assignee-dropdown-container')) {
+        setShowAssigneeDropdown(false);
+      }
+    };
+
+    if (showAssigneeDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showAssigneeDropdown]);
+
   useEffect(() => {
     const fetchProjectMembers = async () => {
       if (!projectId) return;
@@ -189,11 +205,15 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="assignees">Assignees</Label>
-              <div className="relative">
+              <div className="relative assignee-dropdown-container">
                 <button
-                  // type="button"
+                  type="button"
                   className="w-full border rounded px-3 py-2 text-left bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  onClick={() => setShowAssigneeDropdown((prev) => !prev)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowAssigneeDropdown((prev) => !prev);
+                  }}
                 >
                   <div className="flex flex-wrap gap-1">
                     {formData.assignees.length === 0 && (
@@ -211,6 +231,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
                             className="ml-1 text-blue-500 hover:text-blue-700 cursor-pointer"
                             onClick={(e) => {
                               e.stopPropagation();
+                              e.preventDefault();
                               handleSelectChange("assignees", formData.assignees.filter((mid) => mid !== id));
                             }}
                             onKeyDown={(e) => {
@@ -234,6 +255,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
                         placeholder="Search member..."
                         value={assigneeSearch}
                         onChange={e => setAssigneeSearch(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
                       />
                     </div>
                     {projectMembers
@@ -242,7 +264,9 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
                         <div
                           key={member.id}
                           className={`px-3 py-2 cursor-pointer hover:bg-blue-50 flex items-center ${formData.assignees.includes(member.id) ? 'bg-blue-100' : ''}`}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             let newAssignees;
                             if (formData.assignees.includes(member.id)) {
                               newAssignees = formData.assignees.filter((id) => id !== member.id);

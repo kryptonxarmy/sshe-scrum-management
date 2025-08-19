@@ -36,12 +36,24 @@ const TaskCard = ({ task }) => {
   };
 
   const getAssigneeNames = () => {
-    if (!task.taskAssignees || task.taskAssignees.length === 0) {
-      return "Unassigned";
+    // Handle new structure (multiple assignees)
+    if (task.taskAssignees && task.taskAssignees.length > 0) {
+      const names = task.taskAssignees.map(assignee => assignee.user?.name || "Unknown").join(", ");
+      return names.length > 30 ? names.substring(0, 27) + "..." : names;
     }
     
-    const names = task.taskAssignees.map(assignee => assignee.user?.name || "Unknown").join(", ");
-    return names.length > 30 ? names.substring(0, 27) + "..." : names;
+    // Handle old structure (single assignee) - fallback for existing data
+    if (task.assignee && task.assignee.name) {
+      return task.assignee.name;
+    }
+    
+    // Handle legacy assigneeId structure
+    if (task.assigneeId && task.createdBy) {
+      // This is a simplified fallback - in real scenario you'd need to fetch user data
+      return "Assigned User";
+    }
+    
+    return "Unassigned";
   };
 
   return (

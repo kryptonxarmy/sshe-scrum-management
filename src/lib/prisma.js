@@ -349,45 +349,110 @@ export const taskOperations = {
   },
 
   async getByProjectId(projectId, filters = {}) {
-    const where = { projectId };
+    try {
+      const where = { projectId };
 
-    if (filters.status) {
-      where.status = filters.status;
-    }
+      if (filters.status) {
+        where.status = filters.status;
+      }
 
-    if (filters.assigneeId) {
-      where.taskAssignees = {
-        some: {
-          userId: filters.assigneeId,
+      if (filters.assigneeId) {
+        where.taskAssignees = {
+          some: {
+            userId: filters.assigneeId,
+          },
+        };
+      }
+
+      if (filters.priority) {
+        where.priority = filters.priority;
+      }
+
+      const tasks = await prisma.task.findMany({
+        where,
+        include: {
+          taskAssignees: {
+            include: {
+              user: true,
+            },
+          },
+          createdBy: true,
+          function: true,
+          _count: {
+            select: {
+              comments: true,
+              taskAttachments: true,
+            },
+          },
         },
-      };
-    }
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
 
-    if (filters.priority) {
-      where.priority = filters.priority;
-    }
+      // For backward compatibility, check if tasks have old assigneeId and convert
+      const tasksWithCompatibleAssignees = await Promise.all(
+        tasks.map(async (task) => {
+          // If task has no taskAssignees but has assigneeId (old structure)
+          if ((!task.taskAssignees || task.taskAssignees.length === 0) && task.assigneeId) {
+            try {
+              // Try to fetch user for old assigneeId
+              const assigneeUser = await prisma.user.findUnique({
+                where: { id: task.assigneeId },
+                select: { id: true, name: true, email: true }
+              });
+              
+              if (assigneeUser) {
+                // Create a mock taskAssignees structure for frontend compatibility
+                return {
+                  ...task,
+                  taskAssignees: [{
+                    user: assigneeUser,
+                    userId: assigneeUser.id,
+                    taskId: task.id
+                  }]
+                };
+              }
+            } catch (err) {
+              console.log('Could not fetch assignee for task:', task.id);
+            }
+          }
+          return task;
+        })
+      );
 
-    return prisma.task.findMany({
-      where,
-      include: {
-        taskAssignees: {
+      return tasksWithCompatibleAssignees;
+    } catch (error) {
+      console.error('Error in getByProjectId:', error);
+      // Fallback: try to get tasks without taskAssignees relation
+      try {
+        const fallbackTasks = await prisma.task.findMany({
+          where: { projectId },
           include: {
-            user: true,
+            createdBy: true,
+            function: true,
+            _count: {
+              select: {
+                comments: true,
+                taskAttachments: true,
+              },
+            },
           },
-        },
-        createdBy: true,
-        function: true,
-        _count: {
-          select: {
-            comments: true,
-            taskAttachments: true,
+          orderBy: {
+            createdAt: 'desc',
           },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        });
+        
+        // Add empty taskAssignees array for compatibility
+        return fallbackTasks.map(task => ({
+          ...task,
+          taskAssignees: []
+        }));
+      } catch (fallbackError) {
+        console.error('Fallback query also failed:', fallbackError);
+        throw error;
+      }
+    }
   },
 
   async getByProjectIds(projectIds) {
