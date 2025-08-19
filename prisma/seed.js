@@ -400,24 +400,25 @@ async function main() {
   console.log('🌱 Starting database seeding...');
 
   try {
-    // Clear existing data
-    console.log('🗑️ Clearing existing data...');
-    await prisma.activityLog.deleteMany();
-    await prisma.notification.deleteMany();
-    await prisma.comment.deleteMany();
-    await prisma.taskAttachment.deleteMany();
-    await prisma.taskDependency.deleteMany();
-    await prisma.task.deleteMany();
-    await prisma.function.deleteMany();
-    await prisma.sprint.deleteMany();
-    await prisma.projectSettings.deleteMany();
-    await prisma.projectMember.deleteMany();
-    await prisma.project.deleteMany();
-    await prisma.userSettings.deleteMany();
-    await prisma.user.deleteMany();
-    await prisma.systemSettings.deleteMany();
-    await prisma.auditLog.deleteMany();
-    await prisma.report.deleteMany();
+  // Clear existing data
+  console.log('🗑️ Clearing existing data...');
+  await prisma.taskAssignee.deleteMany();
+  await prisma.activityLog.deleteMany();
+  await prisma.notification.deleteMany();
+  await prisma.comment.deleteMany();
+  await prisma.taskAttachment.deleteMany();
+  await prisma.taskDependency.deleteMany();
+  await prisma.task.deleteMany();
+  await prisma.function.deleteMany();
+  await prisma.sprint.deleteMany();
+  await prisma.projectSettings.deleteMany();
+  await prisma.projectMember.deleteMany();
+  await prisma.project.deleteMany();
+  await prisma.userSettings.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.systemSettings.deleteMany();
+  await prisma.auditLog.deleteMany();
+  await prisma.report.deleteMany();
 
     // Create system settings
     console.log('⚙️ Creating system settings...');
@@ -483,14 +484,46 @@ async function main() {
     // Create tasks
     console.log('📋 Creating tasks...');
     for (const taskData of tasksData) {
-      await prisma.task.create({
+      // Remove assigneeId for multi-assignee
+      const { assigneeId, ...rest } = taskData;
+      const task = await prisma.task.create({
         data: {
-          ...taskData,
+          ...rest,
           createdAt: new Date('2024-03-01'),
           updatedAt: new Date('2024-04-01'),
         },
       });
+      // Assign single assignee if exists
+      if (assigneeId) {
+        await prisma.taskAssignee.create({
+          data: {
+            taskId: task.id,
+            userId: assigneeId,
+          },
+        });
+      }
     }
+    // Add one task with multiple assignees for demo
+    const multiTask = await prisma.task.create({
+      data: {
+        title: 'Multi-assignee Demo Task',
+        description: 'Task with multiple assignees',
+        projectId: 'project-1',
+        createdById: 'user-2',
+        type: 'STORY',
+        priority: 'HIGH',
+        status: 'TODO',
+        dueDate: new Date('2024-05-20'),
+        createdAt: new Date('2024-03-01'),
+        updatedAt: new Date('2024-04-01'),
+      },
+    });
+    await prisma.taskAssignee.createMany({
+      data: [
+        { taskId: multiTask.id, userId: 'user-6' },
+        { taskId: multiTask.id, userId: 'user-7' },
+      ],
+    });
 
     // Create some sample activity logs
     console.log('📊 Creating activity logs...');

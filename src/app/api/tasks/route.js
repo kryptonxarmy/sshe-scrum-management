@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { taskOperations, activityOperations, notificationOperations } from '@/lib/prisma';
+import { taskOperations, activityOperations, notificationOperations, prisma } from '@/lib/prisma';
 
 // GET /api/tasks - Get tasks
 export async function GET(request) {
@@ -66,7 +66,7 @@ export async function POST(request) {
       priority = 'MEDIUM',
       status = 'TODO',
       projectId,
-      assigneeId,
+      assigneeIds = [], // array of userId
       createdById,
       dueDate,
       estimatedTime,
@@ -127,7 +127,6 @@ export async function POST(request) {
       priority: priority.toUpperCase(),
       status: status.toUpperCase(),
       projectId,
-      assigneeId,
       createdById,
       dueDate: dueDate ? new Date(dueDate) : null,
       estimatedTime: estimatedTime ? parseFloat(estimatedTime) : null,
@@ -136,6 +135,20 @@ export async function POST(request) {
     };
 
     const task = await taskOperations.create(taskData);
+
+    // Create TaskAssignee records for each assignee
+    if (Array.isArray(assigneeIds) && assigneeIds.length > 0) {
+      await Promise.all(
+        assigneeIds.map(userId =>
+          prisma.taskAssignee.create({
+            data: {
+              taskId: task.id,
+              userId,
+            }
+          })
+        )
+      );
+    }
 
     // Log activity
     await activityOperations.create({
@@ -146,25 +159,30 @@ export async function POST(request) {
       taskId: task.id,
     });
 
-    // Create notification for assignee
-    if (assigneeId && assigneeId !== createdById) {
-      await notificationOperations.create({
-        type: 'TASK_ASSIGNED',
-        title: 'New Task Assigned',
-        message: `You have been assigned to task "${title}"`,
-        userId: assigneeId,
-        taskId: task.id,
-        actionUrl: `/tasks/${task.id}`,
-      });
-
-      // Log assignment activity
-      await activityOperations.create({
-        type: 'TASK_ASSIGNED',
-        description: `Task "${title}" was assigned to ${task.assignee?.name || 'user'}`,
-        userId: createdById,
-        projectId,
-        taskId: task.id,
-      });
+    // Create notification for each assignee
+    if (Array.isArray(assigneeIds) && assigneeIds.length > 0) {
+      await Promise.all(
+        assigneeIds
+          .filter(userId => userId !== createdById)
+          .map(userId => notificationOperations.create({
+            type: 'TASK_ASSIGNED',
+            title: 'New Task Assigned',
+            message: `You have been assigned to task "${title}"`,
+            userId,
+            taskId: task.id,
+            actionUrl: `/tasks/${task.id}`,
+          }))
+      );
+      // Log assignment activity for each assignee
+      await Promise.all(
+        assigneeIds.map(userId => activityOperations.create({
+          type: 'TASK_ASSIGNED',
+          description: `Task "${title}" was assigned to userId ${userId}`,
+          userId: createdById,
+          projectId,
+          taskId: task.id,
+        }))
+      );
     }
 
     return NextResponse.json({ 

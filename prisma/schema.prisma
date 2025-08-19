@@ -101,7 +101,7 @@ model User {
   // Relationships
   ownedProjects     Project[]         @relation("ProjectOwner")
   projectMemberships ProjectMember[]
-  assignedTasks     Task[]            @relation("TaskAssignee")
+  taskAssignees     TaskAssignee[]
   createdTasks      Task[]            @relation("TaskCreator")
   comments          Comment[]
   activityLogs      ActivityLog[]
@@ -229,8 +229,7 @@ model Task {
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  assigneeId String?
-  assignee   User?   @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  taskAssignees  TaskAssignee[]
 
   createdById String
   createdBy   User   @relation("TaskCreator", fields: [createdById], references: [id])
@@ -481,4 +480,16 @@ model Event {
   updatedAt           DateTime  @updatedAt
 
   @@map("events")
+}
+
+model TaskAssignee {
+  id      Int    @id @default(autoincrement())
+  taskId  String
+  userId  String
+
+  task    Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@map("task_assignees")
 }

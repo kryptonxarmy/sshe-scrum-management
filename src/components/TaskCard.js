@@ -35,6 +35,15 @@ const TaskCard = ({ task }) => {
     return task.priority ? task.priority.charAt(0).toUpperCase() + task.priority.slice(1) : "Medium";
   };
 
+  const getAssigneeNames = () => {
+    if (!task.taskAssignees || task.taskAssignees.length === 0) {
+      return "Unassigned";
+    }
+    
+    const names = task.taskAssignees.map(assignee => assignee.user?.name || "Unknown").join(", ");
+    return names.length > 30 ? names.substring(0, 27) + "..." : names;
+  };
+
   return (
     <Card className="cursor-grab transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 relative group min-h-[120px]">
       {/* Task Type Badge */}
@@ -52,7 +61,7 @@ const TaskCard = ({ task }) => {
             {getDisplayPriority()}
           </Badge>
           <span className="text-xs text-slate-500">
-            Assignee: {task.assignee?.name || "-"}
+            Assignee: {getAssigneeNames()}
           </span>
           <span className="text-xs text-slate-500">
             Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric" }) : "No due date"}

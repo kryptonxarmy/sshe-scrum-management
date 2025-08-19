@@ -26,7 +26,7 @@ model User {
   // Relations
   ownedProjects    Project[]       @relation("ProjectOwner")
   projectMemberships ProjectMember[]
-  assignedTasks    Task[]          @relation("TaskAssignee")
+  taskAssignees    TaskAssignee[]
   createdTasks     Task[]          @relation("TaskCreator")
   comments         Comment[]
   activityLogs     ActivityLog[]
@@ -166,13 +166,13 @@ model ProjectFunction {
 }
 
 // Tasks
+
 model Task {
   id          String     @id @default(cuid())
   title       String
   description String?
   projectId   String
   functionId  String?
-  assigneeId  String?
   createdById String
   type        TaskType   @default(STORY)
   priority    Priority   @default(MEDIUM)
@@ -189,13 +189,27 @@ model Task {
   // Relations
   project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   function  Function? @relation(fields: [functionId], references: [id])
-  assignee  User?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
   createdBy User      @relation("TaskCreator", fields: [createdById], references: [id])
   comments  Comment[]
   activityLogs ActivityLog[]
   attachments  TaskAttachment[]
+  assignees TaskAssignee[]
 
   @@map("tasks")
+}
+
+model TaskAssignee {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String
+  assignedAt DateTime @default(now())
+
+  // Relations
+  task Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User   @relation(fields: [userId], references: [id])
+
+  @@unique([taskId, userId])
+  @@map("task_assignees")
 }
 
 // Task types

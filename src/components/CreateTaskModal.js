@@ -8,13 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/contexts/AuthContext";
 
 const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
+  const [assigneeSearch, setAssigneeSearch] = useState("");
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     sprint: "Sprint 1",
     priority: "medium",
-    assignee: "",
+    assignees: [],
     dueDate: "",
   });
   const [projectMembers, setProjectMembers] = useState([]);
@@ -25,6 +26,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
     "Sprint 4",
     "Sprint 5"
   ]);
+  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
 
   useEffect(() => {
     const fetchProjectMembers = async () => {
@@ -50,7 +52,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
       const requestBody = {
         ...formData,
         sprintName: formData.sprint,
-        assigneeId: formData.assignee || null,
+        assigneeIds: formData.assignees,
         projectId: projectId,
         createdById: user?.id,
         status: 'TODO',
@@ -78,7 +80,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
         description: "",
         sprint: "Sprint 1",
         priority: "medium",
-        assignee: "",
+        assignees: [],
         dueDate: "",
       });
       // Notify parent component about the new task
@@ -100,10 +102,17 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
   };
 
   const handleSelectChange = (name, value) => {
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+    if (name === "assignees") {
+      setFormData({
+        ...formData,
+        assignees: value,
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
 
     // Auto-expand sprints if user selects the last 2 sprints
     if (name === "sprint") {
@@ -120,6 +129,8 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
       }
     }
   };
+
+  
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -174,22 +185,85 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
             </div>
           </div>
 
-          {/* Assignee and Due Date */}
+          {/* Assignees (Multi-select dropdown with tag input) and Due Date */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="assignee">Assignee</Label>
-              <Select value={formData.assignee} onValueChange={(value) => handleSelectChange("assignee", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select team member" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projectMembers.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="assignees">Assignees</Label>
+              <div className="relative">
+                <button
+                  // type="button"
+                  className="w-full border rounded px-3 py-2 text-left bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onClick={() => setShowAssigneeDropdown((prev) => !prev)}
+                >
+                  <div className="flex flex-wrap gap-1">
+                    {formData.assignees.length === 0 && (
+                      <span className="text-gray-400">Select team members...</span>
+                    )}
+                    {formData.assignees.map((id) => {
+                      const member = projectMembers.find((m) => m.id === id);
+                      return member ? (
+                        <span key={id} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs flex items-center gap-1">
+                          {member.name}
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Remove ${member.name}`}
+                            className="ml-1 text-blue-500 hover:text-blue-700 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectChange("assignees", formData.assignees.filter((mid) => mid !== id));
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.stopPropagation();
+                                handleSelectChange("assignees", formData.assignees.filter((mid) => mid !== id));
+                              }
+                            }}
+                          >×</span>
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                </button>
+                {showAssigneeDropdown && (
+                  <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow-lg max-h-60 overflow-y-auto">
+                    <div className="p-2 border-b">
+                      <input
+                        type="text"
+                        className="w-full px-2 py-1 border rounded focus:outline-none"
+                        placeholder="Search member..."
+                        value={assigneeSearch}
+                        onChange={e => setAssigneeSearch(e.target.value)}
+                      />
+                    </div>
+                    {projectMembers
+                      .filter(member => member.name.toLowerCase().includes(assigneeSearch.toLowerCase()))
+                      .map((member) => (
+                        <div
+                          key={member.id}
+                          className={`px-3 py-2 cursor-pointer hover:bg-blue-50 flex items-center ${formData.assignees.includes(member.id) ? 'bg-blue-100' : ''}`}
+                          onClick={() => {
+                            let newAssignees;
+                            if (formData.assignees.includes(member.id)) {
+                              newAssignees = formData.assignees.filter((id) => id !== member.id);
+                            } else {
+                              newAssignees = [...formData.assignees, member.id];
+                            }
+                            handleSelectChange("assignees", newAssignees);
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.assignees.includes(member.id)}
+                            readOnly
+                            className="mr-2"
+                          />
+                          {member.name}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
