@@ -14,8 +14,27 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
     done: []
   });
 
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch(`/api/tasks?projectId=${functionId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch tasks');
+      }
+      const data = await response.json();
+      // Organize tasks by status
+      const organizedTasks = {
+        todo: data.tasks.filter(task => task.status === 'TODO'),
+        progress: data.tasks.filter(task => task.status === 'IN_PROGRESS'),
+        done: data.tasks.filter(task => task.status === 'DONE')
+      };
+      setTasks(organizedTasks);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    }
+  };
+
   useEffect(() => {
-    const fetchTasks = async () => {
+    const fetchTasksData = async () => {
       try {
         const response = await fetch(`/api/tasks?projectId=${functionId}`);
         if (!response.ok) {
@@ -33,10 +52,16 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
         console.error('Error fetching tasks:', error);
       }
     };
+    
     if (functionId) {
-      fetchTasks();
+      fetchTasksData();
     }
   }, [functionId]);
+
+  const handleTaskUpdated = () => {
+    // Refresh tasks after update
+    fetchTasks();
+  };
 
   const handleDragEnd = async (result) => {
     const { source, destination } = result;
@@ -85,18 +110,7 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
         })
       });
       // Refetch tasks from backend to ensure sync
-      if (functionId) {
-        const response = await fetch(`/api/tasks?projectId=${functionId}`);
-        if (response.ok) {
-          const data = await response.json();
-          const organizedTasks = {
-            todo: data.tasks.filter(task => task.status === 'TODO'),
-            progress: data.tasks.filter(task => task.status === 'IN_PROGRESS'),
-            done: data.tasks.filter(task => task.status === 'DONE')
-          };
-          setTasks(organizedTasks);
-        }
-      }
+      fetchTasks();
     } catch (error) {
       console.error('Failed to update task status:', error);
     }
@@ -177,7 +191,7 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
                                   {...provided.dragHandleProps}
                                   className={snapshot.isDragging ? 'opacity-80' : ''}
                                 >
-                                  <TaskCard task={task} />
+                                  <TaskCard task={task} onTaskUpdated={handleTaskUpdated} />
                                 </div>
                               )}
                             </Draggable>

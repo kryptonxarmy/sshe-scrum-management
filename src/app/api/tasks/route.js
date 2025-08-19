@@ -59,6 +59,8 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
+    console.log('Create task request body:', body);
+    
     const {
       title,
       description,
@@ -75,6 +77,18 @@ export async function POST(request) {
       sprintName, // New field for sprint name
     } = body;
 
+    console.log('Extracted data:', {
+      title,
+      description,
+      type,
+      priority,
+      status,
+      projectId,
+      assigneeId,
+      createdById,
+      sprintName
+    });
+
     // Validate required fields
     if (!title || !projectId || !createdById) {
       return NextResponse.json(
@@ -87,8 +101,6 @@ export async function POST(request) {
 
     // Handle sprint creation if sprintName is provided
     if (sprintName && !sprintId) {
-      const { prisma } = require('@/lib/prisma');
-      
       // Check if sprint already exists
       let sprint = await prisma.sprint.findFirst({
         where: {
@@ -127,14 +139,21 @@ export async function POST(request) {
       priority: priority.toUpperCase(),
       status: status.toUpperCase(),
       projectId,
+<<<<<<< HEAD
+=======
+      assigneeId: assigneeId || null, // Ensure null if empty
+>>>>>>> 8cdc2b430a9894cbdf5cc8791434331085b95406
       createdById,
       dueDate: dueDate ? new Date(dueDate) : null,
       estimatedTime: estimatedTime ? parseFloat(estimatedTime) : null,
-      functionId,
-      sprintId: finalSprintId,
+      functionId: functionId || null, // Ensure null if empty
+      sprintId: finalSprintId || null, // Ensure null if empty
     };
 
+    console.log('Task data to create:', taskData);
+
     const task = await taskOperations.create(taskData);
+    console.log('Task created successfully:', task.id);
 
     // Create TaskAssignee records for each assignee
     if (Array.isArray(assigneeIds) && assigneeIds.length > 0) {
@@ -192,8 +211,32 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Create task error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
+    
+    // Handle Prisma-specific errors
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'Task with this title already exists in the project' },
+        { status: 409 }
+      );
+    }
+    
+    if (error.code === 'P2003') {
+      return NextResponse.json(
+        { error: 'Invalid project, assignee, or creator ID' },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }

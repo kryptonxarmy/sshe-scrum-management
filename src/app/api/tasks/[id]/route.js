@@ -55,11 +55,56 @@ export async function PUT(request, { params }) {
           processedUpdateData[key] = parseFloat(updateData[key]);
         } else if (['type', 'priority', 'status'].includes(key)) {
           processedUpdateData[key] = updateData[key].toUpperCase();
+        } else if (key === 'assigneeId') {
+          // Handle assigneeId - convert "unassigned" to null
+          if (updateData[key] === 'unassigned' || updateData[key] === '') {
+            processedUpdateData[key] = null;
+          } else {
+            processedUpdateData[key] = updateData[key];
+          }
+        } else if (key === 'updatedById') {
+          // Skip updatedById as it's not in the Task model
+          console.log('UpdatedById received:', updateData[key]);
+        } else if (key === 'sprintName') {
+          // Handle sprintName - we'll create or find sprint by name
+          // For now, skip this and handle it separately
+          console.log('Sprint name received:', updateData[key]);
         } else {
           processedUpdateData[key] = updateData[key];
         }
       }
     });
+    
+    // Handle sprint assignment
+    if (updateData.sprintName) {
+      // Find or create sprint with the given name
+      let sprint = await prisma.sprint.findFirst({
+        where: {
+          name: updateData.sprintName,
+          projectId: currentTask.projectId,
+        },
+      });
+      
+      // If sprint doesn't exist, create it
+      if (!sprint) {
+        const sprintNumber = parseInt(updateData.sprintName.split(' ')[1]) || 1;
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setDate(startDate.getDate() + 14); // 2 week sprint by default
+        
+        sprint = await prisma.sprint.create({
+          data: {
+            name: updateData.sprintName,
+            projectId: currentTask.projectId,
+            startDate,
+            endDate,
+          },
+        });
+      }
+      
+      processedUpdateData.sprintId = sprint.id;
+    }
+    
     console.log('Processed update data:', processedUpdateData);
 
     // Add completion timestamp if status changed to DONE
@@ -69,13 +114,13 @@ export async function PUT(request, { params }) {
       processedUpdateData.completedAt = null;
     }
 
+    // Add updatedAt timestamp
+    processedUpdateData.updatedAt = new Date();
+
     // Update task
     const updatedTask = await prisma.task.update({
       where: { id },
-      data: {
-        ...processedUpdateData,
-        updatedAt: new Date(),
-      },
+      data: processedUpdateData,
       include: {
         project: true,
         taskAssignees: {

@@ -51,7 +51,29 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
         const response = await fetch(`/api/projects/${projectId}/members`);
         if (!response.ok) throw new Error('Failed to fetch project members');
         const data = await response.json();
-        setProjectMembers(data.members || []);
+        
+        // Combine owner and members, then deduplicate by id
+        const allMembers = [
+          ...(data.owner ? [{ id: data.owner.id, name: data.owner.name }] : []),
+          ...(data.members ? data.members.map(member => ({
+            // Member sudah berupa object langsung dengan id, name, etc (tidak ada nested user)
+            id: member.id,
+            name: member.name
+          })) : [])
+        ];
+        
+        // Remove duplicates based on id and filter out any entries with missing id
+        const uniqueMembers = allMembers
+          .filter(member => member.id) // Remove entries without id
+          .reduce((acc, current) => {
+            const exists = acc.find(item => item.id === current.id);
+            if (!exists) {
+              acc.push(current);
+            }
+            return acc;
+          }, []);
+        
+        setProjectMembers(uniqueMembers);
       } catch (error) {
         console.error('Error fetching project members:', error);
       }
@@ -68,7 +90,11 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
       const requestBody = {
         ...formData,
         sprintName: formData.sprint,
+<<<<<<< HEAD
         assigneeIds: formData.assignees,
+=======
+        assigneeId: formData.assignee && formData.assignee !== "" ? formData.assignee : null,
+>>>>>>> 8cdc2b430a9894cbdf5cc8791434331085b95406
         projectId: projectId,
         createdById: user?.id,
         status: 'TODO',
@@ -86,9 +112,13 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const errorMsg = errorData.error || 'Failed to create task';
+        console.error('API Error:', errorData);
         alert(errorMsg);
         throw new Error(errorMsg);
       }
+
+      const result = await response.json();
+      console.log('Task created successfully:', result);
 
       // Reset form
       setFormData({
@@ -204,6 +234,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
           {/* Assignees (Multi-select dropdown with tag input) and Due Date */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
+<<<<<<< HEAD
               <Label htmlFor="assignees">Assignees</Label>
               <div className="relative assignee-dropdown-container">
                 <button
@@ -288,6 +319,21 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
                   </div>
                 )}
               </div>
+=======
+              <Label htmlFor="assignee">Assignee</Label>
+              <Select value={formData.assignee} onValueChange={(value) => handleSelectChange("assignee", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select team member" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projectMembers.map((member, index) => (
+                    <SelectItem key={member.id || `member-${index}`} value={member.id || `member-${index}`}>
+                      {member.name || 'Unknown Member'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+>>>>>>> 8cdc2b430a9894cbdf5cc8791434331085b95406
             </div>
 
             <div className="space-y-2">
