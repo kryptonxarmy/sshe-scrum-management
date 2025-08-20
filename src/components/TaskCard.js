@@ -100,22 +100,6 @@ const TaskCard = ({ task, onTaskUpdated }) => {
           </Button>
         )}
 
-<<<<<<< HEAD
-        {/* Task Meta */}
-        <div className="flex flex-col gap-1 text-xs text-slate-600">
-          <Badge variant={getPriorityBadgeVariant(task.priority)} className="text-xs mb-1">
-            {getDisplayPriority()}
-          </Badge>
-          <span className="text-xs text-slate-500">
-            Assignee: {getAssigneeNames()}
-          </span>
-          <span className="text-xs text-slate-500">
-            Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric" }) : "No due date"}
-          </span>
-        </div>
-      </CardContent>
-    </Card>
-=======
         <CardContent className="p-4">
           {/* Task Title */}
           <div className="font-semibold text-slate-800 mb-3 mr-16 leading-tight text-sm">{task.title || "Untitled Task"}</div>
@@ -126,13 +110,8 @@ const TaskCard = ({ task, onTaskUpdated }) => {
               {getDisplayPriority()}
             </Badge>
             <span className="text-xs text-slate-500">
-              Assignee: {task.assignee?.name || "-"}
+              Assignee: {getAssigneeNames()}
             </span>
-            {task.sprint && (
-              <span className="text-xs text-slate-500">
-                Sprint: {task.sprint.name}
-              </span>
-            )}
             <span className="text-xs text-slate-500">
               Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric" }) : "No due date"}
             </span>
@@ -148,7 +127,6 @@ const TaskCard = ({ task, onTaskUpdated }) => {
         onTaskUpdated={handleTaskUpdated}
       />
     </>
->>>>>>> 8cdc2b430a9894cbdf5cc8791434331085b95406
   );
 };
 

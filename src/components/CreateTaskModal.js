@@ -90,15 +90,10 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
       const requestBody = {
         ...formData,
         sprintName: formData.sprint,
-<<<<<<< HEAD
         assigneeIds: formData.assignees,
-=======
-        assigneeId: formData.assignee && formData.assignee !== "" ? formData.assignee : null,
->>>>>>> 8cdc2b430a9894cbdf5cc8791434331085b95406
         projectId: projectId,
         createdById: user?.id,
         status: 'TODO',
-        type: 'TASK', // Default task type
       };
       console.log('Submitting task:', requestBody);
       const response = await fetch('/api/tasks', {
@@ -234,7 +229,6 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
           {/* Assignees (Multi-select dropdown with tag input) and Due Date */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-<<<<<<< HEAD
               <Label htmlFor="assignees">Assignees</Label>
               <div className="relative assignee-dropdown-container">
                 <button
@@ -319,21 +313,6 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
                   </div>
                 )}
               </div>
-=======
-              <Label htmlFor="assignee">Assignee</Label>
-              <Select value={formData.assignee} onValueChange={(value) => handleSelectChange("assignee", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select team member" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projectMembers.map((member, index) => (
-                    <SelectItem key={member.id || `member-${index}`} value={member.id || `member-${index}`}>
-                      {member.name || 'Unknown Member'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
->>>>>>> 8cdc2b430a9894cbdf5cc8791434331085b95406
             </div>
 
             <div className="space-y-2">

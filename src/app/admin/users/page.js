@@ -91,7 +91,7 @@ const AdminUsersPage = () => {
           ...user,
           _count: user._count || {
             ownedProjects: 0,
-            assignedTasks: 0,
+            taskAssignees: 0,
             projectMemberships: 0
           }
         }));
@@ -143,7 +143,7 @@ const AdminUsersPage = () => {
           ...result.user,
           _count: result.user._count || {
             ownedProjects: 0,
-            assignedTasks: 0,
+            taskAssignees: 0,
             projectMemberships: 0
           }
         };
@@ -193,7 +193,7 @@ const AdminUsersPage = () => {
           ...result.user,
           _count: result.user._count || {
             ownedProjects: 0,
-            assignedTasks: 0,
+            taskAssignees: 0,
             projectMemberships: 0
           }
         };
@@ -500,7 +500,7 @@ const AdminUsersPage = () => {
                       <TableCell>
                         <div className="text-sm">
                           <div>{(user._count?.ownedProjects) || 0} projects</div>
-                          <div className="text-gray-500">{(user._count?.assignedTasks) || 0} tasks</div>
+                          <div className="text-gray-500">{(user._count?.taskAssignees) || 0} tasks</div>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -679,7 +679,7 @@ const AdminUsersPage = () => {
                       <p className="text-xs text-gray-500">Owned Projects</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-green-600">{selectedUser._count?.assignedTasks || 0}</p>
+                      <p className="text-2xl font-bold text-green-600">{selectedUser._count?.taskAssignees || 0}</p>
                       <p className="text-xs text-gray-500">Assigned Tasks</p>
                     </div>
                     <div className="text-center">

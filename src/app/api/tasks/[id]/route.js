@@ -51,9 +51,7 @@ export async function PUT(request, { params }) {
       if (updateData[key] !== undefined) {
         if (key === 'dueDate' && updateData[key]) {
           processedUpdateData[key] = new Date(updateData[key]);
-        } else if (key === 'estimatedTime' && updateData[key]) {
-          processedUpdateData[key] = parseFloat(updateData[key]);
-        } else if (['type', 'priority', 'status'].includes(key)) {
+        } else if (['priority', 'status'].includes(key)) {
           processedUpdateData[key] = updateData[key].toUpperCase();
         } else if (key === 'assigneeId') {
           // Handle assigneeId - convert "unassigned" to null

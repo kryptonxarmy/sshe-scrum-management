@@ -40,7 +40,7 @@ export async function GET(request, { params }) {
         _count: {
           select: {
             ownedProjects: true,
-            assignedTasks: true,
+            taskAssignees: true,
             projectMemberships: true
           }
         }
@@ -151,7 +151,7 @@ export async function PUT(request, { params }) {
         _count: {
           select: {
             ownedProjects: true,
-            assignedTasks: true,
+            taskAssignees: true,
             projectMemberships: true
           }
         }

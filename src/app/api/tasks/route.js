@@ -64,14 +64,12 @@ export async function POST(request) {
     const {
       title,
       description,
-      type = 'TASK',
       priority = 'MEDIUM',
       status = 'TODO',
       projectId,
       assigneeIds = [], // array of userId
       createdById,
       dueDate,
-      estimatedTime,
       functionId,
       sprintId,
       sprintName, // New field for sprint name
@@ -80,11 +78,10 @@ export async function POST(request) {
     console.log('Extracted data:', {
       title,
       description,
-      type,
       priority,
       status,
       projectId,
-      assigneeId,
+      assigneeIds,
       createdById,
       sprintName
     });
@@ -135,17 +132,11 @@ export async function POST(request) {
     const taskData = {
       title,
       description,
-      type: type.toUpperCase(),
       priority: priority.toUpperCase(),
       status: status.toUpperCase(),
       projectId,
-<<<<<<< HEAD
-=======
-      assigneeId: assigneeId || null, // Ensure null if empty
->>>>>>> 8cdc2b430a9894cbdf5cc8791434331085b95406
       createdById,
       dueDate: dueDate ? new Date(dueDate) : null,
-      estimatedTime: estimatedTime ? parseFloat(estimatedTime) : null,
       functionId: functionId || null, // Ensure null if empty
       sprintId: finalSprintId || null, // Ensure null if empty
     };

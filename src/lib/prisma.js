@@ -127,7 +127,7 @@ export const userOperations = {
           select: {
             ownedProjects: true,
             projectMemberships: true,
-            assignedTasks: true,
+            taskAssignees: true,
           },
         },
       },
@@ -368,7 +368,6 @@ export const taskOperations = {
         where.priority = filters.priority;
       }
 
-<<<<<<< HEAD
       const tasks = await prisma.task.findMany({
         where,
         include: {
@@ -384,19 +383,6 @@ export const taskOperations = {
               comments: true,
               taskAttachments: true,
             },
-=======
-    return prisma.task.findMany({
-      where,
-      include: {
-        assignee: true,
-        createdBy: true,
-        function: true,
-        sprint: true, // Include sprint data
-        _count: {
-          select: {
-            comments: true,
-            taskAttachments: true,
->>>>>>> 8cdc2b430a9894cbdf5cc8791434331085b95406
           },
         },
         orderBy: {

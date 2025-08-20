@@ -325,7 +325,7 @@ const ReportsSection = () => {
           overdue: 1,
           todo: 1
         },
-        myAssignedTasks: [
+        myTasks: [
           { id: 1, title: "Update Safety Protocol Document", project: "Fire Safety Improvement", priority: "HIGH", status: "IN_PROGRESS", dueDate: dayjs().add(2, 'days').format('YYYY-MM-DD'), estimatedHours: 8, completedHours: 4 },
           { id: 2, title: "Conduct Safety Training Session", project: "Emergency Response Training", priority: "MEDIUM", status: "TODO", dueDate: dayjs().add(7, 'days').format('YYYY-MM-DD'), estimatedHours: 6, completedHours: 0 },
           { id: 3, title: "Review Chemical Handling Guidelines", project: "Chemical Handling Protocol", priority: "LOW", status: "IN_PROGRESS", dueDate: dayjs().add(15, 'days').format('YYYY-MM-DD'), estimatedHours: 4, completedHours: 2 },
@@ -799,7 +799,7 @@ const ReportsSection = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3 max-h-80 overflow-y-auto">
-                {data.myAssignedTasks?.map((task) => (
+                {data.myTasks?.map((task) => (
                   <div key={task.id} className="border rounded-lg p-4 hover:bg-slate-50 transition-colors">
                     <div className="flex items-start justify-between mb-2">
                       <h4 className="font-medium text-sm">{task.title}</h4>
