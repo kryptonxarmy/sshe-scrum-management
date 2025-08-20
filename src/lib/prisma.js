@@ -51,10 +51,13 @@ export const userOperations = {
             },
           },
         },
-        assignedTasks: {
+        taskAssignees: {
           include: {
-            project: true,
-            assignee: true,
+            task: {
+              include: {
+                project: true,
+              },
+            },
           },
         },
         notifications: {
@@ -147,7 +150,11 @@ export const projectOperations = {
       },
       tasks: {
         include: {
-          assignee: true,
+          assignees: {
+            include: {
+              user: true,
+            },
+          },
           createdBy: true,
         },
         orderBy: {
@@ -326,7 +333,11 @@ export const taskOperations = {
             owner: true,
           },
         },
-        assignee: true,
+        assignees: {
+          include: {
+            user: true,
+          },
+        },
         createdBy: true,
         function: true,
         sprint: true,
@@ -361,7 +372,11 @@ export const taskOperations = {
     }
 
     if (filters.assigneeId) {
-      where.assigneeId = filters.assigneeId;
+      where.assignees = {
+        some: {
+          userId: filters.assigneeId,
+        },
+      };
     }
 
     if (filters.priority) {
@@ -371,7 +386,11 @@ export const taskOperations = {
     return prisma.task.findMany({
       where,
       include: {
-        assignee: true,
+        assignees: {
+          include: {
+            user: true,
+          },
+        },
         createdBy: true,
         function: true,
         sprint: true, // Include sprint data
@@ -404,11 +423,15 @@ export const taskOperations = {
             department: true,
           },
         },
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
         createdBy: {
@@ -427,7 +450,13 @@ export const taskOperations = {
   async getByUserId(userId, filters = {}) {
     const where = {
       OR: [
-        { assigneeId: userId },
+        { 
+          assignees: {
+            some: {
+              userId: userId,
+            },
+          },
+        },
         { createdById: userId },
       ],
     };
@@ -444,7 +473,11 @@ export const taskOperations = {
             owner: true,
           },
         },
-        assignee: true,
+        assignees: {
+          include: {
+            user: true,
+          },
+        },
         createdBy: true,
       },
       orderBy: {
@@ -458,7 +491,11 @@ export const taskOperations = {
       data,
       include: {
         project: true,
-        assignee: true,
+        assignees: {
+          include: {
+            user: true,
+          },
+        },
         createdBy: true,
       },
     });
@@ -474,7 +511,11 @@ export const taskOperations = {
       },
       include: {
         project: true,
-        assignee: true,
+        assignees: {
+          include: {
+            user: true,
+          },
+        },
       },
     });
   },
@@ -482,7 +523,11 @@ export const taskOperations = {
   async getAll() {
     return prisma.task.findMany({
       include: {
-        assignee: true,
+        assignees: {
+          include: {
+            user: true,
+          },
+        },
         createdBy: true,
         function: true,
         _count: {

@@ -64,27 +64,28 @@ export async function POST(request) {
     const {
       title,
       description,
-      type = 'TASK',
       priority = 'MEDIUM',
       status = 'TODO',
       projectId,
-      assigneeId,
+      assignees = [], // Array of assignee IDs
+      assigneeIds = [], // Also support assigneeIds field
       createdById,
       dueDate,
-      estimatedTime,
       functionId,
       sprintId,
       sprintName, // New field for sprint name
     } = body;
 
+    // Combine assignees and assigneeIds arrays
+    const finalAssigneeIds = [...new Set([...assignees, ...assigneeIds])];
+
     console.log('Extracted data:', {
       title,
       description,
-      type,
       priority,
       status,
       projectId,
-      assigneeId,
+      assigneeIds: finalAssigneeIds,
       createdById,
       sprintName
     });
@@ -135,22 +136,58 @@ export async function POST(request) {
     const taskData = {
       title,
       description,
-      type: type.toUpperCase(),
       priority: priority.toUpperCase(),
       status: status.toUpperCase(),
       projectId,
-      assigneeId: assigneeId || null, // Ensure null if empty
       createdById,
       dueDate: dueDate ? new Date(dueDate) : null,
-      estimatedTime: estimatedTime ? parseFloat(estimatedTime) : null,
       functionId: functionId || null, // Ensure null if empty
       sprintId: finalSprintId || null, // Ensure null if empty
     };
 
     console.log('Task data to create:', taskData);
 
-    const task = await taskOperations.create(taskData);
-    console.log('Task created successfully:', task.id);
+    // Create task first
+    const task = await prisma.task.create({
+      data: taskData,
+      include: {
+        project: true,
+        assignees: {
+          include: {
+            user: true,
+          },
+        },
+        createdBy: true,
+      },
+    });
+
+    // Create task assignments if there are assignees
+    if (finalAssigneeIds.length > 0) {
+      const taskAssignments = finalAssigneeIds.map(userId => ({
+        taskId: task.id,
+        userId: userId,
+      }));
+
+      await prisma.taskAssignee.createMany({
+        data: taskAssignments,
+      });
+    }
+
+    // Fetch the complete task with assignees
+    const completeTask = await prisma.task.findUnique({
+      where: { id: task.id },
+      include: {
+        project: true,
+        assignees: {
+          include: {
+            user: true,
+          },
+        },
+        createdBy: true,
+      },
+    });
+
+    console.log('Task created successfully:', completeTask.id);
 
     // Log activity
     await activityOperations.create({
@@ -158,32 +195,36 @@ export async function POST(request) {
       description: `Task "${title}" was created`,
       userId: createdById,
       projectId,
-      taskId: task.id,
+      taskId: completeTask.id,
     });
 
-    // Create notification for assignee
-    if (assigneeId && assigneeId !== createdById) {
-      await notificationOperations.create({
-        type: 'TASK_ASSIGNED',
-        title: 'New Task Assigned',
-        message: `You have been assigned to task "${title}"`,
-        userId: assigneeId,
-        taskId: task.id,
-        actionUrl: `/tasks/${task.id}`,
-      });
+    // Create notifications for assignees
+    if (finalAssigneeIds.length > 0) {
+      for (const assigneeId of finalAssigneeIds) {
+        if (assigneeId !== createdById) {
+          await notificationOperations.create({
+            type: 'TASK_ASSIGNED',
+            title: 'New Task Assigned',
+            message: `You have been assigned to task "${title}"`,
+            userId: assigneeId,
+            taskId: completeTask.id,
+            actionUrl: `/tasks/${completeTask.id}`,
+          });
 
-      // Log assignment activity
-      await activityOperations.create({
-        type: 'TASK_ASSIGNED',
-        description: `Task "${title}" was assigned to ${task.assignee?.name || 'user'}`,
-        userId: createdById,
-        projectId,
-        taskId: task.id,
-      });
+          // Log assignment activity
+          await activityOperations.create({
+            type: 'TASK_ASSIGNED',
+            description: `Task "${title}" was assigned to user`,
+            userId: createdById,
+            projectId,
+            taskId: completeTask.id,
+          });
+        }
+      }
     }
 
     return NextResponse.json({ 
-      task,
+      task: completeTask,
       message: 'Task created successfully' 
     });
 
