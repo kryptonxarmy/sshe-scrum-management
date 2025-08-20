@@ -47,6 +47,27 @@ const TaskCard = ({ task, onTaskUpdated }) => {
     return variants[priority] || "outline";
   };
 
+  // Function to get assignees display
+  const getAssigneesDisplay = () => {
+    // Handle both old single assignee format and new multiple assignees format
+    if (task.assignees && task.assignees.length > 0) {
+      // New format: multiple assignees
+      const names = task.assignees.map(assignee => {
+        // Handle nested user structure
+        return assignee.user ? assignee.user.name : assignee.name;
+      }).filter(Boolean);
+      
+      if (names.length === 0) return "-";
+      if (names.length === 1) return names[0];
+      if (names.length <= 2) return names.join(', ');
+      return `${names[0]}, ${names[1]} +${names.length - 2} more`;
+    } else if (task.assignee) {
+      // Old format: single assignee
+      return task.assignee.name || "-";
+    }
+    return "-";
+  };
+
   // Safe accessor functions dengan default values
   const getDisplayType = () => {
     return task.type ? task.type.charAt(0).toUpperCase() + task.type.slice(1) : "Task";
@@ -89,7 +110,7 @@ const TaskCard = ({ task, onTaskUpdated }) => {
               {getDisplayPriority()}
             </Badge>
             <span className="text-xs text-slate-500">
-              Assignee: {task.assignee?.name || "-"}
+              Assignees: {getAssigneesDisplay()}
             </span>
             {task.sprint && (
               <span className="text-xs text-slate-500">

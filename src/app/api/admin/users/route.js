@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { userOperations, prisma } from '@/lib/prisma';
+import { userOperations, prisma } from '@/lib/prisma-simple';
 import bcrypt from 'bcryptjs';
 
 // GET /api/admin/users - Get all users (superadmin only)
@@ -17,7 +17,7 @@ export async function GET(request) {
 
     // Check if current user is superadmin
     const currentUser = await userOperations.findById(currentUserId);
-    if (!currentUser || (currentUser.role !== 'SUPERADMIN' && currentUser.role !== 'superadmin')) {
+    if (!currentUser || currentUser.role !== 'SUPERADMIN') {
       return NextResponse.json(
         { error: 'Unauthorized. Superadmin access required.' },
         { status: 403 }
@@ -74,20 +74,33 @@ export async function POST(request) {
       currentUserId 
     } = body;
 
-    if (!currentUserId) {
-      return NextResponse.json(
-        { error: 'Current user ID is required' },
-        { status: 400 }
-      );
-    }
+    // Check if there are any superadmins in the system
+    const existingSuperadmin = await prisma.user.findFirst({
+      where: {
+        role: 'SUPERADMIN'
+      }
+    });
 
-    // Check if current user is superadmin
-    const currentUser = await userOperations.findById(currentUserId);
-    if (!currentUser || (currentUser.role !== 'SUPERADMIN' && currentUser.role !== 'superadmin')) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Superadmin access required.' },
-        { status: 403 }
-      );
+    // If no superadmin exists and we're trying to create a superadmin, allow it
+    const isFirstSuperadmin = !existingSuperadmin && role === 'SUPERADMIN';
+
+    if (!isFirstSuperadmin) {
+      // Normal authorization check for non-first superadmin creation
+      if (!currentUserId) {
+        return NextResponse.json(
+          { error: 'Current user ID is required' },
+          { status: 400 }
+        );
+      }
+
+      // Check if current user is superadmin
+      const currentUser = await userOperations.findById(currentUserId);
+      if (!currentUser || currentUser.role !== 'SUPERADMIN') {
+        return NextResponse.json(
+          { error: 'Unauthorized. Superadmin access required.' },
+          { status: 403 }
+        );
+      }
     }
 
     if (!email || !password || !name || !role) {

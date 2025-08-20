@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { userOperations } from '@/lib/prisma';
+import { userOperations } from '@/lib/prisma-simple';
 
 export async function POST(request) {
   try {

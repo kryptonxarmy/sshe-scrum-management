@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 const globalForPrisma = globalThis;
 
 export const prisma = globalForPrisma.prisma || new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  log: process.env.NODE_ENV === 'development' ? ['error'] : ['error'], // Reduced logging
 });
 
 if (process.env.NODE_ENV !== 'production') {
@@ -18,32 +18,18 @@ export const userOperations = {
   async findByEmail(email) {
     return prisma.user.findUnique({
       where: { email },
-      include: {
-        userSettings: true,
-      },
     });
   },
 
   async findById(id) {
     return prisma.user.findUnique({
       where: { id },
-      include: {
-        userSettings: true,
-      },
     });
   },
 
   async create(data) {
     return prisma.user.create({
-      data: {
-        ...data,
-        userSettings: {
-          create: {}, // Create default settings
-        },
-      },
-      include: {
-        userSettings: true,
-      },
+      data,
     });
   },
 
@@ -103,34 +89,14 @@ export const projectOperations = {
       },
       tasks: {
         include: {
-          assignee: true,
           createdBy: true,
         },
         orderBy: {
           createdAt: 'desc',
         },
       },
-      functions: {
-        orderBy: {
-          order: 'asc',
-        },
-      },
-      settings: true,
-      _count: {
-        select: {
-          tasks: true,
-          members: true,
-          comments: true,
-        },
-      },
     } : {
       owner: true,
-      _count: {
-        select: {
-          tasks: true,
-          members: true,
-        },
-      },
     };
 
     return prisma.project.findUnique({
@@ -147,23 +113,9 @@ export const projectOperations = {
       },
       include: {
         owner: true,
-        scrumMaster: true,
-        tasks: {
-          select: {
-            id: true,
-            status: true,
-            priority: true,
-          },
-        },
         members: {
           include: {
             user: true,
-          },
-        },
-        _count: {
-          select: {
-            tasks: true,
-            members: true,
           },
         },
       },
@@ -200,23 +152,9 @@ export const projectOperations = {
       where,
       include: {
         owner: true,
-        scrumMaster: true,
-        tasks: {
-          select: {
-            id: true,
-            status: true,
-            priority: true,
-          },
-        },
         members: {
           include: {
             user: true,
-          },
-        },
-        _count: {
-          select: {
-            tasks: true,
-            members: true,
           },
         },
       },
@@ -231,17 +169,9 @@ export const projectOperations = {
       data: {
         ...data,
         ownerId,
-        settings: {
-          create: {
-            allowMemberEdit: true,
-            requireApproval: false,
-            notificationEnabled: true,
-          },
-        },
       },
       include: {
         owner: true,
-        settings: true,
       },
     });
   },
@@ -271,40 +201,14 @@ export const projectOperations = {
   },
 };
 
-// Task operations
+// Task operations (simplified)
 export const taskOperations = {
   async findById(id) {
     return prisma.task.findUnique({
       where: { id },
       include: {
-        project: {
-          include: {
-            owner: true,
-          },
-        },
-        assignee: true,
+        project: true,
         createdBy: true,
-        function: true,
-        sprint: true,
-        comments: {
-          include: {
-            author: true,
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-        },
-        taskAttachments: true,
-        dependencies: {
-          include: {
-            dependsOnTask: true,
-          },
-        },
-        dependents: {
-          include: {
-            dependentTask: true,
-          },
-        },
       },
     });
   },
@@ -316,14 +220,6 @@ export const taskOperations = {
       where.status = filters.status;
     }
 
-    if (filters.assigneeId) {
-      where.assignees = {
-        some: {
-          userId: filters.assigneeId,
-        },
-      };
-    }
-
     if (filters.priority) {
       where.priority = filters.priority;
     }
@@ -331,60 +227,7 @@ export const taskOperations = {
     return prisma.task.findMany({
       where,
       include: {
-        assignees: {
-          include: {
-            user: true,
-          },
-        },
         createdBy: true,
-        function: true,
-        sprint: true, // Include sprint data
-        _count: {
-          select: {
-            comments: true,
-            taskAttachments: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-  },
-
-  async getByProjectIds(projectIds) {
-    return prisma.task.findMany({
-      where: {
-        projectId: {
-          in: projectIds,
-        },
-        isArchived: false,
-      },
-      include: {
-        project: {
-          select: {
-            id: true,
-            name: true,
-            department: true,
-          },
-        },
-        assignees: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
-        },
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
       },
       orderBy: {
         createdAt: 'desc',
@@ -394,16 +237,7 @@ export const taskOperations = {
 
   async getByUserId(userId, filters = {}) {
     const where = {
-      OR: [
-        { 
-          assignees: {
-            some: {
-              userId: userId,
-            },
-          },
-        },
-        { createdById: userId },
-      ],
+      createdById: userId,
     };
 
     if (filters.status) {
@@ -413,16 +247,7 @@ export const taskOperations = {
     return prisma.task.findMany({
       where,
       include: {
-        project: {
-          include: {
-            owner: true,
-          },
-        },
-        assignees: {
-          include: {
-            user: true,
-          },
-        },
+        project: true,
         createdBy: true,
       },
       orderBy: {
@@ -436,11 +261,6 @@ export const taskOperations = {
       data,
       include: {
         project: true,
-        assignees: {
-          include: {
-            user: true,
-          },
-        },
         createdBy: true,
       },
     });
@@ -456,11 +276,7 @@ export const taskOperations = {
       },
       include: {
         project: true,
-        assignees: {
-          include: {
-            user: true,
-          },
-        },
+        createdBy: true,
       },
     });
   },
@@ -468,19 +284,7 @@ export const taskOperations = {
   async getAll() {
     return prisma.task.findMany({
       include: {
-        assignees: {
-          include: {
-            user: true,
-          },
-        },
         createdBy: true,
-        function: true,
-        _count: {
-          select: {
-            comments: true,
-            taskAttachments: true,
-          },
-        },
       },
       orderBy: {
         createdAt: 'desc',
@@ -494,11 +298,6 @@ export const activityOperations = {
   async create(data) {
     return prisma.activityLog.create({
       data,
-      include: {
-        user: true,
-        project: true,
-        task: true,
-      },
     });
   },
 

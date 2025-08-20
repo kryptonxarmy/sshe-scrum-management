@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import MultiSelectDropdown from "@/components/ui/multi-select";
 import { useAuth } from "@/contexts/AuthContext";
 
 const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
@@ -14,7 +15,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
     description: "",
     sprint: "Sprint 1",
     priority: "medium",
-    assignee: "",
+    assignees: [], // Changed from assignee to assignees array
     dueDate: "",
   });
   const [projectMembers, setProjectMembers] = useState([]);
@@ -36,19 +37,19 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
         
         // Combine owner and members, then deduplicate by id
         const allMembers = [
-          ...(data.owner ? [{ id: data.owner.id, name: data.owner.name }] : []),
+          ...(data.owner ? [{ value: data.owner.id, label: data.owner.name }] : []),
           ...(data.members ? data.members.map(member => ({
-            // Member sudah berupa object langsung dengan id, name, etc (tidak ada nested user)
-            id: member.id,
-            name: member.name
+            // Handle both nested user structure and direct member structure
+            value: member.user ? member.user.id : member.id,
+            label: member.user ? member.user.name : member.name
           })) : [])
         ];
         
-        // Remove duplicates based on id and filter out any entries with missing id
+        // Remove duplicates based on value and filter out any entries with missing value
         const uniqueMembers = allMembers
-          .filter(member => member.id) // Remove entries without id
+          .filter(member => member.value) // Remove entries without value
           .reduce((acc, current) => {
-            const exists = acc.find(item => item.id === current.id);
+            const exists = acc.find(item => item.value === current.value);
             if (!exists) {
               acc.push(current);
             }
@@ -72,11 +73,11 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
       const requestBody = {
         ...formData,
         sprintName: formData.sprint,
-        assigneeId: formData.assignee && formData.assignee !== "" ? formData.assignee : null,
+        assignees: formData.assignees, // Send array of assignee IDs
+        assigneeIds: formData.assignees, // Also support assigneeIds field
         projectId: projectId,
         createdById: user?.id,
         status: 'TODO',
-        type: 'TASK', // Default task type
       };
       console.log('Submitting task:', requestBody);
       const response = await fetch('/api/tasks', {
@@ -104,7 +105,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
         description: "",
         sprint: "Sprint 1",
         priority: "medium",
-        assignee: "",
+        assignees: [],
         dueDate: "",
       });
       // Notify parent component about the new task
@@ -145,6 +146,13 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
         setAvailableSprints(prev => [...prev, ...newSprints]);
       }
     }
+  };
+
+  const handleAssigneesChange = (selectedAssignees) => {
+    setFormData({
+      ...formData,
+      assignees: selectedAssignees,
+    });
   };
 
   return (
@@ -200,22 +208,17 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
             </div>
           </div>
 
-          {/* Assignee and Due Date */}
+          {/* Assignees and Due Date */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="assignee">Assignee</Label>
-              <Select value={formData.assignee} onValueChange={(value) => handleSelectChange("assignee", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select team member" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projectMembers.map((member, index) => (
-                    <SelectItem key={member.id || `member-${index}`} value={member.id || `member-${index}`}>
-                      {member.name || 'Unknown Member'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="assignees">Assignees</Label>
+              <MultiSelectDropdown
+                options={projectMembers}
+                value={formData.assignees}
+                onChange={handleAssigneesChange}
+                placeholder="Select team members..."
+                maxDisplay={2}
+              />
             </div>
 
             <div className="space-y-2">

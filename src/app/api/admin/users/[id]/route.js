@@ -18,7 +18,7 @@ export async function GET(request, { params }) {
 
     // Check if current user is superadmin
     const currentUser = await userOperations.findById(currentUserId);
-    if (!currentUser || (currentUser.role !== 'SUPERADMIN' && currentUser.role !== 'superadmin')) {
+    if (!currentUser || currentUser.role !== 'SUPERADMIN') {
       return NextResponse.json(
         { error: 'Unauthorized. Superadmin access required.' },
         { status: 403 }
