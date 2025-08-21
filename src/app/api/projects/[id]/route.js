@@ -44,13 +44,19 @@ export async function PUT(request, { params }) {
       );
     }
 
+    // Process date fields
+    const processedData = {
+      ...updateData,
+      // Convert date strings to proper Date objects
+      startDate: updateData.startDate ? new Date(updateData.startDate) : null,
+      endDate: updateData.endDate ? new Date(updateData.endDate) : null,
+      updatedAt: new Date(),
+    };
+
     // Update project
     const updatedProject = await prisma.project.update({
       where: { id },
-      data: {
-        ...updateData,
-        updatedAt: new Date(),
-      },
+      data: processedData,
       include: {
         owner: true,
         members: {

@@ -264,9 +264,15 @@ const ModalManageMember = ({ isOpen, onClose, project }) => {
                               <p className="font-medium">{member.user.name}</p>
                               <p className="text-sm text-gray-500">{member.user.email}</p>
                               <div className="flex items-center gap-2 mt-1">
-                                <Badge variant={getRoleBadgeVariant(member.user.role)} className="text-xs">
-                                  {getRoleDisplay(member.user.role)}
-                                </Badge>
+                                {member.user.id === project.scrumMasterId ? (
+                                  <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-200">
+                                    Scrum Master
+                                  </Badge>
+                                ) : (
+                                  <Badge variant={getRoleBadgeVariant(member.user.role)} className="text-xs">
+                                    {getRoleDisplay(member.user.role)}
+                                  </Badge>
+                                )}
                                 {member.user.department && (
                                   <Badge variant="outline" className="text-xs">
                                     {member.user.department}
