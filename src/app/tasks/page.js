@@ -26,28 +26,51 @@ export default function TasksPage() {
         const res = await fetch(`/api/projects/${projectId}/members`);
         const data = await res.json();
         
-        // Create a Set to track unique user IDs and avoid duplicates
-        const uniqueMembers = [];
-        const seenIds = new Set();
-        
-        // Add owner if exists
-        if (data.owner) {
-          uniqueMembers.push({ ...data.owner });
-          seenIds.add(data.owner.id);
+        // Use the teamMembers array from API which has proper roles
+        if (data.teamMembers) {
+          setTeamMembers(data.teamMembers);
+        } else {
+          // Fallback to old format if needed
+          const uniqueMembers = [];
+          const seenIds = new Set();
+          
+          // Add owner if exists
+          if (data.owner) {
+            uniqueMembers.push({ 
+              ...data.owner, 
+              projectRole: 'PROJECT_OWNER',
+              isOwner: true 
+            });
+            seenIds.add(data.owner.id);
+          }
+          
+          // Add scrum master if exists and not already added
+          if (data.scrumMaster && !seenIds.has(data.scrumMaster.id)) {
+            uniqueMembers.push({ 
+              ...data.scrumMaster, 
+              projectRole: 'SCRUM_MASTER',
+              isScrumMaster: true 
+            });
+            seenIds.add(data.scrumMaster.id);
+          }
+          
+          // Add members that are not already in the list
+          if (data.members) {
+            data.members.forEach(member => {
+              if (!seenIds.has(member.userId || member.id)) {
+                uniqueMembers.push({ 
+                  ...member, 
+                  projectRole: 'TEAM_MEMBER' 
+                });
+                seenIds.add(member.userId || member.id);
+              }
+            });
+          }
+          
+          setTeamMembers(uniqueMembers);
         }
-        
-        // Add members that are not already in the list
-        if (data.members) {
-          data.members.forEach(member => {
-            if (!seenIds.has(member.userId)) {
-              uniqueMembers.push({ ...member.user, role: member.role || member.user.role });
-              seenIds.add(member.userId);
-            }
-          });
-        }
-        
-        setTeamMembers(uniqueMembers);
-      } catch {
+      } catch (error) {
+        console.error('Error fetching team members:', error);
         setTeamMembers([]);
       }
     };
@@ -120,15 +143,34 @@ export default function TasksPage() {
                     </div>
                     {/* Team Members List */}
                     <div className="mt-4">
-                      <h3 className="font-semibold text-base mb-2">Team Members</h3>
+                      <h3 className="font-semibold text-base mb-2">Team Members ({teamMembers.length})</h3>
                       <div className="flex flex-wrap gap-3">
                         {teamMembers.length === 0 ? (
                           <span className="text-slate-400 text-sm">No team members found.</span>
                         ) : (
                           teamMembers.map((member, index) => (
-                            <div key={`member-${member.id || member.userId || index}`} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 flex flex-col items-start min-w-[120px]">
-                              <span className="font-medium text-slate-700 text-sm">{member.name}</span>
-                              <span className="text-xs text-slate-500">{member.role.replace('_', ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
+                            <div 
+                              key={`member-${member.id || member.userId || index}`} 
+                              className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 flex flex-col items-start min-w-[130px]"
+                            >
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-slate-700 text-sm">{member.name}</span>
+                                {member.isOwner && (
+                                  <span className="bg-amber-100 text-amber-700 text-xs px-1 py-0.5 rounded">Owner</span>
+                                )}
+                                {member.isScrumMaster && (
+                                  <span className="bg-green-100 text-green-700 text-xs px-1 py-0.5 rounded">SM</span>
+                                )}
+                              </div>
+                              <span className="text-xs text-slate-500">
+                                {member.projectRole ? 
+                                  member.projectRole.replace('_', ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) :
+                                  (member.role || '').replace('_', ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+                                }
+                              </span>
+                              {member.department && (
+                                <span className="text-xs text-slate-400 mt-0.5">{member.department}</span>
+                              )}
                             </div>
                           ))
                         )}

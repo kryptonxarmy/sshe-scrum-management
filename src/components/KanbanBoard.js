@@ -100,19 +100,35 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
 
     // Update task status and order in backend
     try {
-      await fetch(`/api/tasks/${movedTask.id}`, {
+      console.log('Updating task status:', { taskId: movedTask.id, newStatus });
+      const response = await fetch(`/api/tasks/${movedTask.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          status: newStatus.toUpperCase()
+          status: newStatus
         })
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Failed to update task status:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('Task status updated successfully:', result);
+
       // Refetch tasks from backend to ensure sync
       fetchTasks();
     } catch (error) {
       console.error('Failed to update task status:', error);
+      // Revert optimistic update on error
+      const revertedTasks = { ...tasks };
+      revertedTasks[destination.droppableId].splice(destination.index, 1);
+      revertedTasks[source.droppableId].splice(source.index, 0, movedTask);
+      setTasks(revertedTasks);
     }
   };
 

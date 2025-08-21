@@ -4,12 +4,22 @@ import { projectOperations, activityOperations, notificationOperations, prisma }
 // GET /api/projects/[id]/members - Get project members
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const project = await prisma.project.findUnique({
       where: { id },
       include: {
         owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            department: true,
+            avatar: true,
+          },
+        },
+        scrumMaster: {
           select: {
             id: true,
             name: true,
@@ -43,13 +53,56 @@ export async function GET(request, { params }) {
       );
     }
 
+    // Create team members list with proper roles
+    const teamMembers = [];
+    
+    // Add owner with PROJECT_OWNER role for this project
+    if (project.owner) {
+      teamMembers.push({
+        ...project.owner,
+        projectRole: 'PROJECT_OWNER',
+        isOwner: true,
+        userId: project.owner.id,
+        joinedAt: project.createdAt
+      });
+    }
+    
+    // Add scrum master with SCRUM_MASTER role for this project
+    if (project.scrumMaster && project.scrumMaster.id !== project.owner?.id) {
+      teamMembers.push({
+        ...project.scrumMaster,
+        projectRole: 'SCRUM_MASTER',
+        isScrumMaster: true,
+        userId: project.scrumMaster.id,
+        joinedAt: project.createdAt
+      });
+    }
+    
+    // Add regular members
+    project.members.forEach(member => {
+      // Skip if this user is already added as owner or scrum master
+      if (member.user.id !== project.owner?.id && member.user.id !== project.scrumMaster?.id) {
+        teamMembers.push({
+          ...member.user,
+          projectRole: 'TEAM_MEMBER',
+          userId: member.user.id,
+          joinedAt: member.joinedAt,
+          isActive: member.isActive
+        });
+      }
+    });
+
     return NextResponse.json({ 
       owner: project.owner,
+      scrumMaster: project.scrumMaster,
       members: project.members.map(member => ({
         ...member.user,
         joinedAt: member.joinedAt,
         isActive: member.isActive,
-      }))
+        userId: member.user.id
+      })),
+      teamMembers: teamMembers,
+      totalMembers: teamMembers.length
     });
 
   } catch (error) {
