@@ -148,6 +148,7 @@ export const projectOperations = {
       where: {
         ownerId: ownerId,
         isArchived: false,
+        deletedAt: null, // Exclude soft deleted projects
       },
       include: {
         owner: true,
@@ -179,6 +180,7 @@ export const projectOperations = {
 
   async getByUserId(userId, filters = {}) {
     const where = {
+      deletedAt: null, // Exclude soft deleted projects
       OR: [
         { ownerId: userId },
         {

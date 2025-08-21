@@ -15,7 +15,6 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
     name: "",
     description: "",
     department: "",
-    priority: "MEDIUM",
     status: "PLANNING",
     startDate: "",
     endDate: "",
@@ -32,31 +31,33 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
         name: project.name || "",
         description: project.description || "",
         department: project.department || "",
-        priority: project.priority || "MEDIUM",
         status: project.status || "PLANNING",
         startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : "",
         endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : "",
-        scrumMasterId: project.scrumMasterId || "",
+        scrumMasterId: project.scrumMasterId || "NONE",
       });
     }
   }, [project, isOpen]);
 
-  // Fetch Scrum Masters
+  // Fetch Team Members that can be assigned as Scrum Master
   useEffect(() => {
-    const fetchScrumMasters = async () => {
+    const fetchTeamMembers = async () => {
       try {
-        const response = await fetch('/api/users?role=SCRUM_MASTER&isActive=true');
+        // Fetch all active users that can be assigned as Scrum Master
+        const response = await fetch('/api/users?isActive=true');
         if (response.ok) {
           const data = await response.json();
           setScrumMasters(data.users || []);
+        } else {
+          console.error('Failed to fetch users:', response.status);
         }
       } catch (error) {
-        console.error('Error fetching scrum masters:', error);
+        console.error('Error fetching users:', error);
       }
     };
 
     if (isOpen) {
-      fetchScrumMasters();
+      fetchTeamMembers();
     }
   }, [isOpen]);
 
@@ -77,7 +78,7 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
         userId: user.id,
         startDate: formData.startDate || null,
         endDate: formData.endDate || null,
-        scrumMasterId: formData.scrumMasterId || null,
+        scrumMasterId: formData.scrumMasterId === "NONE" ? null : formData.scrumMasterId,
       };
 
       const response = await fetch(`/api/projects/${project.id}`, {
@@ -112,9 +113,12 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
   };
 
   const handleSelectChange = (field, value) => {
+    // Handle "NONE" value for scrumMasterId
+    const processedValue = field === 'scrumMasterId' && value === 'NONE' ? '' : value;
+    
     setFormData({
       ...formData,
-      [field]: value,
+      [field]: processedValue,
     });
   };
 
@@ -183,26 +187,7 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Priority</Label>
-              <Select
-                value={formData.priority}
-                onValueChange={(value) => handleSelectChange("priority", value)}
-                disabled={loading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="LOW">Low</SelectItem>
-                  <SelectItem value="MEDIUM">Medium</SelectItem>
-                  <SelectItem value="HIGH">High</SelectItem>
-                  <SelectItem value="CRITICAL">Critical</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Status</Label>
               <Select
@@ -234,14 +219,18 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
                   <SelectValue placeholder="Select Scrum Master" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Scrum Master</SelectItem>
-                  {scrumMasters.map((sm) => (
-                    <SelectItem key={sm.id} value={sm.id}>
-                      {sm.name} ({sm.email})
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="NONE">No Scrum Master</SelectItem>
+                  {scrumMasters
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((sm) => (
+                      <SelectItem key={sm.id} value={sm.id}>
+                        {sm.name} ({sm.email})
+                      </SelectItem>
+                    ))
+                  }
                 </SelectContent>
               </Select>
+
             </div>
           </div>
 

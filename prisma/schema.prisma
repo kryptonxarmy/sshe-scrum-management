@@ -59,15 +59,11 @@ model Project {
   description   String?
   department    String
   status        ProjectStatus    @default(PLANNING)
-<<<<<<< HEAD
-=======
-  priority      Priority         @default(MEDIUM)
-  duration      ProjectDuration  @default(SHORT_TERM)
->>>>>>> 3bd583c0ba84c15bc2e336bb23023537bff1f78a
   startDate     DateTime?
   endDate       DateTime?
   progress      Int              @default(0)
   isArchived    Boolean          @default(false)
+  deletedAt     DateTime?        // For soft delete
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
   ownerId       String
@@ -355,6 +351,7 @@ model TaskAssignee {
 enum UserRole {
   SUPERADMIN
   PROJECT_OWNER
+  SCRUM_MASTER
   TEAM_MEMBER
 }
 
@@ -389,6 +386,7 @@ enum ActivityType {
   PROJECT_CREATED
   PROJECT_UPDATED
   PROJECT_DELETED
+  PROJECT_RESTORED
   TASK_CREATED
   TASK_UPDATED
   TASK_DELETED

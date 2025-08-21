@@ -91,12 +91,13 @@ export async function PUT(request, { params }) {
   }
 }
 
-// DELETE /api/projects/[id] - Delete project
+// DELETE /api/projects/[id] - Soft delete project
 export async function DELETE(request, { params }) {
   try {
     const { id } = params;
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const forceDelete = searchParams.get('force') === 'true';
 
     // Check if project exists
     const project = await projectOperations.findById(id);
@@ -107,23 +108,63 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    // Delete project (cascade will handle related records)
-    await prisma.project.delete({
-      where: { id },
-    });
+    if (forceDelete) {
+      // Hard delete - permanently remove project
+      await prisma.project.delete({
+        where: { id },
+      });
 
-    // Log activity
-    if (userId) {
-      await activityOperations.create({
-        type: 'PROJECT_DELETED',
-        description: `Project "${project.name}" was deleted`,
-        userId,
+      // Log activity
+      if (userId) {
+        await activityOperations.create({
+          type: 'PROJECT_DELETED',
+          description: `Project "${project.name}" was permanently deleted`,
+          userId,
+        });
+      }
+
+      return NextResponse.json({ 
+        message: 'Project permanently deleted successfully' 
+      });
+    } else {
+      // Soft delete - mark as deleted
+      const deletedProject = await prisma.project.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          updatedAt: new Date(),
+        },
+        include: {
+          owner: true,
+          members: {
+            include: {
+              user: true,
+            },
+          },
+          _count: {
+            select: {
+              tasks: true,
+              members: true,
+            },
+          },
+        },
+      });
+
+      // Log activity
+      if (userId) {
+        await activityOperations.create({
+          type: 'PROJECT_DELETED',
+          description: `Project "${project.name}" was moved to trash`,
+          userId,
+          projectId: id,
+        });
+      }
+
+      return NextResponse.json({ 
+        project: deletedProject,
+        message: 'Project moved to trash successfully' 
       });
     }
-
-    return NextResponse.json({ 
-      message: 'Project deleted successfully' 
-    });
 
   } catch (error) {
     console.error('Delete project error:', error);

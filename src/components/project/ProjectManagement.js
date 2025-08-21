@@ -15,16 +15,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, MoreVertical, Edit, Trash2, Users, Calendar, AlertTriangle, Archive } from "lucide-react";
 import ModalManageMember from "@/components/project/_partials/ModalManageMember";
 import ArchiveReports from "@/components/project/ArchiveReports";
+import EditProjectModal from "@/components/project/EditProjectModal";
 
 const ProjectManagement = () => {
   const { user, canCreateProject, canManageProject, canManageProjectMembers, canViewProject } = useAuth();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [isManageMembersOpen, setIsManageMembersOpen] = useState(false);
   const [projectList, setProjectList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("active");
+  const [deletedProjects, setDeletedProjects] = useState([]);
 
   // Permission Rules:
   // - SUPERADMIN: Can manage all projects and members
@@ -58,6 +61,31 @@ const ProjectManagement = () => {
     fetchProjects();
   }, [user]);
 
+  // Fetch deleted projects
+  const fetchDeletedProjects = async () => {
+    if (!user) return;
+
+    try {
+      const response = await fetch(`/api/projects/deleted?userId=${user.id}`);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch deleted projects");
+      }
+
+      const data = await response.json();
+      setDeletedProjects(data.projects || []);
+    } catch (error) {
+      console.error("Error fetching deleted projects:", error);
+    }
+  };
+
+  // Fetch deleted projects when switching to trash tab
+  useEffect(() => {
+    if (activeTab === "trash") {
+      fetchDeletedProjects();
+    }
+  }, [activeTab, user]);
+
   const handleManageMembers = (project) => {
     setSelectedProject(project);
     setIsManageMembersOpen(true);
@@ -66,6 +94,110 @@ const ProjectManagement = () => {
   const handleCloseMembersModal = () => {
     setIsManageMembersOpen(false);
     setSelectedProject(null);
+  };
+
+  const handleEditProject = (project) => {
+    setSelectedProject(project);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedProject(null);
+  };
+
+  const handleProjectUpdated = (updatedProject) => {
+    setProjectList(prev => 
+      prev.map(project => 
+        project.id === updatedProject.id ? updatedProject : project
+      )
+    );
+  };
+
+  const handleDeleteProject = async (project) => {
+    const confirmMessage = `Are you sure you want to move project "${project.name}" to trash? You can restore it later from the trash.`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/projects/${project.id}?userId=${user.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete project');
+      }
+
+      // Remove project from active list
+      setProjectList(prev => prev.filter(p => p.id !== project.id));
+      alert(`Project "${project.name}" has been moved to trash successfully!`);
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      alert(`Failed to delete project: ${error.message}`);
+    }
+  };
+
+  const handleRestoreProject = async (project) => {
+    const confirmMessage = `Are you sure you want to restore project "${project.name}"?`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/projects/${project.id}/restore`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to restore project');
+      }
+
+      const data = await response.json();
+      
+      // Remove from deleted list and add to active list
+      setDeletedProjects(prev => prev.filter(p => p.id !== project.id));
+      setProjectList(prev => [...prev, data.project]);
+      
+      alert(`Project "${project.name}" has been restored successfully!`);
+    } catch (error) {
+      console.error('Error restoring project:', error);
+      alert(`Failed to restore project: ${error.message}`);
+    }
+  };
+
+  const handlePermanentDeleteProject = async (project) => {
+    const confirmMessage = `Are you sure you want to PERMANENTLY delete project "${project.name}"? This action cannot be undone and will delete all associated tasks.`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/projects/${project.id}?userId=${user.id}&force=true`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to permanently delete project');
+      }
+
+      // Remove from deleted list
+      setDeletedProjects(prev => prev.filter(p => p.id !== project.id));
+      alert(`Project "${project.name}" has been permanently deleted!`);
+    } catch (error) {
+      console.error('Error permanently deleting project:', error);
+      alert(`Failed to permanently delete project: ${error.message}`);
+    }
   };
 
   const handleReleaseProject = async (project) => {
@@ -255,6 +387,7 @@ const ProjectManagement = () => {
         <TabsList>
           <TabsTrigger value="active">Active Projects</TabsTrigger>
           <TabsTrigger value="timeline">Timeline Project</TabsTrigger>
+          <TabsTrigger value="trash">Trash</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active" className="space-y-6">
@@ -282,7 +415,7 @@ const ProjectManagement = () => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         {canManageProjectActions && (
-                          <DropdownMenuItem className="flex items-center gap-2">
+                          <DropdownMenuItem onClick={() => handleEditProject(project)} className="flex items-center gap-2">
                             <Edit size={14} />
                             Edit Project
                           </DropdownMenuItem>
@@ -300,7 +433,7 @@ const ProjectManagement = () => {
                           </DropdownMenuItem>
                         )}
                         {canManageProjectActions && (
-                          <DropdownMenuItem className="flex items-center gap-2 text-red-600">
+                          <DropdownMenuItem onClick={() => handleDeleteProject(project)} className="flex items-center gap-2 text-red-600">
                             <Trash2 size={14} />
                             Delete Project
                           </DropdownMenuItem>
@@ -411,10 +544,158 @@ const ProjectManagement = () => {
         <TabsContent value="timeline" className="space-y-6">
           <ArchiveReports />
         </TabsContent>
+
+        <TabsContent value="trash" className="space-y-6">
+          {/* Deleted Projects Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {deletedProjects.map((project) => {
+              const stats = getProjectStats(project);
+              const canManageProjectActions = canManageProject(project.ownerId);
+              
+              return (
+                <Card key={project.id} className="hover:shadow-lg transition-shadow border-red-200 bg-red-50">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg text-red-800">{project.name}</CardTitle>
+                        <p className="text-xs text-red-600">
+                          Deleted: {project.deletedAt ? new Date(project.deletedAt).toLocaleDateString() : 'Unknown'}
+                        </p>
+                      </div>
+
+                      {canManageProjectActions && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical size={16} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleRestoreProject(project)} className="flex items-center gap-2 text-green-600">
+                              <Archive size={14} />
+                              Restore Project
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handlePermanentDeleteProject(project)} className="flex items-center gap-2 text-red-600">
+                              <Trash2 size={14} />
+                              Delete Permanently
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-red-700 line-clamp-2">{project.description}</p>
+
+                    {/* Owner and Scrum Master Info */}
+                    <div className="space-y-1">
+                      <p className="text-sm text-red-700">
+                        <span className="font-medium">Owner:</span> {getProjectOwnerName(project.owner)}
+                      </p>
+                      {getScrumMasterName(project.scrumMaster) && (
+                        <p className="text-sm text-red-700">
+                          <span className="font-medium">Scrum Master:</span> {getScrumMasterName(project.scrumMaster)}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-end">
+                      <Badge variant="destructive">DELETED</Badge>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-red-700">Progress</span>
+                        <span className="font-medium text-red-800">{stats.completionRate}%</span>
+                      </div>
+                      <div className="w-full bg-red-200 rounded-full h-2">
+                        <div className="bg-red-600 h-2 rounded-full transition-all" style={{ width: `${stats.completionRate}%` }} />
+                      </div>
+
+                      {/* Enhanced Task Statistics */}
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div className="text-center p-2 bg-red-100 rounded">
+                          <div className="font-semibold text-red-700">{stats.todo}</div>
+                          <div className="text-red-600">To Do</div>
+                        </div>
+                        <div className="text-center p-2 bg-red-100 rounded">
+                          <div className="font-semibold text-red-700">{stats.inProgress}</div>
+                          <div className="text-red-600">In Progress</div>
+                        </div>
+                        <div className="text-center p-2 bg-red-100 rounded">
+                          <div className="font-semibold text-red-700">{stats.completed}</div>
+                          <div className="text-red-600">Done</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-red-600">
+                        <span>Total: {stats.total} tasks</span>
+                        {stats.total > 0 && (
+                          <span>
+                            {stats.completed}/{stats.total} completed
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm text-red-700">
+                      <div className="flex items-center gap-1">
+                        <Calendar size={14} />
+                        <span>{project.endDate ? new Date(project.endDate).toLocaleDateString() : "No end date"}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Users size={14} />
+                        <span>{project._count?.members || 0} members</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 flex justify-between">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRestoreProject(project)}
+                        className="text-green-600 border-green-600 hover:bg-green-50"
+                      >
+                        Restore
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePermanentDeleteProject(project)}
+                        className="text-red-600 border-red-600 hover:bg-red-50"
+                      >
+                        Delete Permanently
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {deletedProjects.length === 0 && (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Trash2 size={48} className="text-slate-400 mb-4" />
+                <h3 className="text-lg font-medium text-slate-600 mb-2">Trash is Empty</h3>
+                <p className="text-slate-500 text-center">Deleted projects will appear here. You can restore them or delete them permanently.</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* Modal for Manage Members */}
       <ModalManageMember isOpen={isManageMembersOpen} onClose={handleCloseMembersModal} project={selectedProject} />
+      
+      {/* Modal for Edit Project */}
+      <EditProjectModal 
+        isOpen={isEditModalOpen} 
+        onClose={handleCloseEditModal} 
+        project={selectedProject}
+        onProjectUpdated={handleProjectUpdated}
+      />
     </div>
   );
 };
