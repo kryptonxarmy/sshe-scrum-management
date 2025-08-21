@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { User, LogOut, Settings, FolderOpen, Users, BarChart3, Plus, Eye, Edit, Trash2, Calendar } from "lucide-react";
+import { User, LogOut, Settings, FolderOpen, Users, BarChart3, Plus, Eye, Edit, Trash2, Calendar, Archive } from "lucide-react";
 import TaskBoard from "@/components/TaskBoard";
 import ProjectManagement from "@/components/project/ProjectManagement";
 import CalendarDashboardData from "@/components/dashboard/CalendarDashboardData";
@@ -99,6 +99,13 @@ const Dashboard = () => {
                 <BarChart3 size={16} />
                 Reports
               </Button>
+
+              {(user?.role === 'SUPERADMIN' || user?.role === 'PROJECT_OWNER') && (
+                <Button variant="ghost" onClick={() => router.push("/archive")} className="flex items-center gap-2">
+                  <Archive size={16} />
+                  Released Projects
+                </Button>
+              )}
             </nav>
 
             {/* User Menu */}

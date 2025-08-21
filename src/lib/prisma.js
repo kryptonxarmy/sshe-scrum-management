@@ -103,7 +103,11 @@ export const projectOperations = {
       },
       tasks: {
         include: {
-          assignee: true,
+          assignees: {
+            include: {
+              user: true,
+            },
+          },
           createdBy: true,
         },
         orderBy: {
@@ -282,7 +286,11 @@ export const taskOperations = {
             owner: true,
           },
         },
-        assignee: true,
+        assignees: {
+          include: {
+            user: true,
+          },
+        },
         createdBy: true,
         function: true,
         sprint: true,
@@ -305,6 +313,7 @@ export const taskOperations = {
             dependentTask: true,
           },
         },
+        activityLogs: true,
       },
     });
   },

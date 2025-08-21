@@ -1,11 +1,14 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import { Settings, HardHat, AlertTriangle, Calendar, BarChart3, Users, CalendarDays, User, Cog } from "lucide-react";
 
 const Sidebar = ({ currentFunction, setCurrentFunction, isSidebarOpen, setIsSidebarOpen }) => {
   const router = useRouter();
   const pathname = usePathname();
+  const { user } = useAuth();
+  
   const functions = [
     { id: "process-safety", name: "Process Safety", icon: Settings, count: 8 },
     { id: "personnel-safety", name: "Personnel Safety", icon: HardHat, count: 6 },

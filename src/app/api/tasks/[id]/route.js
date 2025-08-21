@@ -4,7 +4,7 @@ import { taskOperations, activityOperations, notificationOperations, prisma } fr
 // GET /api/tasks/[id] - Get task details
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const task = await taskOperations.findById(id);
 
@@ -29,7 +29,7 @@ export async function GET(request, { params }) {
 // PUT /api/tasks/[id] - Update task
 export async function PUT(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { userId, ...updateData } = body;
 
@@ -212,7 +212,7 @@ export async function PUT(request, { params }) {
 // DELETE /api/tasks/[id] - Delete task
 export async function DELETE(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 

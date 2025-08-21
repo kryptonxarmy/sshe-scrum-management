@@ -60,6 +60,7 @@ model Project {
   department    String
   status        ProjectStatus    @default(PLANNING)
   priority      Priority         @default(MEDIUM)
+  duration      ProjectDuration  @default(SHORT_TERM)
   startDate     DateTime?
   endDate       DateTime?
   progress      Int              @default(0)
@@ -362,6 +363,11 @@ enum ProjectStatus {
   COMPLETED
   CANCELLED
   RELEASED
+}
+
+enum ProjectDuration {
+  SHORT_TERM
+  LONG_TERM
 }
 
 enum TaskStatus {

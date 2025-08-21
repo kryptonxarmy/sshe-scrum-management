@@ -11,8 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, MoreVertical, Edit, Trash2, Users, Calendar, AlertTriangle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, MoreVertical, Edit, Trash2, Users, Calendar, AlertTriangle, Archive } from "lucide-react";
 import ModalManageMember from "@/components/project/_partials/ModalManageMember";
+import ArchiveReports from "@/components/project/ArchiveReports";
 
 const ProjectManagement = () => {
   const { user, canCreateProject, canManageProject, canManageProjectMembers, canViewProject } = useAuth();
@@ -22,6 +24,7 @@ const ProjectManagement = () => {
   const [projectList, setProjectList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState("active");
 
   // Permission Rules:
   // - SUPERADMIN: Can manage all projects and members
@@ -65,9 +68,60 @@ const ProjectManagement = () => {
     setSelectedProject(null);
   };
 
+  const handleReleaseProject = async (project) => {
+    if (!confirm(`Are you sure you want to release project "${project.name}"? This will move it to the archive.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/projects/${project.id}/release`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'release' }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to release project');
+      }
+
+      // Refresh projects list
+      const fetchProjects = async () => {
+        if (!user) return;
+
+        try {
+          setLoading(true);
+          const response = await fetch(`/api/projects?userId=${user.id}`);
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch projects");
+          }
+
+          const data = await response.json();
+          setProjectList(data.projects || []);
+        } catch (error) {
+          console.error("Error fetching projects:", error);
+          setError(error.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      await fetchProjects();
+      alert(`Project "${project.name}" has been released successfully!`);
+    } catch (error) {
+      console.error('Error releasing project:', error);
+      alert(`Failed to release project: ${error.message}`);
+    }
+  };
+
   // Filter projects based on user role and permissions
   const getVisibleProjects = () => {
-    return projectList.filter((project) => canViewProject(project));
+    return projectList.filter((project) => 
+      canViewProject(project) && project.status !== 'RELEASED'
+    );
   };
 
   const getProjectStats = (project) => {
@@ -216,8 +270,16 @@ const ProjectManagement = () => {
         )}
       </div>
 
-      {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="active">Active Projects</TabsTrigger>
+          <TabsTrigger value="timeline">Timeline Project</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="active" className="space-y-6">
+          {/* Projects Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {getVisibleProjects().map((project) => {
           const stats = getProjectStats(project);
           const canManageProjectActions = canManageProject(project.ownerId);
@@ -261,6 +323,12 @@ const ProjectManagement = () => {
                           <DropdownMenuItem onClick={() => handleManageMembers(project)} className="flex items-center gap-2">
                             <Users size={14} />
                             Manage Members
+                          </DropdownMenuItem>
+                        )}
+                        {canManageProjectActions && project.status !== 'RELEASED' && (
+                          <DropdownMenuItem onClick={() => handleReleaseProject(project)} className="flex items-center gap-2 text-blue-600">
+                            <Archive size={14} />
+                            Release Project
                           </DropdownMenuItem>
                         )}
                         {canManageProjectActions && (
@@ -354,26 +422,32 @@ const ProjectManagement = () => {
             </Card>
           );
         })}
-      </div>
+          </div>
+
+          {getVisibleProjects().length === 0 && (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <AlertTriangle size={48} className="text-slate-400 mb-4" />
+                <h3 className="text-lg font-medium text-slate-600 mb-2">No Projects Found</h3>
+                <p className="text-slate-500 text-center mb-4">{canCreateProject() ? "Get started by creating your first project." : "You haven't been assigned to any projects yet."}</p>
+                {canCreateProject() && (
+                  <Button onClick={() => setIsCreateModalOpen(true)}>
+                    <Plus size={16} className="mr-2" />
+                    Create Project
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="timeline" className="space-y-6">
+          <ArchiveReports />
+        </TabsContent>
+      </Tabs>
 
       {/* Modal for Manage Members */}
       <ModalManageMember isOpen={isManageMembersOpen} onClose={handleCloseMembersModal} project={selectedProject} />
-
-      {getVisibleProjects().length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <AlertTriangle size={48} className="text-slate-400 mb-4" />
-            <h3 className="text-lg font-medium text-slate-600 mb-2">No Projects Found</h3>
-            <p className="text-slate-500 text-center mb-4">{canCreateProject() ? "Get started by creating your first project." : "You haven't been assigned to any projects yet."}</p>
-            {canCreateProject() && (
-              <Button onClick={() => setIsCreateModalOpen(true)}>
-                <Plus size={16} className="mr-2" />
-                Create Project
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
@@ -386,6 +460,7 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
     description: "",
     department: "",
     priority: "MEDIUM",
+    duration: "SHORT_TERM",
     startDate: "",
     endDate: "",
   });
@@ -482,7 +557,7 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
         <Textarea id="description" name="description" value={formData.description} onChange={handleChange} disabled={loading} rows={3} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Priority</Label>
           <Select value={formData.priority} onValueChange={(value) => handleSelectChange("priority", value)} disabled={loading}>
@@ -498,6 +573,21 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
           </Select>
         </div>
 
+        <div className="space-y-2">
+          <Label>Project Duration</Label>
+          <Select value={formData.duration} onValueChange={(value) => handleSelectChange("duration", value)} disabled={loading}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select duration type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="SHORT_TERM">Short Term Project</SelectItem>
+              <SelectItem value="LONG_TERM">Long Term Project</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="startDate">Start Date</Label>
           <Input id="startDate" name="startDate" type="date" value={formData.startDate} onChange={handleChange} disabled={loading} required />
