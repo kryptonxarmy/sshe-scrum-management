@@ -106,16 +106,6 @@ const ProjectManagement = () => {
     return scrumMaster ? scrumMaster.name : null;
   };
 
-  const getPriorityBadgeStyle = (priority) => {
-    const styles = {
-      HIGH: "bg-red-500 text-white border-transparent hover:bg-red-600",
-      MEDIUM: "bg-yellow-500 text-white border-transparent hover:bg-yellow-600",
-      LOW: "bg-blue-500 text-white border-transparent hover:bg-blue-600",
-      CRITICAL: "bg-purple-500 text-white border-transparent hover:bg-purple-600"
-    };
-    return styles[priority] || styles.MEDIUM;
-  };
-
   const getStatusBadgeVariant = (status) => {
     const variants = {
       ACTIVE: "default",
@@ -132,16 +122,6 @@ const ProjectManagement = () => {
       return department;
     }
     return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
-  };
-
-  const getPriorityDisplay = (priority) => {
-    const priorityMap = {
-      LOW: "Low",
-      MEDIUM: "Medium",
-      HIGH: "High",
-      CRITICAL: "Critical",
-    };
-    return priorityMap[priority] || "Medium";
   };
 
   if (loading) {
@@ -223,18 +203,6 @@ const ProjectManagement = () => {
           const canManageProjectActions = canManageProject(project.ownerId);
           const canManageMembers = canManageProjectMembers(project.ownerId, project);
           
-          // Debug logging for Scrum Master member management
-          if (user.role === "SCRUM_MASTER") {
-            console.log(`Project: ${project.name}`, {
-              userId: user.id,
-              userRole: user.role,
-              projectOwnerId: project.ownerId,
-              projectMembers: project.members,
-              canManageMembers,
-              canManageProjectActions
-            });
-          }
-          
           return (
             <Card key={project.id} className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
@@ -290,8 +258,7 @@ const ProjectManagement = () => {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <Badge className={getPriorityBadgeStyle(project.priority)}>{getPriorityDisplay(project.priority)}</Badge>
+                <div className="flex items-center justify-end">
                   <Badge variant={getStatusBadgeVariant(project.status)}>{getStatusDisplay(project.status, project.department)}</Badge>
                 </div>
 
@@ -385,12 +352,29 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
     name: "",
     description: "",
     department: "",
-    priority: "MEDIUM",
+    scrumMasterId: "",
     startDate: "",
     endDate: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [members, setMembers] = useState([]);
+
+  // Fetch members for dropdown (team members only)
+  useEffect(() => {
+    const fetchMembers = async () => {
+      if (!user) return;
+      try {
+        const response = await fetch(`/api/users?role=TEAM_MEMBER`);
+        if (!response.ok) throw new Error("Failed to fetch members");
+        const data = await response.json();
+        setMembers(data.users || []);
+      } catch (err) {
+        setMembers([]);
+      }
+    };
+    fetchMembers();
+  }, [user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -403,7 +387,6 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
     try {
       setLoading(true);
       setError(null);
-
       const response = await fetch("/api/projects", {
         method: "POST",
         headers: {
@@ -414,13 +397,10 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
           ownerId: user.id,
         }),
       });
-
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.error || "Failed to create project");
       }
-
       onProjectCreated(data.project);
     } catch (error) {
       console.error("Error creating project:", error);
@@ -484,16 +464,17 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
-          <Label>Priority</Label>
-          <Select value={formData.priority} onValueChange={(value) => handleSelectChange("priority", value)} disabled={loading}>
+          <Label htmlFor="scrumMasterId">Scrum Master</Label>
+          <Select value={formData.scrumMasterId} onValueChange={(value) => handleSelectChange("scrumMasterId", value)} disabled={loading} required>
             <SelectTrigger>
-              <SelectValue placeholder="Select priority" />
+              <SelectValue placeholder="Select Scrum Master" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="LOW">Low</SelectItem>
-              <SelectItem value="MEDIUM">Medium</SelectItem>
-              <SelectItem value="HIGH">High</SelectItem>
-              <SelectItem value="CRITICAL">Critical</SelectItem>
+              {members.map((member) => (
+                <SelectItem key={member.id} value={member.id}>
+                  {member.name} ({member.email})
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

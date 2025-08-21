@@ -45,6 +45,7 @@ import {
   Trash2, 
   MoreHorizontal, 
   Eye, 
+  EyeOff,
   Shield,
   UserCheck,
   UserX,
@@ -78,6 +79,8 @@ const AdminUsersPage = () => {
     isActive: true
   });
   const [formLoading, setFormLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -156,6 +159,7 @@ const AdminUsersPage = () => {
           department: '',
           isActive: true
         });
+        setShowPassword(false);
         setIsCreateDialogOpen(false);
         alert('User berhasil dibuat!');
       } else {
@@ -200,6 +204,7 @@ const AdminUsersPage = () => {
         setUsers(prev => prev.map(u => u.id === selectedUser.id ? updatedUser : u));
         setIsEditDialogOpen(false);
         setSelectedUser(null);
+        setShowEditPassword(false);
         alert('User berhasil diupdate!');
       } else {
         alert(`Error: ${result.error}`);
@@ -270,13 +275,11 @@ const AdminUsersPage = () => {
     const variants = {
       SUPERADMIN: "default",
       PROJECT_OWNER: "secondary",
-      SCRUM_MASTER: "default", 
       TEAM_MEMBER: "outline",
     };
     const labels = {
       SUPERADMIN: "Super Admin",
       PROJECT_OWNER: "Project Owner",
-      SCRUM_MASTER: "Scrum Master",
       TEAM_MEMBER: "Team Member",
     };
     return (
@@ -341,14 +344,28 @@ const AdminUsersPage = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="password">Password *</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData(prev => ({...prev, password: e.target.value}))}
-                      placeholder="Masukkan password"
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={(e) => setFormData(prev => ({...prev, password: e.target.value}))}
+                        placeholder="Masukkan password"
+                        required
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -359,7 +376,6 @@ const AdminUsersPage = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
-                        <SelectItem value="SCRUM_MASTER">Scrum Master</SelectItem>
                         <SelectItem value="PROJECT_OWNER">Project Owner</SelectItem>
                         <SelectItem value="SUPERADMIN">Super Admin</SelectItem>
                       </SelectContent>
@@ -377,7 +393,10 @@ const AdminUsersPage = () => {
                   </div>
 
                   <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                    <Button type="button" variant="outline" onClick={() => {
+                      setIsCreateDialogOpen(false);
+                      setShowPassword(false);
+                    }}>
                       Batal
                     </Button>
                     <Button type="submit" disabled={formLoading}>
@@ -412,7 +431,6 @@ const AdminUsersPage = () => {
                   <SelectItem value="all">Semua Role</SelectItem>
                   <SelectItem value="SUPERADMIN">Super Admin</SelectItem>
                   <SelectItem value="PROJECT_OWNER">Project Owner</SelectItem>
-                  <SelectItem value="SCRUM_MASTER">Scrum Master</SelectItem>
                   <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
                 </SelectContent>
               </Select>
@@ -569,13 +587,27 @@ const AdminUsersPage = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="edit-password">Password Baru (kosongkan jika tidak diubah)</Label>
-                <Input
-                  id="edit-password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData(prev => ({...prev, password: e.target.value}))}
-                  placeholder="Masukkan password baru atau kosongkan"
-                />
+                <div className="relative">
+                  <Input
+                    id="edit-password"
+                    type={showEditPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(e) => setFormData(prev => ({...prev, password: e.target.value}))}
+                    placeholder="Masukkan password baru atau kosongkan"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditPassword(!showEditPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showEditPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -586,7 +618,6 @@ const AdminUsersPage = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
-                    <SelectItem value="SCRUM_MASTER">Scrum Master</SelectItem>
                     <SelectItem value="PROJECT_OWNER">Project Owner</SelectItem>
                     <SelectItem value="SUPERADMIN">Super Admin</SelectItem>
                   </SelectContent>
@@ -613,7 +644,10 @@ const AdminUsersPage = () => {
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => {
+                  setIsEditDialogOpen(false);
+                  setShowEditPassword(false);
+                }}>
                   Batal
                 </Button>
                 <Button type="submit" disabled={formLoading}>

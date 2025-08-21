@@ -41,7 +41,7 @@ export async function POST(request) {
       name, 
       description, 
       department, 
-      priority = 'MEDIUM',
+      scrumMasterId,
       startDate,
       endDate,
       ownerId 
@@ -55,16 +55,28 @@ export async function POST(request) {
       );
     }
 
+    if (!scrumMasterId) {
+      return NextResponse.json(
+        { error: 'Scrum Master is required' },
+        { status: 400 }
+      );
+    }
+
     const projectData = {
       name,
       description,
       department,
-      priority: priority.toUpperCase(),
+      scrumMasterId,
       startDate: startDate ? new Date(startDate) : null,
       endDate: endDate ? new Date(endDate) : null,
     };
 
     const project = await projectOperations.create(projectData, ownerId);
+
+    // Automatically add scrum master as project member
+    if (scrumMasterId && scrumMasterId !== ownerId) {
+      await projectOperations.addMember(project.id, scrumMasterId);
+    }
 
     // Log activity
     await activityOperations.create({

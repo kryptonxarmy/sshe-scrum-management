@@ -59,7 +59,6 @@ model Project {
   description   String?
   department    String
   status        ProjectStatus    @default(PLANNING)
-  priority      Priority         @default(MEDIUM)
   startDate     DateTime?
   endDate       DateTime?
   progress      Int              @default(0)
@@ -351,7 +350,6 @@ model TaskAssignee {
 enum UserRole {
   SUPERADMIN
   PROJECT_OWNER
-  SCRUM_MASTER
   TEAM_MEMBER
 }
 

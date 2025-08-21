@@ -36,7 +36,6 @@ const Dashboard = () => {
     const variants = {
       superadmin: "default",
       project_owner: "secondary",
-      scrum_master: "default",
       team_member: "outline",
     };
     return variants[role] || "outline";
@@ -46,7 +45,6 @@ const Dashboard = () => {
     const labels = {
       superadmin: "Super Admin",
       project_owner: "Project Owner",
-      scrum_master: "Scrum Master",
       team_member: "Team Member",
     };
     return labels[role] || role;
