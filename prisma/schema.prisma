@@ -1,19 +1,352 @@
-// Prisma Schema for SSHE Scrum Application
-// This schema defines the database structure for a role-based task management system
-// with authentication, projects, tasks, and activity tracking
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql" // You can change this to "mysql" or "sqlite" as needed
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// =====================================
-// ENUMS
-// =====================================
+model User {
+  id                  String          @id @default(cuid())
+  email               String          @unique
+  password            String
+  name                String
+  avatar              String?
+  role                UserRole        @default(TEAM_MEMBER)
+  department          String?
+  isActive            Boolean         @default(true)
+  lastLoginAt         DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  activityLogs        ActivityLog[]
+  comments            Comment[]
+  createdEvents       Event[]
+  notifications       Notification[]
+  projectMemberships  ProjectMember[]
+  ownedProjects       Project[]       @relation("ProjectOwner")
+  scrumMasterProjects Project[]       @relation("ProjectScrumMaster")
+  assignedTasks       TaskAssignee[]
+  createdTasks        Task[]          @relation("TaskCreator")
+  userSettings        UserSettings?
+
+  @@map("users")
+}
+
+model UserSettings {
+  id                    String  @id @default(cuid())
+  userId                String  @unique
+  emailNotifications    Boolean @default(true)
+  pushNotifications     Boolean @default(true)
+  taskReminders         Boolean @default(true)
+  weeklyDigest          Boolean @default(true)
+  theme                 String  @default("light")
+  language              String  @default("en")
+  timezone              String  @default("UTC")
+  dateFormat            String  @default("MM/DD/YYYY")
+  defaultProjectView    String  @default("kanban")
+  autoAssignTasks       Boolean @default(false)
+  showCompletedTasks    Boolean @default(false)
+  taskNotificationSound Boolean @default(true)
+  user                  User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+model Project {
+  id            String           @id @default(cuid())
+  name          String
+  description   String?
+  department    String
+  status        ProjectStatus    @default(PLANNING)
+  priority      Priority         @default(MEDIUM)
+  startDate     DateTime?
+  endDate       DateTime?
+  progress      Int              @default(0)
+  isArchived    Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  ownerId       String
+  scrumMasterId String?
+  activityLogs  ActivityLog[]
+  comments      Comment[]
+  events        Event[]
+  functions     Function[]
+  members       ProjectMember[]
+  settings      ProjectSettings?
+  owner         User             @relation("ProjectOwner", fields: [ownerId], references: [id])
+  scrumMaster   User?            @relation("ProjectScrumMaster", fields: [scrumMasterId], references: [id])
+  sprints       Sprint[]
+  tasks         Task[]
+
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  joinedAt  DateTime @default(now())
+  isActive  Boolean  @default(true)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+model ProjectSettings {
+  id                  String  @id @default(cuid())
+  projectId           String  @unique
+  allowMemberEdit     Boolean @default(true)
+  requireApproval     Boolean @default(false)
+  notificationEnabled Boolean @default(true)
+  autoArchiveTasks    Boolean @default(false)
+  enableTimeTracking  Boolean @default(true)
+  enableComments      Boolean @default(true)
+  enableFileUpload    Boolean @default(true)
+  maxFileSize         Int     @default(10)
+  allowedFileTypes    String  @default("pdf,doc,docx,xls,xlsx,png,jpg,jpeg")
+  sprintDuration      Int     @default(14)
+  taskAutoAssign      Boolean @default(false)
+  requireTaskEstimate Boolean @default(false)
+  project             Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_settings")
+}
+
+model Task {
+  id              String           @id @default(cuid())
+  title           String
+  description     String?
+  status          TaskStatus       @default(TODO)
+  priority        Priority         @default(MEDIUM)
+  dueDate         DateTime?
+  completedAt     DateTime?
+  isArchived      Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  projectId       String
+  createdById     String
+  sprintId        String?
+  functionId      String?
+  type            String           @default("TASK") @db.VarChar(255)
+  estimatedTime   Float?
+  timeSpent       Float?
+  progress        Int?             @default(0)
+  activityLogs    ActivityLog[]
+  comments        Comment[]
+  assignees       TaskAssignee[]
+  taskAttachments TaskAttachment[]
+  dependencies    TaskDependency[] @relation("DependentTask")
+  dependents      TaskDependency[] @relation("DependsOnTask")
+  createdBy       User             @relation("TaskCreator", fields: [createdById], references: [id])
+  function        Function?        @relation(fields: [functionId], references: [id])
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sprint          Sprint?          @relation(fields: [sprintId], references: [id])
+
+  @@map("tasks")
+}
+
+model TaskDependency {
+  id              String   @id @default(cuid())
+  dependentTaskId String
+  dependsOnTaskId String
+  createdAt       DateTime @default(now())
+  dependentTask   Task     @relation("DependentTask", fields: [dependentTaskId], references: [id], onDelete: Cascade)
+  dependsOnTask   Task     @relation("DependsOnTask", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([dependentTaskId, dependsOnTaskId])
+  @@map("task_dependencies")
+}
+
+model TaskAttachment {
+  id           String   @id @default(cuid())
+  taskId       String
+  fileName     String
+  originalName String
+  filePath     String
+  fileSize     Int
+  mimeType     String
+  uploadedBy   String
+  uploadedAt   DateTime @default(now())
+  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("task_attachments")
+}
+
+model Sprint {
+  id          String   @id @default(cuid())
+  name        String
+  goal        String?
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(false)
+  isCompleted Boolean  @default(false)
+  projectId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+
+  @@map("sprints")
+}
+
+model Function {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  projectId   String
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+
+  @@map("functions")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  taskId    String?
+  projectId String?
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model ActivityLog {
+  id          String       @id @default(cuid())
+  type        ActivityType
+  description String
+  metadata    Json?
+  userId      String
+  projectId   String?
+  taskId      String?
+  createdAt   DateTime     @default(now())
+  project     Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task        Task?        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("activity_logs")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  userId    String
+  projectId String?
+  taskId    String?
+  actionUrl String?
+  metadata  Json?
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model SystemSettings {
+  id                     String   @id @default(cuid())
+  siteName               String   @default("SSHE Scrum")
+  siteDescription        String   @default("Safety, Security, Health & Environment Scrum Management")
+  logoUrl                String?
+  primaryColor           String   @default("#3B82F6")
+  secondaryColor         String   @default("#10B981")
+  maintenanceMode        Boolean  @default(false)
+  maintenanceMessage     String?
+  allowUserRegistration  Boolean  @default(false)
+  maxProjectsPerUser     Int      @default(10)
+  maxTasksPerProject     Int      @default(1000)
+  maxFileUploadSize      Int      @default(10)
+  sessionTimeout         Int      @default(24)
+  passwordMinLength      Int      @default(8)
+  requirePasswordChange  Boolean  @default(false)
+  passwordChangeInterval Int      @default(90)
+  enableAuditLog         Boolean  @default(true)
+  backupEnabled          Boolean  @default(true)
+  backupInterval         Int      @default(24)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        String
+  query       Json
+  isPublic    Boolean  @default(false)
+  createdById String
+  projectId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("reports")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  tableName String
+  recordId  String?
+  oldValues Json?
+  newValues Json?
+  userId    String?
+  ipAddress String?
+  userAgent String?
+  timestamp DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+model Event {
+  id                 String    @id @default(cuid())
+  title              String
+  description        String?
+  startDate          DateTime
+  endDate            DateTime
+  isRecurring        Boolean   @default(false)
+  recurringType      String?
+  recurringDayOfWeek Int?
+  recurringEndDate   DateTime?
+  parentEventId      String?
+  projectId          String?
+  createdById        String
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  createdBy          User      @relation(fields: [createdById], references: [id])
+  parentEvent        Event?    @relation("EventRecurrence", fields: [parentEventId], references: [id])
+  childEvents        Event[]   @relation("EventRecurrence")
+  project            Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("events")
+}
+
+model TaskAssignee {
+  id         String   @id @default(cuid())
+  taskId     String
+  userId     String
+  assignedAt DateTime @default(now())
+  isActive   Boolean  @default(true)
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@map("task_assignees")
+}
 
 enum UserRole {
   SUPERADMIN
@@ -28,6 +361,7 @@ enum ProjectStatus {
   ON_HOLD
   COMPLETED
   CANCELLED
+  RELEASED
 }
 
 enum TaskStatus {
@@ -67,420 +401,4 @@ enum NotificationType {
   PROJECT_UPDATE
   MENTION
   SYSTEM_ALERT
-}
-
-// =====================================
-// USER MODELS
-// =====================================
-
-model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  password    String   // Should be hashed in real implementation
-  name        String
-  avatar      String?  // Could be initials or image URL
-  role        UserRole @default(TEAM_MEMBER)
-  department  String?
-  isActive    Boolean  @default(true)
-  lastLoginAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relationships
-  ownedProjects     Project[]         @relation("ProjectOwner")
-  scrumMasterProjects Project[]       @relation("ProjectScrumMaster")
-  projectMemberships ProjectMember[]
-  assignedTasks     TaskAssignee[]    // Many-to-many through TaskAssignee
-  createdTasks      Task[]            @relation("TaskCreator")
-  comments          Comment[]
-  activityLogs      ActivityLog[]
-  notifications     Notification[]
-  userSettings      UserSettings?
-  createdEvents     Event[]
-
-  @@map("users")
-}
-
-model UserSettings {
-  id                     String  @id @default(cuid())
-  userId                 String  @unique
-  emailNotifications     Boolean @default(true)
-  pushNotifications      Boolean @default(true)
-  taskReminders          Boolean @default(true)
-  weeklyDigest           Boolean @default(true)
-  theme                  String  @default("light") // light, dark, system
-  language               String  @default("en")
-  timezone               String  @default("UTC")
-  dateFormat             String  @default("MM/DD/YYYY")
-  defaultProjectView     String  @default("kanban") // kanban, list, calendar
-  autoAssignTasks        Boolean @default(false)
-  showCompletedTasks     Boolean @default(false)
-  taskNotificationSound  Boolean @default(true)
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("user_settings")
-}
-
-// =====================================
-// PROJECT MODELS
-// =====================================
-
-model Project {
-  id          String        @id @default(cuid())
-  name        String
-  description String?       @db.Text
-  department  String
-  status      ProjectStatus @default(PLANNING)
-  priority    Priority      @default(MEDIUM)
-  startDate   DateTime?
-  endDate     DateTime?
-  progress    Int           @default(0) // 0-100
-  isArchived  Boolean       @default(false)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  // Owner relationship
-  ownerId String
-  owner   User   @relation("ProjectOwner", fields: [ownerId], references: [id])
-
-  // Scrum Master relationship
-  scrumMasterId String?
-  scrumMaster   User?   @relation("ProjectScrumMaster", fields: [scrumMasterId], references: [id])
-
-  // Relationships
-  members      ProjectMember[]
-  tasks        Task[]
-  sprints      Sprint[]
-  functions    Function[]
-  comments     Comment[]
-  activityLogs ActivityLog[]
-  settings     ProjectSettings?
-  events       Event[]
-
-  @@map("projects")
-}
-
-model ProjectMember {
-  id        String   @id @default(cuid())
-  projectId String
-  userId    String
-  joinedAt  DateTime @default(now())
-  isActive  Boolean  @default(true)
-
-  // Relationships
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([projectId, userId])
-  @@map("project_members")
-}
-
-model ProjectSettings {
-  id                  String  @id @default(cuid())
-  projectId           String  @unique
-  allowMemberEdit     Boolean @default(true)
-  requireApproval     Boolean @default(false)
-  notificationEnabled Boolean @default(true)
-  autoArchiveTasks    Boolean @default(false)
-  enableTimeTracking  Boolean @default(true)
-  enableComments      Boolean @default(true)
-  enableFileUpload    Boolean @default(true)
-  maxFileSize         Int     @default(10) // MB
-  allowedFileTypes    String  @default("pdf,doc,docx,xls,xlsx,png,jpg,jpeg")
-  sprintDuration      Int     @default(14) // days
-  taskAutoAssign      Boolean @default(false)
-  requireTaskEstimate Boolean @default(false)
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@map("project_settings")
-}
-
-// =====================================
-// TASK MODELS
-// =====================================
-
-model Task {
-  id            String     @id @default(cuid())
-  title         String
-  description   String?    @db.Text
-  status        TaskStatus @default(TODO)
-  priority      Priority   @default(MEDIUM)
-  dueDate       DateTime?
-  completedAt   DateTime?
-  isArchived    Boolean    @default(false)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-
-  // Relationships
-  projectId String
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  createdById String
-  createdBy   User   @relation("TaskCreator", fields: [createdById], references: [id])
-
-  sprintId String?
-  sprint   Sprint? @relation(fields: [sprintId], references: [id])
-
-  functionId String?
-  function   Function? @relation(fields: [functionId], references: [id])
-
-  // Multiple assignees relationship
-  assignees      TaskAssignee[]
-  
-  // Child relationships
-  comments       Comment[]
-  activityLogs   ActivityLog[]
-  taskAttachments TaskAttachment[]
-  dependencies   TaskDependency[] @relation("DependentTask")
-  dependents     TaskDependency[] @relation("DependsOnTask")
-
-  @@map("tasks")
-}
-
-model TaskDependency {
-  id              String @id @default(cuid())
-  dependentTaskId String // Task that depends on another
-  dependsOnTaskId String // Task that this task depends on
-  
-  dependentTask Task @relation("DependentTask", fields: [dependentTaskId], references: [id], onDelete: Cascade)
-  dependsOnTask Task @relation("DependsOnTask", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
-  
-  createdAt DateTime @default(now())
-
-  @@unique([dependentTaskId, dependsOnTaskId])
-  @@map("task_dependencies")
-}
-
-model TaskAttachment {
-  id          String   @id @default(cuid())
-  taskId      String
-  fileName    String
-  originalName String
-  filePath    String
-  fileSize    Int      // bytes
-  mimeType    String
-  uploadedBy  String
-  uploadedAt  DateTime @default(now())
-
-  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-
-  @@map("task_attachments")
-}
-
-// =====================================
-// SPRINT MODELS
-// =====================================
-
-model Sprint {
-  id          String    @id @default(cuid())
-  name        String
-  goal        String?   @db.Text
-  startDate   DateTime
-  endDate     DateTime
-  isActive    Boolean   @default(false)
-  isCompleted Boolean   @default(false)
-  projectId   String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  // Relationships
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  tasks   Task[]
-
-  @@map("sprints")
-}
-
-// =====================================
-// FUNCTION MODELS (for Scrum Functions)
-// =====================================
-
-model Function {
-  id          String   @id @default(cuid())
-  name        String   // e.g., "Sprint Planning", "Daily Standups", "Sprint Review"
-  description String?  @db.Text
-  projectId   String
-  isActive    Boolean  @default(true)
-  order       Int      @default(0) // For sorting
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relationships
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  tasks   Task[]
-
-  @@map("functions")
-}
-
-// =====================================
-// COMMUNICATION MODELS
-// =====================================
-
-model Comment {
-  id        String   @id @default(cuid())
-  content   String   @db.Text
-  taskId    String?
-  projectId String?
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relationships
-  task    Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  author  User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-
-  @@map("comments")
-}
-
-// =====================================
-// ACTIVITY & NOTIFICATION MODELS
-// =====================================
-
-model ActivityLog {
-  id          String       @id @default(cuid())
-  type        ActivityType
-  description String
-  metadata    Json?        // Additional data about the activity
-  userId      String       // Who performed the action
-  projectId   String?      // Related project
-  taskId      String?      // Related task
-  createdAt   DateTime     @default(now())
-
-  // Relationships
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  task    Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
-
-  @@map("activity_logs")
-}
-
-model Notification {
-  id        String           @id @default(cuid())
-  type      NotificationType
-  title     String
-  message   String           @db.Text
-  isRead    Boolean          @default(false)
-  userId    String
-  projectId String?
-  taskId    String?
-  actionUrl String?          // URL to navigate when notification is clicked
-  metadata  Json?            // Additional data
-  createdAt DateTime         @default(now())
-  readAt    DateTime?
-
-  // Relationships
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("notifications")
-}
-
-// =====================================
-// SYSTEM MODELS - NON MVP
-// =====================================
-
-model SystemSettings {
-  id                    String   @id @default(cuid())
-  siteName              String   @default("SSHE Scrum")
-  siteDescription       String   @default("Safety, Security, Health & Environment Scrum Management")
-  logoUrl               String?
-  primaryColor          String   @default("#3B82F6")
-  secondaryColor        String   @default("#10B981")
-  maintenanceMode       Boolean  @default(false)
-  maintenanceMessage    String?
-  allowUserRegistration Boolean  @default(false)
-  maxProjectsPerUser    Int      @default(10)
-  maxTasksPerProject    Int      @default(1000)
-  maxFileUploadSize     Int      @default(10) // MB
-  sessionTimeout        Int      @default(24) // hours
-  passwordMinLength     Int      @default(8)
-  requirePasswordChange Boolean  @default(false)
-  passwordChangeInterval Int     @default(90) // days
-  enableAuditLog        Boolean  @default(true)
-  backupEnabled         Boolean  @default(true)
-  backupInterval        Int      @default(24) // hours
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-
-  @@map("system_settings")
-}
-
-// =====================================
-// REPORTING MODELS
-// =====================================
-
-model Report {
-  id          String   @id @default(cuid())
-  name        String
-  description String?  @db.Text
-  type        String   // "project", "task", "user", "performance"
-  query       Json     // Stored report query/configuration
-  isPublic    Boolean  @default(false)
-  createdById String
-  projectId   String?  // If report is project-specific
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("reports")
-}
-
-// =====================================
-// AUDIT MODELS
-// =====================================
-
-model AuditLog {
-  id         String   @id @default(cuid())
-  action     String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT
-  tableName  String   // Which table was affected
-  recordId   String?  // ID of the affected record
-  oldValues  Json?    // Previous values (for updates)
-  newValues  Json?    // New values (for creates/updates)
-  userId     String?  // Who performed the action
-  ipAddress  String?  // IP address of the user
-  userAgent  String?  // Browser/client information
-  timestamp  DateTime @default(now())
-
-  @@map("audit_logs")
-}
-
-// =====================================
-// EVENT MODELS
-// =====================================
-
-model Event {
-  id                  String    @id @default(cuid())
-  title               String
-  description         String?   @db.Text
-  startDate           DateTime
-  endDate             DateTime
-  isRecurring         Boolean   @default(false)
-  recurringType       String?   // "weekly" or "biweekly"
-  recurringDayOfWeek  Int?      // 0 = Sunday, 1 = Monday, etc.
-  recurringEndDate    DateTime?
-  parentEventId       String?   // For recurring event instances
-  parentEvent         Event?    @relation("EventRecurrence", fields: [parentEventId], references: [id])
-  childEvents         Event[]   @relation("EventRecurrence")
-  projectId           String?
-  project             Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdById         String
-  createdBy           User      @relation(fields: [createdById], references: [id])
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-
-  @@map("events")
-}
-
-model TaskAssignee {
-  id         String   @id @default(cuid())
-  taskId     String
-  userId     String
-  assignedAt DateTime @default(now())
-  isActive   Boolean  @default(true)
-
-  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([taskId, userId])
-  @@map("task_assignees")
 }
