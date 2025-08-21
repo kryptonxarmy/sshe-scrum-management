@@ -265,18 +265,6 @@ const ProjectManagement = () => {
           const canManageProjectActions = canManageProject(project.ownerId);
           const canManageMembers = canManageProjectMembers(project.ownerId, project);
           
-          // Debug logging for Scrum Master member management
-          if (user.role === "SCRUM_MASTER") {
-            console.log(`Project: ${project.name}`, {
-              userId: user.id,
-              userRole: user.role,
-              projectOwnerId: project.ownerId,
-              projectMembers: project.members,
-              canManageMembers,
-              canManageProjectActions
-            });
-          }
-          
           return (
             <Card key={project.id} className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
@@ -338,8 +326,7 @@ const ProjectManagement = () => {
                       )}
                     </div>
 
-                <div className="flex items-center justify-between">
-                  <Badge className={getPriorityBadgeStyle(project.priority)}>{getPriorityDisplay(project.priority)}</Badge>
+                <div className="flex items-center justify-end">
                   <Badge variant={getStatusBadgeVariant(project.status)}>{getStatusDisplay(project.status, project.department)}</Badge>
                 </div>
 
@@ -440,7 +427,6 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
     description: "",
     department: "",
     scrumMasterId: "",
-    priority: "MEDIUM",
     duration: "SHORT_TERM",
     startDate: "",
     endDate: "",
