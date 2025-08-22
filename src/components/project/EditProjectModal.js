@@ -12,13 +12,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    department: "",
-    status: "PLANNING",
-    startDate: "",
-    endDate: "",
-    scrumMasterId: "",
+  name: "",
+  description: "",
+  department: "",
+  status: "PLANNING",
+  startDate: "",
+  endDate: "",
+  scrumMasterId: "",
+  duration: "SHORT_TERM",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -35,6 +36,7 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
         startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : "",
         endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : "",
         scrumMasterId: project.scrumMasterId || "NONE",
+        duration: project.duration || "SHORT_TERM",
       });
     }
   }, [project, isOpen]);
@@ -134,15 +136,14 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
           <DialogTitle>Edit Project</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-md">
               <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
               <Label htmlFor="name">Project Name</Label>
               <Input
                 id="name"
@@ -153,8 +154,7 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
                 required
               />
             </div>
-
-            <div className="space-y-2">
+            <div className="space-y-4">
               <Label>Functions</Label>
               <Select
                 value={formData.department}
@@ -164,7 +164,7 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
                 <SelectTrigger>
                   <SelectValue placeholder="Select function" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent style={{zIndex: 999}}>
                   {departments.map((dept) => (
                     <SelectItem key={dept} value={dept}>
                       {dept}
@@ -174,8 +174,7 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
               </Select>
             </div>
           </div>
-
-          <div className="space-y-2">
+          <div className="space-y-4">
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
@@ -186,19 +185,18 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
               rows={3}
             />
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
               <Label>Status</Label>
               <Select
                 value={formData.status}
                 onValueChange={(value) => handleSelectChange("status", value)}
                 disabled={loading}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent style={{zIndex: 999}}>
                   {statuses.map((status) => (
                     <SelectItem key={status} value={status}>
                       {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
@@ -207,18 +205,17 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-2">
+            <div className="space-y-4">
               <Label>Scrum Master</Label>
               <Select
                 value={formData.scrumMasterId}
                 onValueChange={(value) => handleSelectChange("scrumMasterId", value)}
                 disabled={loading}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select Scrum Master" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent style={{zIndex: 999}}>
                   <SelectItem value="NONE">No Scrum Master</SelectItem>
                   {scrumMasters
                     .sort((a, b) => a.name.localeCompare(b.name))
@@ -230,12 +227,26 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
                   }
                 </SelectContent>
               </Select>
-
+            </div>
+            <div className="space-y-4 md:col-span-2">
+              <Label>Project Duration</Label>
+              <Select
+                value={formData.duration}
+                onValueChange={(value) => handleSelectChange("duration", value)}
+                disabled={loading}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select duration type" />
+                </SelectTrigger>
+                <SelectContent style={{zIndex: 999}}>
+                  <SelectItem value="SHORT_TERM">Short Term Project</SelectItem>
+                  <SelectItem value="LONG_TERM">Long Term Project</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
               <Label htmlFor="startDate">Start Date</Label>
               <Input
                 id="startDate"
@@ -246,8 +257,7 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
                 disabled={loading}
               />
             </div>
-
-            <div className="space-y-2">
+            <div className="space-y-4">
               <Label htmlFor="endDate">End Date</Label>
               <Input
                 id="endDate"
@@ -259,8 +269,7 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
               />
             </div>
           </div>
-
-          <div className="flex gap-4 justify-end pt-4">
+          <div className="flex gap-6 justify-end pt-6">
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancel
             </Button>

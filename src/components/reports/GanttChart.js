@@ -110,9 +110,9 @@ const GanttChart = ({ projects = [], timeFilter = "3months" }) => {
       },
       LONG_TERM: {
         HIGH: 'bg-gradient-to-r from-orange-400 to-orange-600 border-orange-700',
-        MEDIUM: 'bg-gradient-to-r from-purple-400 to-purple-600 border-purple-700',
-        LOW: 'bg-gradient-to-r from-indigo-400 to-indigo-600 border-indigo-700',
-        CRITICAL: 'bg-gradient-to-r from-red-500 to-red-700 border-red-800'
+        MEDIUM: 'bg-gradient-to-r from-orange-400 to-orange-600 border-orange-700',
+        LOW: 'bg-gradient-to-r from-orange-400 to-orange-600 border-orange-700',
+        CRITICAL: 'bg-gradient-to-r from-orange-400 to-orange-600 border-orange-700'
       }
     };
 
@@ -184,13 +184,6 @@ const GanttChart = ({ projects = [], timeFilter = "3months" }) => {
                     <h4 className="font-medium text-slate-800 text-sm mb-1">{project.name}</h4>
                     <div className="flex items-center gap-2 mb-2">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        project.priority === 'HIGH' ? 'bg-red-100 text-red-700' :
-                        project.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-blue-100 text-blue-700'
-                      }`}>
-                        {project.priority}
-                      </span>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
                         project.duration === 'LONG_TERM' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
                       }`}>
                         {project.duration === 'LONG_TERM' ? 'Long Term' : 'Short Term'}
@@ -234,19 +227,19 @@ const GanttChart = ({ projects = [], timeFilter = "3months" }) => {
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-slate-700">Priority:</span>
+              {/* <span className="text-sm font-medium text-slate-700">Priority:</span> */}
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-red-500 rounded"></div>
-                  <span className="text-xs text-slate-600">High</span>
+                  {/* <div className="w-3 h-3 bg-red-500 rounded"></div>
+                  <span className="text-xs text-slate-600">High</span> */}
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                  <span className="text-xs text-slate-600">Medium</span>
+                  {/* <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                  <span className="text-xs text-slate-600">Medium</span> */}
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                  <span className="text-xs text-slate-600">Low</span>
+                  {/* <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                  <span className="text-xs text-slate-600">Low</span> */}
                 </div>
               </div>
             </div>

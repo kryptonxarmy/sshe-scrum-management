@@ -52,6 +52,16 @@ export async function PUT(request, { params }) {
       endDate: updateData.endDate ? new Date(updateData.endDate) : null,
       updatedAt: new Date(),
     };
+    // Fix: Prisma expects 'scrumMaster' relation, not 'scrumMasterId' field
+    if (processedData.scrumMasterId !== undefined) {
+      processedData.scrumMaster = processedData.scrumMasterId ? { connect: { id: processedData.scrumMasterId } } : { disconnect: true };
+      delete processedData.scrumMasterId;
+    }
+
+    // Remove duration if not in model
+    if (!('duration' in existingProject)) {
+      delete processedData.duration;
+    }
 
     // Update project
     const updatedProject = await prisma.project.update({

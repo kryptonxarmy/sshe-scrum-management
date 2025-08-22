@@ -36,9 +36,9 @@ const LoginPage = () => {
   };
 
   const demoUsers = [
-    { email: "superadmin@exxonmobil.com", password: "admin123", role: "Super Admin" },
-    { email: "john.doe@exxonmobil.com", password: "john123", role: "Project Owner" },
-    { email: "david.johnson@exxonmobil.com", password: "david123", role: "Team Member" },
+  { email: "superadmin@exxonmobil.com", password: "password123", role: "Super Admin" },
+  { email: "john.doe@exxonmobil.com", password: "password123", role: "Project Owner" },
+  { email: "david.johnson@exxonmobil.com", password: "password123", role: "Team Member" },
   ];
 
   const fillDemoCredentials = (email, password) => {

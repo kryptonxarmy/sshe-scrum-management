@@ -832,6 +832,8 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
                 </SelectItem>
               ))}
             </SelectContent>
+            {/* Tambahkan style z-index agar dropdown tidak tumpang tindih */}
+            <style>{`.select-content { z-index: 50 !important; }`}</style>
           </Select>
         </div>
 

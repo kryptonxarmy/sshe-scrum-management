@@ -59,6 +59,7 @@ model Project {
   description   String?
   department    String
   status        ProjectStatus    @default(PLANNING)
+  duration      ProjectDuration  @default(SHORT_TERM)
   startDate     DateTime?
   endDate       DateTime?
   progress      Int              @default(0)
