@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 // Prevent multiple instances of Prisma Client in development
 const globalForPrisma = globalThis;
