@@ -27,11 +27,11 @@ const ArchiveReports = () => {
     if (user?.id) {
       fetchReleasedProjects();
     }
-  }, [user?.id]);
+  }, [user?.id, fetchReleasedProjects]);
 
   useEffect(() => {
     calculateStats();
-  }, [projects, timeFilter, durationFilter]);
+  }, [projects, timeFilter, durationFilter, calculateStats]);
 
   const fetchReleasedProjects = async () => {
     if (!user?.id) return;

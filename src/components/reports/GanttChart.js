@@ -268,3 +268,7 @@ const GanttChart = ({ projects = [], timeFilter = "3months" }) => {
 };
 
 export default GanttChart;
+
+
+
+

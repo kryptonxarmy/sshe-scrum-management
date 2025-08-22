@@ -119,7 +119,7 @@ const ArchiveProjects = () => {
         <div className="text-center">
           <CheckCircle className="h-16 w-16 text-slate-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-700 mb-2">No Released Projects</h3>
-          <p className="text-slate-500">You haven't released any projects yet.</p>
+          <p className="text-slate-500">You haven not released any projects yet.</p>
         </div>
       </div>
     );
