@@ -4,9 +4,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Eye, EyeOff, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ProfileEditSection = ({ user }) => {
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -72,16 +74,16 @@ const ProfileEditSection = ({ user }) => {
     }
     setLoading(true);
     try {
-    const res = await fetch("/api/profile", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: user.id, // ambil dari useAuth
-        name: formData.name,
-        email: formData.email,
-        oldPassword: formData.oldPassword,
-        newPassword: formData.newPassword,
-      }),
+      const res = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: currentUser.id, // ambil dari useAuth
+          name: formData.name,
+          email: formData.email,
+          oldPassword: formData.oldPassword,
+          newPassword: formData.newPassword,
+        }),
       });
       const result = await res.json();
       if (result.success) {
