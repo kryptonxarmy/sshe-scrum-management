@@ -63,6 +63,15 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
     fetchTasks();
   };
 
+  const handleTaskDeleted = (deletedTaskId) => {
+    // Remove the deleted task from the state
+    setTasks(prevTasks => ({
+      todo: prevTasks.todo.filter(task => task.id !== deletedTaskId),
+      progress: prevTasks.progress.filter(task => task.id !== deletedTaskId),
+      done: prevTasks.done.filter(task => task.id !== deletedTaskId)
+    }));
+  };
+
   const handleDragEnd = async (result) => {
     const { source, destination } = result;
 
@@ -207,7 +216,11 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
                                   {...provided.dragHandleProps}
                                   className={snapshot.isDragging ? 'opacity-80' : ''}
                                 >
-                                  <TaskCard task={task} onTaskUpdated={handleTaskUpdated} />
+                                  <TaskCard 
+                                    task={task} 
+                                    onTaskUpdated={handleTaskUpdated}
+                                    onTaskDeleted={handleTaskDeleted}
+                                  />
                                 </div>
                               )}
                             </Draggable>

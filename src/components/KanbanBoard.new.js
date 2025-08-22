@@ -63,6 +63,15 @@ const KanbanBoard = ({ functionId }) => {
     fetchTasks();
   };
 
+  const handleTaskDeleted = (deletedTaskId) => {
+    // Remove the deleted task from the state
+    setTasks(prevTasks => ({
+      todo: prevTasks.todo.filter(task => task.id !== deletedTaskId),
+      progress: prevTasks.progress.filter(task => task.id !== deletedTaskId),
+      done: prevTasks.done.filter(task => task.id !== deletedTaskId)
+    }));
+  };
+
   const columns = [
     { 
       id: "todo", 
@@ -102,7 +111,12 @@ const KanbanBoard = ({ functionId }) => {
           {column.tasks.length > 0 ? (
             <div className="space-y-4">
               {column.tasks.map((task) => (
-                <TaskCard key={task.id} task={task} onTaskUpdated={handleTaskUpdated} />
+                <TaskCard 
+                  key={task.id} 
+                  task={task} 
+                  onTaskUpdated={handleTaskUpdated}
+                  onTaskDeleted={handleTaskDeleted}
+                />
               ))}
             </div>
           ) : (

@@ -2,23 +2,43 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit } from "lucide-react";
+import { Edit, Trash2, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import EditTaskModal from "./EditTaskModal";
 
-const TaskCard = ({ task, onTaskUpdated }) => {
+const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Null check untuk task object
   if (!task) {
     return null;
   }
 
-  // Check if user can edit task (Scrum Master or Project Owner)
+  // Check if user can edit/delete task
   const canEditTask = () => {
     if (!user) return false;
-    return user.role === "SCRUM_MASTER" || user.role === "PROJECT_OWNER";
+    if (user.role === "SUPERADMIN") return true;
+    if (user.role === "PROJECT_OWNER") return true;
+    // Allow if user is the designated Scrum Master of the task's project
+    if (task.project && task.project.scrumMasterId === user.id) return true;
+    // Allow if user is assigned to the task (can edit their own tasks)
+    if (
+      task.assignees &&
+      task.assignees.some((assignee) => {
+        const userId = assignee.user ? assignee.user.id : assignee.userId;
+        return userId === user.id;
+      })
+    )
+      return true;
+    // Backward compatibility: check single assignee
+    if (task.assigneeId === user.id) return true;
+    return false;
   };
 
   const handleTaskUpdated = (updatedTask) => {
@@ -26,6 +46,49 @@ const TaskCard = ({ task, onTaskUpdated }) => {
       onTaskUpdated(updatedTask);
     }
     setIsEditModalOpen(false);
+  };
+
+  const handleDeleteTask = async () => {
+    if (!task?.id) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/tasks/${task.id}?userId=${user?.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to delete task");
+      }
+
+      toast({
+        title: "Task Deleted Successfully",
+        description: `"${task.title}" has been permanently removed.`,
+        variant: "success",
+        icon: <CheckCircle className="h-5 w-5 text-green-600" />,
+      });
+
+      if (onTaskDeleted) {
+        onTaskDeleted(task.id);
+      }
+
+      // Only close dialog after delete is done
+      if (response.ok) {
+        setShowDeleteDialog(false);
+      }
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      toast({
+        title: "Deletion Failed",
+        description: error.message || "Failed to delete task. Please try again.",
+        variant: "destructive",
+        icon: <AlertTriangle className="h-5 w-5 text-red-600" />,
+      });
+      // Keep dialog open if error
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const getTypeBadgeVariant = (type) => {
@@ -52,14 +115,16 @@ const TaskCard = ({ task, onTaskUpdated }) => {
     // Handle both old single assignee format and new multiple assignees format
     if (task.assignees && task.assignees.length > 0) {
       // New format: multiple assignees
-      const names = task.assignees.map(assignee => {
-        // Handle nested user structure
-        return assignee.user ? assignee.user.name : assignee.name;
-      }).filter(Boolean);
-      
+      const names = task.assignees
+        .map((assignee) => {
+          // Handle nested user structure
+          return assignee.user ? assignee.user.name : assignee.name;
+        })
+        .filter(Boolean);
+
       if (names.length === 0) return "-";
       if (names.length === 1) return names[0];
-      if (names.length <= 2) return names.join(', ');
+      if (names.length <= 2) return names.join(", ");
       return `${names[0]}, ${names[1]} +${names.length - 2} more`;
     } else if (task.assignee) {
       // Old format: single assignee
@@ -87,17 +152,58 @@ const TaskCard = ({ task, onTaskUpdated }) => {
 
         {/* Edit Button - Only visible to Scrum Master and Project Owner */}
         {canEditTask() && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-1"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsEditModalOpen(true);
-            }}
-          >
-            <Edit className="h-3 w-3" />
-          </Button>
+          <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsEditModalOpen(true);
+              }}
+            >
+              <Edit className="h-3 w-3" />
+            </Button>
+
+            <AlertDialog
+              open={showDeleteDialog}
+              onOpenChange={(open) => {
+                // Prevent closing while deleting
+                if (!isDeleting) setShowDeleteDialog(open);
+              }}
+            >
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-1 hover:bg-red-100 hover:text-red-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDeleteDialog(true);
+                  }}
+                  disabled={isDeleting}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                    Delete Task
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>Are you sure you want to delete &quot;{task.title}&quot;? This action cannot be undone and will permanently remove the task and all its associated data.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteTask} disabled={isDeleting} className="bg-red-600 hover:bg-red-700 focus:ring-red-600">
+                    {isDeleting ? <Loader2 className="animate-spin mr-2" /> : null}
+                    {isDeleting ? "Deleting..." : "Delete"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         )}
 
         <CardContent className="p-4">
@@ -109,28 +215,15 @@ const TaskCard = ({ task, onTaskUpdated }) => {
             <Badge variant={getPriorityBadgeVariant(task.priority)} className="text-xs mb-1">
               {getDisplayPriority()}
             </Badge>
-            <span className="text-xs text-slate-500">
-              Assignees: {getAssigneesDisplay()}
-            </span>
-            {task.sprint && (
-              <span className="text-xs text-slate-500">
-                Sprint: {task.sprint.name}
-              </span>
-            )}
-            <span className="text-xs text-slate-500">
-              Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric" }) : "No due date"}
-            </span>
+            <span className="text-xs text-slate-500">Assignees: {getAssigneesDisplay()}</span>
+            {task.sprint && <span className="text-xs text-slate-500">Sprint: {task.sprint.name}</span>}
+            <span className="text-xs text-slate-500">Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric" }) : "No due date"}</span>
           </div>
         </CardContent>
       </Card>
 
       {/* Edit Task Modal */}
-      <EditTaskModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        task={task}
-        onTaskUpdated={handleTaskUpdated}
-      />
+      <EditTaskModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} task={task} onTaskUpdated={handleTaskUpdated} />
     </>
   );
 };

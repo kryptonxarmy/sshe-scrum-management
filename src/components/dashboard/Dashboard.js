@@ -25,6 +25,10 @@ const Dashboard = () => {
     router.push("/login");
   };
 
+  const handleProfileClick = () => {
+    router.push("/profile");
+  };
+
   // Redirect superadmin to admin panel
   useEffect(() => {
     if (user && user.role === 'SUPERADMIN') {
@@ -115,7 +119,7 @@ const Dashboard = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem className="flex items-center gap-2">
+                <DropdownMenuItem onClick={handleProfileClick} className="flex items-center gap-2">
                   <User size={16} />
                   Profile
                 </DropdownMenuItem>
