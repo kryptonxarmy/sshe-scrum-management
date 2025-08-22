@@ -221,7 +221,7 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
                     .sort((a, b) => a.name.localeCompare(b.name))
                     .map((sm) => (
                       <SelectItem key={sm.id} value={sm.id}>
-                        {sm.name} ({sm.email})
+                        {sm.name}
                       </SelectItem>
                     ))
                   }

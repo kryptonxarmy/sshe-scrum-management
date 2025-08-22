@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -62,7 +63,9 @@ const ProjectManagement = () => {
   }, [user]);
 
   // Fetch deleted projects
-  const fetchDeletedProjects = async () => {
+  
+
+  const fetchDeletedProjects = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -77,14 +80,14 @@ const ProjectManagement = () => {
     } catch (error) {
       console.error("Error fetching deleted projects:", error);
     }
-  };
+  }, [user]);
 
   // Fetch deleted projects when switching to trash tab
   useEffect(() => {
     if (activeTab === "trash") {
       fetchDeletedProjects();
     }
-  }, [activeTab, user]);
+  }, [activeTab, user, fetchDeletedProjects]);
 
   const handleManageMembers = (project) => {
     setSelectedProject(project);
@@ -828,7 +831,7 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
             <SelectContent>
               {members.map((member) => (
                 <SelectItem key={member.id} value={member.id}>
-                  {member.name} ({member.email})
+                  {member.name}
                 </SelectItem>
               ))}
             </SelectContent>

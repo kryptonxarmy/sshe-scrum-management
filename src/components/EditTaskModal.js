@@ -1,77 +1,197 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ChevronDown, X, Search, CheckCircle, AlertTriangle, Loader2, XCircle } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+
+// Custom MultiSelect Component
+const MultiSelectDropdown = ({ options, value, onChange, placeholder = "Select options..." }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Filter options based on search term
+  const filteredOptions = options.filter((option) => option.label.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  // Get selected option labels
+  const selectedLabels = options.filter((option) => value.includes(option.value)).map((option) => option.label);
+
+  const removeOption = (optionValue, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    onChange(value.filter((v) => v !== optionValue));
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Trigger Button */}
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full min-h-[40px] px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <div className="flex flex-wrap gap-1 flex-1">
+          {selectedLabels.length === 0 ? (
+            <span className="text-gray-500">{placeholder}</span>
+          ) : (
+            selectedLabels.map((label, index) => {
+              const option = options.find((opt) => opt.label === label);
+              return (
+                <span key={index} className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs font-medium">
+                  {label}
+                  <X
+                    className="h-3 w-3 cursor-pointer hover:text-blue-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeOption(option.value);
+                    }}
+                  />
+                </span>
+              );
+            })
+          )}
+        </div>
+        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+      </div>
+
+      {/* Dropdown */}
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-50 max-h-64 overflow-hidden">
+          {/* Search Input */}
+          <div className="p-2 border-b border-gray-200">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input type="text" placeholder="Search members..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-8 h-8 text-sm" />
+            </div>
+          </div>
+
+          {/* Options List */}
+          <div className="max-h-48 overflow-y-auto">
+            {filteredOptions.length === 0 ? (
+              <div className="p-3 text-sm text-gray-500 text-center">No members found</div>
+            ) : (
+              filteredOptions.map((option) => (
+                <div key={option.value} className="flex items-center space-x-2 p-2 hover:bg-gray-50">
+                  <Checkbox
+                    checked={value.includes(option.value)}
+                    onCheckedChange={(checked) => {
+                      const newValue = checked ? [...value, option.value] : value.filter((v) => v !== option.value);
+                      onChange(newValue);
+                    }}
+                  />
+                  <span
+                    className="text-sm cursor-pointer flex-1"
+                    onClick={() => {
+                      const isCurrentlySelected = value.includes(option.value);
+                      const newValue = isCurrentlySelected ? value.filter((v) => v !== option.value) : [...value, option.value];
+                      onChange(newValue);
+                    }}
+                  >
+                    {option.label}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const EditTaskModal = ({ isOpen, onClose, task, onTaskUpdated }) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     sprint: "",
     priority: "medium",
-    assignee: "unassigned",
+    assignees: [], // Changed from assignee to assignees array
     dueDate: "",
     status: "TODO",
   });
   const [projectMembers, setProjectMembers] = useState([]);
-  const [availableSprints, setAvailableSprints] = useState([
-    "Sprint 1",
-    "Sprint 2", 
-    "Sprint 3",
-    "Sprint 4",
-    "Sprint 5"
-  ]);
+  const [availableSprints, setAvailableSprints] = useState(["Sprint 1", "Sprint 2", "Sprint 3", "Sprint 4", "Sprint 5"]);
   const [loading, setLoading] = useState(false);
 
   const fetchProjectMembers = useCallback(async () => {
     if (!task?.projectId) return;
     try {
       const response = await fetch(`/api/projects/${task.projectId}/members`);
-      if (!response.ok) throw new Error('Failed to fetch project members');
+      if (!response.ok) throw new Error("Failed to fetch project members");
       const data = await response.json();
-      
+
       // Combine owner and members, then deduplicate by id
       const allMembers = [
-        ...(data.owner ? [{ id: data.owner.id, name: data.owner.name }] : []),
-        ...(data.members ? data.members.map(member => ({
-          // Member sudah berupa object langsung dengan id, name, etc (tidak ada nested user)
-          id: member.id,
-          name: member.name
-        })) : [])
+        ...(data.owner ? [{ value: data.owner.id, label: data.owner.name }] : []),
+        ...(data.members
+          ? data.members.map((member) => ({
+              // Handle both nested user structure and direct member structure
+              value: member.user ? member.user.id : member.id,
+              label: member.user ? member.user.name : member.name,
+            }))
+          : []),
       ];
-      
-      // Remove duplicates based on id and filter out any entries with missing id
+
+      // Remove duplicates based on value and filter out any entries with missing value
       const uniqueMembers = allMembers
-        .filter(member => member.id) // Remove entries without id
+        .filter((member) => member.value) // Remove entries without value
         .reduce((acc, current) => {
-          const exists = acc.find(item => item.id === current.id);
+          const exists = acc.find((item) => item.value === current.value);
           if (!exists) {
             acc.push(current);
           }
           return acc;
         }, []);
-      
+
       setProjectMembers(uniqueMembers);
     } catch (error) {
-      console.error('Error fetching project members:', error);
+      console.error("Error fetching project members:", error);
     }
   }, [task?.projectId]);
 
   useEffect(() => {
     if (task && isOpen) {
+      // Get current assignee IDs from task
+      const currentAssigneeIds = [];
+      if (task.assignees && Array.isArray(task.assignees)) {
+        // If task has multiple assignees array
+        currentAssigneeIds.push(...task.assignees.map((assignee) => (typeof assignee === "object" ? assignee.userId || assignee.id : assignee)));
+      } else if (task.assigneeId) {
+        // If task has single assignee (backward compatibility)
+        currentAssigneeIds.push(task.assigneeId);
+      }
+
       // Populate form with task data
       setFormData({
         title: task.title || "",
         description: task.description || "",
         sprint: task.sprint?.name || "Sprint 1", // Use sprint relation
         priority: task.priority?.toLowerCase() || "medium",
-        assignee: task.assigneeId || "unassigned",
-        dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "",
+        assignees: currentAssigneeIds, // Use array of assignee IDs
+        dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : "",
         status: task.status || "TODO",
       });
 
@@ -83,48 +203,66 @@ const EditTaskModal = ({ isOpen, onClose, task, onTaskUpdated }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const requestBody = {
         title: formData.title,
         description: formData.description,
         sprintName: formData.sprint,
         priority: formData.priority.toUpperCase(),
-        assigneeId: formData.assignee === "unassigned" ? null : formData.assignee,
+        assignees: formData.assignees, // Send array of assignee IDs
+        assigneeIds: formData.assignees, // Also support assigneeIds field
         dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : null,
         status: formData.status,
         updatedById: user?.id,
       };
 
-      console.log('Updating task:', requestBody);
-      
+      console.log("Updating task:", requestBody);
+
       const response = await fetch(`/api/tasks/${task.id}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMsg = errorData.error || 'Failed to update task';
-        alert(errorMsg);
+        const errorMsg = errorData.error || "Failed to update task";
+        toast({
+          title: "Update Failed",
+          description: errorMsg,
+          variant: "destructive",
+          icon: <AlertTriangle className="h-5 w-5 text-red-600" />,
+        });
         throw new Error(errorMsg);
       }
 
       const result = await response.json();
-      
+
+      // Show success toast
+      toast({
+        title: "Task Updated Successfully",
+        description: `"${result.task.title}" has been updated.`,
+        variant: "success",
+        icon: <CheckCircle className="h-5 w-5 text-green-600" />,
+      });
+
       // Notify parent component about the updated task
       if (onTaskUpdated) {
         onTaskUpdated(result.task);
       }
-      
+
       // Close modal
       onClose();
-      alert('Task updated successfully!');
     } catch (error) {
-      console.error('Error updating task:', error);
+       toast({
+      title: "Update Failed",
+      description: error.message || "Failed to update task.",
+      variant: "destructive",
+      icon: <XCircle className="text-red-600" size={22} />,
+    });
+      console.error("Error updating task:", error);
     } finally {
       setLoading(false);
     }
@@ -146,16 +284,23 @@ const EditTaskModal = ({ isOpen, onClose, task, onTaskUpdated }) => {
     // Auto-expand sprints if user selects the last 2 sprints
     if (name === "sprint") {
       const currentSprintNumber = parseInt(value.split(" ")[1]);
-      const maxSprintNumber = Math.max(...availableSprints.map(s => parseInt(s.split(" ")[1])));
-      
+      const maxSprintNumber = Math.max(...availableSprints.map((s) => parseInt(s.split(" ")[1])));
+
       if (currentSprintNumber >= maxSprintNumber - 1) {
         const newSprints = [];
         for (let i = maxSprintNumber + 1; i <= maxSprintNumber + 2; i++) {
           newSprints.push(`Sprint ${i}`);
         }
-        setAvailableSprints(prev => [...prev, ...newSprints]);
+        setAvailableSprints((prev) => [...prev, ...newSprints]);
       }
     }
+  };
+
+  const handleAssigneesChange = (selectedAssignees) => {
+    setFormData({
+      ...formData,
+      assignees: selectedAssignees,
+    });
   };
 
   if (!task) return null;
@@ -171,27 +316,13 @@ const EditTaskModal = ({ isOpen, onClose, task, onTaskUpdated }) => {
           {/* Task Title */}
           <div className="space-y-2">
             <Label htmlFor="title">Task Title</Label>
-            <Input 
-              id="title" 
-              name="title" 
-              value={formData.title} 
-              onChange={handleChange} 
-              placeholder="Enter task title" 
-              required 
-            />
+            <Input id="title" name="title" value={formData.title} onChange={handleChange} placeholder="Enter task title" required />
           </div>
 
           {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea 
-              id="description" 
-              name="description" 
-              value={formData.description} 
-              onChange={handleChange} 
-              placeholder="Enter task description" 
-              rows={3} 
-            />
+            <Textarea id="description" name="description" value={formData.description} onChange={handleChange} placeholder="Enter task description" rows={3} />
           </div>
 
           {/* Sprint and Priority */}
@@ -227,23 +358,11 @@ const EditTaskModal = ({ isOpen, onClose, task, onTaskUpdated }) => {
             </div>
           </div>
 
-          {/* Assignee and Status */}
+          {/* Assignees and Status */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="assignee">Assignee</Label>
-              <Select value={formData.assignee} onValueChange={(value) => handleSelectChange("assignee", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select team member" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem key="unassigned" value="unassigned">Unassigned</SelectItem>
-                  {projectMembers.map((member, index) => (
-                    <SelectItem key={member.id || `member-${index}`} value={member.id || `member-${index}`}>
-                      {member.name || 'Unknown Member'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Assignees</Label>
+              <MultiSelectDropdown options={projectMembers} value={formData.assignees} onChange={handleAssigneesChange} placeholder="Select team members..." />
             </div>
 
             <div className="space-y-2">
@@ -266,13 +385,7 @@ const EditTaskModal = ({ isOpen, onClose, task, onTaskUpdated }) => {
           {/* Due Date */}
           <div className="space-y-2">
             <Label htmlFor="dueDate">Due Date</Label>
-            <Input 
-              id="dueDate" 
-              name="dueDate" 
-              type="date" 
-              value={formData.dueDate} 
-              onChange={handleChange} 
-            />
+            <Input id="dueDate" name="dueDate" type="date" value={formData.dueDate} onChange={handleChange} />
           </div>
 
           {/* Form Buttons */}
@@ -281,7 +394,8 @@ const EditTaskModal = ({ isOpen, onClose, task, onTaskUpdated }) => {
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Updating...' : 'Update Task'}
+              {loading ? <Loader2 className="animate-spin mr-2" /> : null}
+              {loading ? "Updating..." : "Update Task"}
             </Button>
           </div>
         </form>

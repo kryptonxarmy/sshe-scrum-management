@@ -1,13 +1,15 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 
 // Prevent multiple instances of Prisma Client in development
 const globalForPrisma = globalThis;
 
-export const prisma = globalForPrisma.prisma || new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-});
+export const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+  });
 
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
 
@@ -15,6 +17,20 @@ if (process.env.NODE_ENV !== 'production') {
 
 // User operations
 export const userOperations = {
+  async updateProfile({ id, name, email, newPassword }) {
+    const updateData = { name, email };
+    if (newPassword) {
+      // Hash password baru sebelum simpan
+      const hashed = await bcrypt.hash(newPassword, 10);
+      updateData.password = hashed;
+    }
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: updateData,
+    });
+    return updatedUser;
+  },
+
   async findByEmail(email) {
     return prisma.user.findUnique({
       where: { email },
@@ -58,15 +74,15 @@ export const userOperations = {
 
   async getAll(filters = {}) {
     const where = {};
-    
+
     if (filters.role) {
       where.role = filters.role;
     }
-    
+
     if (filters.department) {
       where.department = filters.department;
     }
-    
+
     if (filters.isActive !== undefined) {
       where.isActive = filters.isActive;
     }
@@ -85,7 +101,7 @@ export const userOperations = {
         updatedAt: true,
       },
       orderBy: {
-        name: 'asc',
+        name: "asc",
       },
     });
   },
@@ -94,48 +110,50 @@ export const userOperations = {
 // Project operations
 export const projectOperations = {
   async findById(id, includeDetails = false) {
-    const include = includeDetails ? {
-      owner: true,
-      members: {
-        include: {
-          user: true,
-        },
-      },
-      tasks: {
-        include: {
-          assignees: {
+    const include = includeDetails
+      ? {
+          owner: true,
+          members: {
             include: {
               user: true,
             },
           },
-          createdBy: true,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      },
-      functions: {
-        orderBy: {
-          order: 'asc',
-        },
-      },
-      settings: true,
-      _count: {
-        select: {
-          tasks: true,
-          members: true,
-          comments: true,
-        },
-      },
-    } : {
-      owner: true,
-      _count: {
-        select: {
-          tasks: true,
-          members: true,
-        },
-      },
-    };
+          tasks: {
+            include: {
+              assignees: {
+                include: {
+                  user: true,
+                },
+              },
+              createdBy: true,
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
+          functions: {
+            orderBy: {
+              order: "asc",
+            },
+          },
+          settings: true,
+          _count: {
+            select: {
+              tasks: true,
+              members: true,
+              comments: true,
+            },
+          },
+        }
+      : {
+          owner: true,
+          _count: {
+            select: {
+              tasks: true,
+              members: true,
+            },
+          },
+        };
 
     return prisma.project.findUnique({
       where: { id },
@@ -173,7 +191,7 @@ export const projectOperations = {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
   },
@@ -227,7 +245,7 @@ export const projectOperations = {
         },
       },
       orderBy: {
-        updatedAt: 'desc',
+        updatedAt: "desc",
       },
     });
   },
@@ -301,7 +319,7 @@ export const taskOperations = {
             author: true,
           },
           orderBy: {
-            createdAt: 'desc',
+            createdAt: "desc",
           },
         },
         taskAttachments: true,
@@ -358,7 +376,7 @@ export const taskOperations = {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
   },
@@ -398,7 +416,7 @@ export const taskOperations = {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
   },
@@ -406,7 +424,7 @@ export const taskOperations = {
   async getByUserId(userId, filters = {}) {
     const where = {
       OR: [
-        { 
+        {
           assignees: {
             some: {
               userId: userId,
@@ -437,7 +455,7 @@ export const taskOperations = {
         createdBy: true,
       },
       orderBy: {
-        updatedAt: 'desc',
+        updatedAt: "desc",
       },
     });
   },
@@ -462,7 +480,7 @@ export const taskOperations = {
       where: { id },
       data: {
         status,
-        completedAt: status === 'DONE' ? new Date() : null,
+        completedAt: status === "DONE" ? new Date() : null,
         updatedAt: new Date(),
       },
       include: {
@@ -494,7 +512,7 @@ export const taskOperations = {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
   },
@@ -521,7 +539,7 @@ export const activityOperations = {
         task: true,
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
       take: limit,
     });
@@ -535,7 +553,7 @@ export const activityOperations = {
         task: true,
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
       take: limit,
     });
@@ -554,7 +572,7 @@ export const notificationOperations = {
     return prisma.notification.findMany({
       where: { userId },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
       take: limit,
     });

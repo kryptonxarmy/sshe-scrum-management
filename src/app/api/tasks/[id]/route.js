@@ -56,12 +56,15 @@ export async function PUT(request, { params }) {
         } else if (['type', 'priority', 'status'].includes(key)) {
           processedUpdateData[key] = updateData[key].toUpperCase();
         } else if (key === 'assigneeId') {
-          // Handle assigneeId - convert "unassigned" to null
+          // Handle single assigneeId - convert "unassigned" to null
           if (updateData[key] === 'unassigned' || updateData[key] === '') {
             processedUpdateData[key] = null;
           } else {
             processedUpdateData[key] = updateData[key];
           }
+        } else if (key === 'assignees' || key === 'assigneeIds') {
+          // Handle multiple assignees - we'll handle this after the main update
+          console.log('Multiple assignees received:', updateData[key]);
         } else if (key === 'updatedById') {
           // Skip updatedById as it's not in the Task model
           console.log('UpdatedById received:', updateData[key]);
@@ -123,12 +126,43 @@ export async function PUT(request, { params }) {
       data: processedUpdateData,
       include: {
         project: true,
-        assignee: true,
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              }
+            }
+          }
+        },
         createdBy: true,
         function: true,
         sprint: true,
       },
     });
+
+    // Handle multiple assignees if provided
+    if (updateData.assignees || updateData.assigneeIds) {
+      const assigneeIds = updateData.assignees || updateData.assigneeIds || [];
+      
+      // Remove existing task assignees
+      await prisma.taskAssignee.deleteMany({
+        where: { taskId: id }
+      });
+      
+      // Add new assignees if any
+      if (assigneeIds.length > 0) {
+        await prisma.taskAssignee.createMany({
+          data: assigneeIds.map(userId => ({
+            taskId: id,
+            userId: userId,
+            assignedAt: new Date(),
+          }))
+        });
+      }
+    }
 
     // Log activities for significant changes
     if (userId) {
@@ -145,12 +179,14 @@ export async function PUT(request, { params }) {
         });
       }
 
-      // Assignment change
+      // Assignment change - handle both single and multiple assignees
       if (processedUpdateData.assigneeId !== undefined && processedUpdateData.assigneeId !== currentTask.assigneeId) {
         if (processedUpdateData.assigneeId) {
+          // Get assignee name from the updated task's assignees
+          const assigneeName = updatedTask.assignees?.find(a => a.user.id === processedUpdateData.assigneeId)?.user.name || 'user';
           activities.push({
             type: 'TASK_ASSIGNED',
-            description: `Task "${updatedTask.title}" was assigned to ${updatedTask.assignee?.name || 'user'}`,
+            description: `Task "${updatedTask.title}" was assigned to ${assigneeName}`,
             userId,
             projectId: updatedTask.projectId,
             taskId: id,
@@ -175,6 +211,32 @@ export async function PUT(request, { params }) {
             projectId: updatedTask.projectId,
             taskId: id,
           });
+        }
+      }
+      
+      // Multiple assignees change
+      if (updateData.assignees || updateData.assigneeIds) {
+        const assigneeIds = updateData.assignees || updateData.assigneeIds || [];
+        activities.push({
+          type: 'TASK_ASSIGNED',
+          description: `Task "${updatedTask.title}" assignees were updated`,
+          userId,
+          projectId: updatedTask.projectId,
+          taskId: id,
+        });
+        
+        // Create notifications for new assignees
+        for (const assigneeId of assigneeIds) {
+          if (assigneeId !== userId) {
+            await notificationOperations.create({
+              type: 'TASK_ASSIGNED',
+              title: 'Task Assigned to You',
+              message: `You have been assigned to task "${updatedTask.title}"`,
+              userId: assigneeId,
+              taskId: id,
+              actionUrl: `/tasks/${id}`,
+            });
+          }
         }
       }
 
