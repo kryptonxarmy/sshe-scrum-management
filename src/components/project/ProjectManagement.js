@@ -13,10 +13,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, MoreVertical, Edit, Trash2, Users, Calendar, AlertTriangle, Archive } from "lucide-react";
+import { Plus, MoreVertical, Edit, Trash2, Users, Calendar, AlertTriangle, Archive, MessageCircleMore } from "lucide-react";
 import ModalManageMember from "@/components/project/_partials/ModalManageMember";
 import ArchiveReports from "@/components/project/ArchiveReports";
 import EditProjectModal from "@/components/project/EditProjectModal";
+import ProjectCommentsSheet from "./ProjectCommentsSheet";
 
 const ProjectManagement = () => {
   const [statusFilter, setStatusFilter] = useState("all");
@@ -30,6 +31,8 @@ const ProjectManagement = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("active");
   const [deletedProjects, setDeletedProjects] = useState([]);
+  const [isCommentsSheetOpen, setIsCommentsSheetOpen] = useState(false);
+  const [selectedProjectForComments, setSelectedProjectForComments] = useState(null); // Tambahkan state baru
 
   // Permission Rules:
   // - SUPERADMIN: Can manage all projects and members
@@ -51,7 +54,7 @@ const ProjectManagement = () => {
         }
 
         const data = await response.json();
-    console.log('Fetched projects:', data.projects);
+        console.log("Fetched projects:", data.projects);
         setProjectList(data.projects || []);
       } catch (error) {
         console.error("Error fetching projects:", error);
@@ -65,7 +68,6 @@ const ProjectManagement = () => {
   }, [user]);
 
   // Fetch deleted projects
-  
 
   const fetchDeletedProjects = useCallback(async () => {
     if (!user) return;
@@ -112,97 +114,98 @@ const ProjectManagement = () => {
   };
 
   const handleProjectUpdated = (updatedProject) => {
-    setProjectList(prev => 
-      prev.map(project => 
-        project.id === updatedProject.id ? updatedProject : project
-      )
-    );
+    setProjectList((prev) => prev.map((project) => (project.id === updatedProject.id ? updatedProject : project)));
   };
 
   const handleDeleteProject = async (project) => {
     const confirmMessage = `Are you sure you want to move project "${project.name}" to trash? You can restore it later from the trash.`;
-    
+
     if (!confirm(confirmMessage)) {
       return;
     }
 
     try {
       const response = await fetch(`/api/projects/${project.id}?userId=${user.id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete project');
+        throw new Error(errorData.error || "Failed to delete project");
       }
 
       // Remove project from active list
-      setProjectList(prev => prev.filter(p => p.id !== project.id));
+      setProjectList((prev) => prev.filter((p) => p.id !== project.id));
       alert(`Project "${project.name}" has been moved to trash successfully!`);
     } catch (error) {
-      console.error('Error deleting project:', error);
+      console.error("Error deleting project:", error);
       alert(`Failed to delete project: ${error.message}`);
     }
   };
 
   const handleRestoreProject = async (project) => {
     const confirmMessage = `Are you sure you want to restore project "${project.name}"?`;
-    
+
     if (!confirm(confirmMessage)) {
       return;
     }
 
     try {
       const response = await fetch(`/api/projects/${project.id}/restore`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ userId: user.id }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to restore project');
+        throw new Error(errorData.error || "Failed to restore project");
       }
 
       const data = await response.json();
-      
+
       // Remove from deleted list and add to active list
-      setDeletedProjects(prev => prev.filter(p => p.id !== project.id));
-      setProjectList(prev => [...prev, data.project]);
-      
+      setDeletedProjects((prev) => prev.filter((p) => p.id !== project.id));
+      setProjectList((prev) => [...prev, data.project]);
+
       alert(`Project "${project.name}" has been restored successfully!`);
     } catch (error) {
-      console.error('Error restoring project:', error);
+      console.error("Error restoring project:", error);
       alert(`Failed to restore project: ${error.message}`);
     }
   };
 
   const handlePermanentDeleteProject = async (project) => {
     const confirmMessage = `Are you sure you want to PERMANENTLY delete project "${project.name}"? This action cannot be undone and will delete all associated tasks.`;
-    
+
     if (!confirm(confirmMessage)) {
       return;
     }
 
     try {
       const response = await fetch(`/api/projects/${project.id}?userId=${user.id}&force=true`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to permanently delete project');
+        throw new Error(errorData.error || "Failed to permanently delete project");
       }
 
       // Remove from deleted list
-      setDeletedProjects(prev => prev.filter(p => p.id !== project.id));
+      setDeletedProjects((prev) => prev.filter((p) => p.id !== project.id));
       alert(`Project "${project.name}" has been permanently deleted!`);
     } catch (error) {
-      console.error('Error permanently deleting project:', error);
+      console.error("Error permanently deleting project:", error);
       alert(`Failed to permanently delete project: ${error.message}`);
     }
+  };
+
+  const handleCommentsProject = (project) => {
+    setSelectedProjectForComments(project);
+    setIsCommentsSheetOpen(true);
   };
 
   const handleReleaseProject = async (project) => {
@@ -212,16 +215,16 @@ const ProjectManagement = () => {
 
     try {
       const response = await fetch(`/api/projects/${project.id}/release`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ action: 'release' }),
+        body: JSON.stringify({ action: "release" }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to release project');
+        throw new Error(errorData.error || "Failed to release project");
       }
 
       // Refresh projects list
@@ -249,15 +252,15 @@ const ProjectManagement = () => {
       await fetchProjects();
       alert(`Project "${project.name}" has been released successfully!`);
     } catch (error) {
-      console.error('Error releasing project:', error);
+      console.error("Error releasing project:", error);
       alert(`Failed to release project: ${error.message}`);
     }
   };
 
   // Filter projects based on user role and permissions
   const getVisibleProjects = () => {
-  // Tampilkan semua project tanpa filter status
-  return projectList.filter((project) => canViewProject(project));
+    // Tampilkan hanya project dengan status ACTIVE
+    return projectList.filter((project) => project.status === "ACTIVE" && canViewProject(project));
   };
 
   const getProjectStats = (project) => {
@@ -325,11 +328,7 @@ const ProjectManagement = () => {
             {/* Filter Status Project */}
             <div className="mb-4 flex gap-2 items-center">
               <label className="text-sm font-medium">Filter Status:</label>
-              <select
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
-                className="border rounded px-2 py-1 text-sm"
-              >
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border rounded px-2 py-1 text-sm">
                 <option value="all">All</option>
                 <option value="active">Active</option>
                 <option value="released">Released</option>
@@ -413,56 +412,64 @@ const ProjectManagement = () => {
         <TabsContent value="active" className="space-y-6">
           {/* Projects Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {getVisibleProjects().map((project) => {
-          const stats = getProjectStats(project);
-          const canManageProjectActions = canManageProject(project.ownerId);
-          const canManageMembers = canManageProjectMembers(project.ownerId, project);
-          
-          return (
-            <Card key={project.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg">{project.name}</CardTitle>
-                  </div>
+            {getVisibleProjects().map((project) => {
+              const stats = getProjectStats(project);
+              const canManageProjectActions = canManageProject(project.ownerId);
+              const canManageMembers = canManageProjectMembers(project.ownerId, project);
 
-                  {(canManageProjectActions || canManageMembers) && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical size={16} />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {canManageProjectActions && (
-                          <DropdownMenuItem onClick={() => handleEditProject(project)} className="flex items-center gap-2">
-                            <Edit size={14} />
-                            Edit Project
-                          </DropdownMenuItem>
-                        )}
-                        {canManageMembers && (
-                          <DropdownMenuItem onClick={() => handleManageMembers(project)} className="flex items-center gap-2">
-                            <Users size={14} />
-                            Manage Members
-                          </DropdownMenuItem>
-                        )}
-                        {canManageProjectActions && project.status !== 'RELEASED' && (
-                          <DropdownMenuItem onClick={() => handleReleaseProject(project)} className="flex items-center gap-2 text-blue-600">
-                            <Archive size={14} />
-                            Release Project
-                          </DropdownMenuItem>
-                        )}
-                        {canManageProjectActions && (
-                          <DropdownMenuItem onClick={() => handleDeleteProject(project)} className="flex items-center gap-2 text-red-600">
-                            <Trash2 size={14} />
-                            Delete Project
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
-              </CardHeader>
+              return (
+                <Card key={project.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg">{project.name}</CardTitle>
+                      </div>
+
+                      {(canManageProjectActions || canManageMembers) && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical size={16} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {canManageProjectActions && (
+                              <DropdownMenuItem onClick={() => handleEditProject(project)} className="flex items-center gap-2">
+                                <Edit size={14} />
+                                Edit Project
+                              </DropdownMenuItem>
+                            )}
+                            {canManageMembers && (
+                              <>
+                                <DropdownMenuItem onClick={() => handleManageMembers(project)} className="flex items-center gap-2">
+                                  <Users size={14} />
+                                  Manage Members
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleCommentsProject(project)} className="flex items-center gap-2">
+                                  <MessageCircleMore size={14} />
+                                  Comments Project
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {canManageProjectActions && project.status !== "RELEASED" && (
+                              <DropdownMenuItem onClick={() => handleReleaseProject(project)} className="flex items-center gap-2 text-blue-600">
+                                <Archive size={14} />
+                                Release Project
+                              </DropdownMenuItem>
+                            )}
+                            {canManageProjectActions && (
+                              <>
+                                <DropdownMenuItem onClick={() => handleDeleteProject(project)} className="flex items-center gap-2 text-red-600">
+                                  <Trash2 size={14} />
+                                  Delete Project
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  </CardHeader>
 
                   <CardContent className="space-y-4">
                     <p className="text-sm text-slate-600 line-clamp-2">{project.description}</p>
@@ -479,9 +486,9 @@ const ProjectManagement = () => {
                       )}
                     </div>
 
-                <div className="flex items-center justify-end">
-                  <Badge variant={getStatusBadgeVariant(project.status)}>{getStatusDisplay(project.status, project.department)}</Badge>
-                </div>
+                    <div className="flex items-center justify-end">
+                      <Badge variant={getStatusBadgeVariant(project.status)}>{getStatusDisplay(project.status, project.department)}</Badge>
+                    </div>
 
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
@@ -523,9 +530,7 @@ const ProjectManagement = () => {
                         <Calendar size={14} />
                         <span>{project.endDate ? new Date(project.endDate).toLocaleDateString() : "No end date"}</span>
                         {/* Tambahkan keterangan short/long term di samping tanggal */}
-                        <span className="ml-2 px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">
-                          {project.duration === 'LONG_TERM' ? 'Long Term' : 'Short Term'}
-                        </span>
+                        <span className="ml-2 px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">{project.duration === "LONG_TERM" ? "Long Term" : "Short Term"}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Users size={14} />
@@ -533,19 +538,15 @@ const ProjectManagement = () => {
                       </div>
                     </div>
 
-                <div className="pt-4 flex justify-end">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.location.href = `/tasks?projectId=${project.id}`}
-                  >
-                    View Tasks
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                    <div className="pt-4 flex justify-end">
+                      <Button variant="outline" size="sm" onClick={() => (window.location.href = `/tasks?projectId=${project.id}`)}>
+                        View Tasks
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
           {getVisibleProjects().length === 0 && (
@@ -575,16 +576,14 @@ const ProjectManagement = () => {
             {deletedProjects.map((project) => {
               const stats = getProjectStats(project);
               const canManageProjectActions = canManageProject(project.ownerId);
-              
+
               return (
                 <Card key={project.id} className="hover:shadow-lg transition-shadow border-red-200 bg-red-50">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
                         <CardTitle className="text-lg text-red-800">{project.name}</CardTitle>
-                        <p className="text-xs text-red-600">
-                          Deleted: {project.deletedAt ? new Date(project.deletedAt).toLocaleDateString() : 'Unknown'}
-                        </p>
+                        <p className="text-xs text-red-600">Deleted: {project.deletedAt ? new Date(project.deletedAt).toLocaleDateString() : "Unknown"}</p>
                       </div>
 
                       {canManageProjectActions && (
@@ -675,20 +674,10 @@ const ProjectManagement = () => {
                     </div>
 
                     <div className="pt-4 flex justify-between">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRestoreProject(project)}
-                        className="text-green-600 border-green-600 hover:bg-green-50"
-                      >
+                      <Button variant="outline" size="sm" onClick={() => handleRestoreProject(project)} className="text-green-600 border-green-600 hover:bg-green-50">
                         Restore
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePermanentDeleteProject(project)}
-                        className="text-red-600 border-red-600 hover:bg-red-50"
-                      >
+                      <Button variant="outline" size="sm" onClick={() => handlePermanentDeleteProject(project)} className="text-red-600 border-red-600 hover:bg-red-50">
                         Delete Permanently
                       </Button>
                     </div>
@@ -712,14 +701,12 @@ const ProjectManagement = () => {
 
       {/* Modal for Manage Members */}
       <ModalManageMember isOpen={isManageMembersOpen} onClose={handleCloseMembersModal} project={selectedProject} />
-      
+
       {/* Modal for Edit Project */}
-      <EditProjectModal 
-        isOpen={isEditModalOpen} 
-        onClose={handleCloseEditModal} 
-        project={selectedProject}
-        onProjectUpdated={handleProjectUpdated}
-      />
+      <EditProjectModal isOpen={isEditModalOpen} onClose={handleCloseEditModal} project={selectedProject} onProjectUpdated={handleProjectUpdated} />
+
+      {/* Sheet for Project Comments */}
+      <ProjectCommentsSheet open={isCommentsSheetOpen} onOpenChange={setIsCommentsSheetOpen} user={user} projectId={selectedProjectForComments?.id} />
     </div>
   );
 };

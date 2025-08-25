@@ -6,47 +6,71 @@ export async function PATCH(request, { params }) {
     const { action } = await request.json();
 
     // Validasi action
-    if (action !== "release") {
+    if (action !== "release" && action !== "active") {
       return Response.json({ error: "Invalid action" }, { status: 400 });
     }
 
-    // Update project status to RELEASED
-    const updatedProject = await prisma.project.update({
-      where: { id },
-      data: {
-        status: "RELEASED",
-        updatedAt: new Date(),
-      },
-      include: {
-        owner: true,
-        scrumMaster: true,
-        members: {
-          include: {
-            user: true,
+    // Get current status
+    const project = await prisma.project.findUnique({ where: { id } });
+    if (!project) {
+      return Response.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    let updatedProject;
+    if (action === "release") {
+      updatedProject = await prisma.project.update({
+        where: { id },
+        data: {
+          previousStatus: project.status,
+          status: "RELEASED",
+          updatedAt: new Date(),
+        },
+        include: {
+          owner: true,
+          scrumMaster: true,
+          members: {
+            include: {
+              user: true,
+            },
           },
         },
-      },
-    });
+      });
+    } else if (action === "active") {
+      updatedProject = await prisma.project.update({
+        where: { id },
+        data: {
+          previousStatus: project.status,
+          status: "ACTIVE",
+          updatedAt: new Date(),
+        },
+        include: {
+          owner: true,
+          scrumMaster: true,
+          members: {
+            include: {
+              user: true,
+            },
+          },
+        },
+      });
+    }
 
     // Log activity
     await prisma.activityLog.create({
       data: {
         type: "PROJECT_UPDATED",
-        description: `Project "${updatedProject.name}" has been released`,
+        description: `Project "${updatedProject.name}" status changed to ${updatedProject.status}`,
         projectId: id,
         userId: updatedProject.ownerId,
       },
     });
 
     return Response.json({
-      message: "Project released successfully",
+      message: `Project status changed to ${updatedProject.status}`,
       project: updatedProject,
     });
   } catch (error) {
     console.error("Release project error:", error);
-    return Response.json(
-      { error: "Failed to release project" },
-      { status: 500 }
-    );
+    return Response.json({ error: "Failed to release project" }, { status: 500 });
   }
 }

@@ -45,6 +45,7 @@ export async function POST(request) {
       name,
       description,
       department,
+      status: "ACTIVE",
       scrumMasterId,
       startDate: startDate ? new Date(startDate) : null,
       endDate: endDate ? new Date(endDate) : null,

@@ -7,6 +7,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import EditTaskModal from "./EditTaskModal";
+import TaskCommentsSheet from "./task/TaskCommentsSheet";
 
 const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
   const { user } = useAuth();
@@ -14,6 +15,7 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isCommentsSheetOpen, setIsCommentsSheetOpen] = useState(false);
 
   // Null check untuk task object
   if (!task) {
@@ -144,7 +146,7 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
 
   return (
     <>
-      <Card className={`cursor-grab transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 relative group min-h-[120px] ${task.status === 'OVERDUE' ? 'border-2 border-red-500 bg-red-50' : ''} min-h-[120px]`}>
+      <Card className={`cursor-grab transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 relative group min-h-[120px] ${task.status === "OVERDUE" ? "border-2 border-red-500 bg-red-50" : ""} min-h-[120px]`}>
         {/* Task Type Badge */}
         <Badge variant={getTypeBadgeVariant(task.type)} className="absolute top-2 right-2 text-xs">
           {getDisplayType()}
@@ -219,11 +221,21 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
             {task.sprint && <span className="text-xs text-slate-500">Sprint: {task.sprint.name}</span>}
             <span className="text-xs text-slate-500">Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric" }) : "No due date"}</span>
           </div>
+
+          {/* Comments Button */}
+          <div className="flex gap-2 mt-2">
+            <Button variant="outline" size="sm" onClick={() => setIsCommentsSheetOpen(true)}>
+              Comments
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
       {/* Edit Task Modal */}
       <EditTaskModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} task={task} onTaskUpdated={handleTaskUpdated} />
+
+      {/* Task Comments Sheet */}
+      <TaskCommentsSheet open={isCommentsSheetOpen} onOpenChange={setIsCommentsSheetOpen} user={user} taskId={task.id} taskName={task.title} />
     </>
   );
 };
