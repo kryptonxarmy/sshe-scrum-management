@@ -80,10 +80,10 @@ const ArchivePage = () => {
                   Released Projects
                 </Button>
 
-                <Button variant={activeView === "reports" ? "default" : "ghost"} onClick={() => setActiveView("reports")} className="flex items-center gap-2">
+                {/* <Button variant={activeView === "reports" ? "default" : "ghost"} onClick={() => setActiveView("reports")} className="flex items-center gap-2">
                   <TrendingUp size={16} />
                   Release Reports
-                </Button>
+                </Button> */}
               </nav>
 
               {/* User Menu */}

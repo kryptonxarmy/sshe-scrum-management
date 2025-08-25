@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, TrendingUp, BarChart3, Filter, Clock, Timer } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCallback } from "react";
 
 const ArchiveReports = () => {
   const { user } = useAuth();
@@ -20,10 +21,10 @@ const ArchiveReports = () => {
     averageDuration: 0,
     highPriorityCount: 0,
     shortTermCount: 0,
-    longTermCount: 0
+    longTermCount: 0,
   });
 
-  const fetchReleasedProjects = async () => {
+  const fetchReleasedProjects = useCallback(async () => {
     if (!user?.id) return;
     try {
       setLoading(true);
@@ -32,37 +33,33 @@ const ArchiveReports = () => {
       if (response.ok) {
         const data = await response.json();
         // Filter hanya project yang belum rilis (status !== 'RELEASED')
-        const activeProjects = data.projects?.filter(project => project.status !== 'RELEASED') || [];
+        const activeProjects = data.projects?.filter((project) => project.status !== "RELEASED") || [];
         setProjects(activeProjects);
       } else {
-        console.error('Failed to fetch projects:', response.statusText);
+        console.error("Failed to fetch projects:", response.statusText);
       }
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      console.error("Error fetching projects:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
 
   useEffect(() => {
     if (user?.id) {
       fetchReleasedProjects();
     }
-  }, [user?.id]);
+  }, [user?.id, fetchReleasedProjects]);
 
-  useEffect(() => {
-    calculateStats();
-  }, [projects, timeFilter, durationFilter]);
-
-  const calculateStats = () => {
+  const calculateStats = useCallback(() => {
     if (projects.length === 0) {
-      setStats({ 
-        totalProjects: 0, 
-        completedOnTime: 0, 
-        averageDuration: 0, 
+      setStats({
+        totalProjects: 0,
+        completedOnTime: 0,
+        averageDuration: 0,
         highPriorityCount: 0,
         shortTermCount: 0,
-        longTermCount: 0 
+        longTermCount: 0,
       });
       return;
     }
@@ -71,39 +68,35 @@ const ArchiveReports = () => {
     const now = new Date();
     const monthsToSubtract = timeFilter === "3months" ? 3 : timeFilter === "6months" ? 6 : 12;
     const filterDate = new Date(now.getFullYear(), now.getMonth() - monthsToSubtract, 1);
-    
-    let filteredProjects = projects.filter(project => {
+
+    let filteredProjects = projects.filter((project) => {
       const projectDate = new Date(project.updatedAt);
       return projectDate >= filterDate;
     });
 
     // Filter by duration if selected
     if (durationFilter !== "all") {
-      filteredProjects = filteredProjects.filter(project => 
-        project.duration === durationFilter
-      );
+      filteredProjects = filteredProjects.filter((project) => project.duration === durationFilter);
     }
 
     const totalProjects = filteredProjects.length;
-  // Remove priority count, only count short/long term
-  const shortTermCount = filteredProjects.filter(project => project.duration === 'SHORT_TERM').length;
-  const longTermCount = filteredProjects.filter(project => project.duration === 'LONG_TERM').length;
+    // Remove priority count, only count short/long term
+    const shortTermCount = filteredProjects.filter((project) => project.duration === "SHORT_TERM").length;
+    const longTermCount = filteredProjects.filter((project) => project.duration === "LONG_TERM").length;
 
     // Calculate average duration
-    const durations = filteredProjects.map(project => {
+    const durations = filteredProjects.map((project) => {
       if (!project.startDate || !project.endDate) return 1;
       const start = new Date(project.startDate);
       const end = new Date(project.endDate);
       const diffTime = Math.abs(end - start);
       return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     });
-    
-    const averageDuration = durations.length > 0 
-      ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) 
-      : 0;
+
+    const averageDuration = durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0;
 
     // Calculate completed on time
-    const completedOnTime = filteredProjects.filter(project => {
+    const completedOnTime = filteredProjects.filter((project) => {
       if (!project.endDate) return true;
       const endDate = new Date(project.endDate);
       const releaseDate = new Date(project.updatedAt);
@@ -114,26 +107,28 @@ const ArchiveReports = () => {
       totalProjects,
       completedOnTime,
       averageDuration,
-  // highPriorityCount removed
+      // highPriorityCount removed
       shortTermCount,
-      longTermCount
+      longTermCount,
     });
-  };
+  }, [projects, timeFilter, durationFilter]);
+
+  useEffect(() => {
+    calculateStats();
+  }, [projects, timeFilter, durationFilter, calculateStats]);
 
   const getFilteredProjects = () => {
     const now = new Date();
     const monthsToSubtract = timeFilter === "3months" ? 3 : timeFilter === "6months" ? 6 : 12;
     const filterDate = new Date(now.getFullYear(), now.getMonth() - monthsToSubtract, 1);
-    
-    let filteredProjects = projects.filter(project => {
+
+    let filteredProjects = projects.filter((project) => {
       const projectDate = new Date(project.updatedAt);
       return projectDate >= filterDate;
     });
 
     if (durationFilter !== "all") {
-      filteredProjects = filteredProjects.filter(project => 
-        project.duration === durationFilter
-      );
+      filteredProjects = filteredProjects.filter((project) => project.duration === durationFilter);
     }
 
     return filteredProjects;
@@ -196,7 +191,7 @@ const ArchiveReports = () => {
           <h2 className="text-2xl font-bold text-slate-800">Timeline Project</h2>
           <p className="text-slate-600">Project timeline and statistics for active projects</p>
         </div>
-        
+
         {/* Filters */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
           <Filter size={16} className="text-slate-500" />
@@ -210,7 +205,7 @@ const ArchiveReports = () => {
               <SelectItem value="1year">Last 1 Year</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <Select value={durationFilter} onValueChange={setDurationFilter}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Select duration" />
@@ -252,9 +247,7 @@ const ArchiveReports = () => {
                 <Calendar size={24} className="text-green-600" />
               </div>
             </div>
-            <p className="text-xs text-slate-500 mt-2">
-              {stats.totalProjects > 0 ? Math.round((stats.completedOnTime / stats.totalProjects) * 100) : 0}% success rate
-            </p>
+            <p className="text-xs text-slate-500 mt-2">{stats.totalProjects > 0 ? Math.round((stats.completedOnTime / stats.totalProjects) * 100) : 0}% success rate</p>
           </CardContent>
         </Card>
 
@@ -282,9 +275,9 @@ const ArchiveReports = () => {
               </div>
               <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-600">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="12" y1="8" x2="12" y2="12"/>
-                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
               </div>
             </div>

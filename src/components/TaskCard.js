@@ -7,6 +7,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import EditTaskModal from "./EditTaskModal";
+import TaskCommentsSheet from "./task/TaskCommentsSheet";
 
 const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
   const { user } = useAuth();
@@ -14,6 +15,7 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isCommentsSheetOpen, setIsCommentsSheetOpen] = useState(false);
 
   // Null check untuk task object
   if (!task) {
@@ -25,9 +27,7 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
     if (!user) return false;
     if (user.role === "SUPERADMIN") return true;
     if (user.role === "PROJECT_OWNER") return true;
-    // Allow if user is the designated Scrum Master of the task's project
     if (task.project && task.project.scrumMasterId === user.id) return true;
-    // Allow if user is assigned to the task (can edit their own tasks)
     if (
       task.assignees &&
       task.assignees.some((assignee) => {
@@ -36,10 +36,48 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
       })
     )
       return true;
-    // Backward compatibility: check single assignee
     if (task.assigneeId === user.id) return true;
     return false;
   };
+
+  // Check if user can view/comment
+  const canComment = () => {
+    if (!user) return false;
+    // Project Owner
+    if (user.role === "PROJECT_OWNER") return true;
+    // Scrum Master
+    if (task.project && task.project.scrumMasterId === user.id) return true;
+    // Team member assigned to this task (multiple assignees)
+    if (
+      user.role === "TEAM_MEMBER" &&
+      task.assignees &&
+      Array.isArray(task.assignees) &&
+      task.assignees.some((assignee) => {
+        const userId = assignee.user ? assignee.user.id : assignee.userId;
+        // Fallback: jika projectRole tidak ada, tetap izinkan jika user adalah assignee
+        if (userId === user.id) {
+          if (!assignee.projectRole || assignee.projectRole === "TEAM_MEMBER") {
+            return true;
+          }
+        }
+        return false;
+      })
+    ) return true;
+    // Team member assigned (single assignee format)
+    if (
+      user.role === "TEAM_MEMBER" &&
+      task.assignee &&
+      task.assignee.id === user.id &&
+      (!task.assignee.projectRole || task.assignee.projectRole === "TEAM_MEMBER")
+    ) return true;
+    // Fallback: jika hanya ada assigneeId
+    if (
+      user.role === "TEAM_MEMBER" &&
+      task.assigneeId &&
+      task.assigneeId === user.id
+    ) return true;
+    return false;
+};
 
   const handleTaskUpdated = (updatedTask) => {
     if (onTaskUpdated) {
@@ -144,8 +182,12 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
 
   return (
     <>
-      <Card className={`cursor-grab transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 relative group min-h-[120px] ${task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'DONE' ? 'border-2 border-red-600 bg-red-50' : ''} min-h-[120px]`}>
-        {task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'DONE' && (
+      <Card
+        className={`cursor-grab transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 relative group min-h-[120px] ${
+          task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "DONE" ? "border-2 border-red-600 bg-red-50" : ""
+        } min-h-[120px]`}
+      >
+        {task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "DONE" && (
           <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded shadow z-10">
             <AlertCircle className="h-4 w-4 text-white" />
             Overdue!
@@ -221,10 +263,22 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
             {task.sprint && <span className="text-xs text-slate-500">Sprint: {task.sprint.name}</span>}
             <span className="text-xs text-slate-500">Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric" }) : "No due date"}</span>
           </div>
+
+          {/* Comments Button */}
+          <div className="flex gap-2 mt-2">
+            {canComment() && (
+              <Button variant="outline" size="sm" onClick={() => setIsCommentsSheetOpen(true)}>
+                Comments
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
       {/* Edit Task Modal */}
       <EditTaskModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} task={task} onTaskUpdated={handleTaskUpdated} />
+
+      {/* Task Comments Sheet */}
+      {canComment() && <TaskCommentsSheet open={isCommentsSheetOpen} onOpenChange={setIsCommentsSheetOpen} user={user} taskId={task.id} taskName={task.title} />}
     </>
   );
 };

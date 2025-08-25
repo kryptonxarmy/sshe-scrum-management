@@ -4,12 +4,8 @@ import React from "react";
 function InfoWithTooltip() {
   const [show, setShow] = React.useState(false);
   return (
-    <span style={{ position: 'relative', display: 'inline-block' }}>
-      <span
-        onMouseEnter={() => setShow(true)}
-        onMouseLeave={() => setShow(false)}
-        style={{ display: 'inline-block' }}
-      >
+    <span style={{ position: "relative", display: "inline-block" }}>
+      <span onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)} style={{ display: "inline-block" }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 cursor-pointer">
           <circle cx="12" cy="12" r="10" />
           <line x1="12" y1="16" x2="12" y2="12" />
@@ -17,11 +13,27 @@ function InfoWithTooltip() {
         </svg>
       </span>
       {show && (
-        <div style={{
-          position: 'absolute', top: '22px', left: '-10px', minWidth: '220px', background: '#f3f4f6', color: '#374151', fontSize: '12px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', padding: '10px', zIndex: 50
-        }}>
-          <div><b>Short Term:</b> Proyek dengan durasi singkat, maksimal 6 bulan.</div>
-          <div style={{ marginTop: '4px' }}><b>Long Term:</b> Proyek dengan durasi lebih dari 6 bulan.</div>
+        <div
+          style={{
+            position: "absolute",
+            top: "22px",
+            left: "-10px",
+            minWidth: "220px",
+            background: "#f3f4f6",
+            color: "#374151",
+            fontSize: "12px",
+            borderRadius: "8px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            padding: "10px",
+            zIndex: 50,
+          }}
+        >
+          <div>
+            <b>Short Term:</b> Proyek dengan durasi singkat, maksimal 6 bulan.
+          </div>
+          <div style={{ marginTop: "4px" }}>
+            <b>Long Term:</b> Proyek dengan durasi lebih dari 6 bulan.
+          </div>
         </div>
       )}
     </span>
@@ -41,10 +53,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, MoreVertical, Edit, Trash2, Users, Calendar, AlertTriangle, Archive } from "lucide-react";
+import { Plus, MoreVertical, Edit, Trash2, Users, Calendar, AlertTriangle, Archive, MessageCircleMore } from "lucide-react";
 import ModalManageMember from "@/components/project/_partials/ModalManageMember";
 import ArchiveReports from "@/components/project/ArchiveReports";
 import EditProjectModal from "@/components/project/EditProjectModal";
+import ProjectCommentsSheet from "./ProjectCommentsSheet";
 
 const ProjectManagement = () => {
   const [statusFilter, setStatusFilter] = useState("all");
@@ -58,6 +71,8 @@ const ProjectManagement = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("active");
   const [deletedProjects, setDeletedProjects] = useState([]);
+  const [isCommentsSheetOpen, setIsCommentsSheetOpen] = useState(false);
+  const [selectedProjectForComments, setSelectedProjectForComments] = useState(null); // Tambahkan state baru
 
   // Permission Rules:
   // - SUPERADMIN: Can manage all projects and members
@@ -79,7 +94,7 @@ const ProjectManagement = () => {
         }
 
         const data = await response.json();
-    console.log('Fetched projects:', data.projects);
+        console.log("Fetched projects:", data.projects);
         setProjectList(data.projects || []);
       } catch (error) {
         console.error("Error fetching projects:", error);
@@ -93,7 +108,6 @@ const ProjectManagement = () => {
   }, [user]);
 
   // Fetch deleted projects
-  
 
   const fetchDeletedProjects = useCallback(async () => {
     if (!user) return;
@@ -120,18 +134,27 @@ const ProjectManagement = () => {
   }, [activeTab, user, fetchDeletedProjects]);
 
   const handleManageMembers = (project) => {
-    setSelectedProject(project);
-    setIsManageMembersOpen(true);
+    // Close all dropdowns before opening modal
+    document.activeElement?.blur();
+    setTimeout(() => {
+      setSelectedProject(project);
+      setIsManageMembersOpen(true);
+    }, 50);
   };
 
   const handleCloseMembersModal = () => {
     setIsManageMembersOpen(false);
     setSelectedProject(null);
+    console.log("ModalManageMember opened, isOpen:", false);
   };
 
   const handleEditProject = (project) => {
-    setSelectedProject(project);
-    setIsEditModalOpen(true);
+    // Close all dropdowns before opening modal
+    document.activeElement?.blur();
+    setTimeout(() => {
+      setSelectedProject(project);
+      setIsEditModalOpen(true);
+    }, 50);
   };
 
   const handleCloseEditModal = () => {
@@ -140,97 +163,98 @@ const ProjectManagement = () => {
   };
 
   const handleProjectUpdated = (updatedProject) => {
-    setProjectList(prev => 
-      prev.map(project => 
-        project.id === updatedProject.id ? updatedProject : project
-      )
-    );
+    setProjectList((prev) => prev.map((project) => (project.id === updatedProject.id ? updatedProject : project)));
   };
 
   const handleDeleteProject = async (project) => {
     const confirmMessage = `Are you sure you want to move project "${project.name}" to trash? You can restore it later from the trash.`;
-    
+
     if (!confirm(confirmMessage)) {
       return;
     }
 
     try {
       const response = await fetch(`/api/projects/${project.id}?userId=${user.id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete project');
+        throw new Error(errorData.error || "Failed to delete project");
       }
 
       // Remove project from active list
-      setProjectList(prev => prev.filter(p => p.id !== project.id));
+      setProjectList((prev) => prev.filter((p) => p.id !== project.id));
       alert(`Project "${project.name}" has been moved to trash successfully!`);
     } catch (error) {
-      console.error('Error deleting project:', error);
+      console.error("Error deleting project:", error);
       alert(`Failed to delete project: ${error.message}`);
     }
   };
 
   const handleRestoreProject = async (project) => {
     const confirmMessage = `Are you sure you want to restore project "${project.name}"?`;
-    
+
     if (!confirm(confirmMessage)) {
       return;
     }
 
     try {
       const response = await fetch(`/api/projects/${project.id}/restore`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ userId: user.id }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to restore project');
+        throw new Error(errorData.error || "Failed to restore project");
       }
 
       const data = await response.json();
-      
+
       // Remove from deleted list and add to active list
-      setDeletedProjects(prev => prev.filter(p => p.id !== project.id));
-      setProjectList(prev => [...prev, data.project]);
-      
+      setDeletedProjects((prev) => prev.filter((p) => p.id !== project.id));
+      setProjectList((prev) => [...prev, data.project]);
+
       alert(`Project "${project.name}" has been restored successfully!`);
     } catch (error) {
-      console.error('Error restoring project:', error);
+      console.error("Error restoring project:", error);
       alert(`Failed to restore project: ${error.message}`);
     }
   };
 
   const handlePermanentDeleteProject = async (project) => {
     const confirmMessage = `Are you sure you want to PERMANENTLY delete project "${project.name}"? This action cannot be undone and will delete all associated tasks.`;
-    
+
     if (!confirm(confirmMessage)) {
       return;
     }
 
     try {
       const response = await fetch(`/api/projects/${project.id}?userId=${user.id}&force=true`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to permanently delete project');
+        throw new Error(errorData.error || "Failed to permanently delete project");
       }
 
       // Remove from deleted list
-      setDeletedProjects(prev => prev.filter(p => p.id !== project.id));
+      setDeletedProjects((prev) => prev.filter((p) => p.id !== project.id));
       alert(`Project "${project.name}" has been permanently deleted!`);
     } catch (error) {
-      console.error('Error permanently deleting project:', error);
+      console.error("Error permanently deleting project:", error);
       alert(`Failed to permanently delete project: ${error.message}`);
     }
+  };
+
+  const handleCommentsProject = (project) => {
+    setSelectedProjectForComments(project);
+    setIsCommentsSheetOpen(true);
   };
 
   const handleReleaseProject = async (project) => {
@@ -240,16 +264,16 @@ const ProjectManagement = () => {
 
     try {
       const response = await fetch(`/api/projects/${project.id}/release`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ action: 'release' }),
+        body: JSON.stringify({ action: "release" }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to release project');
+        throw new Error(errorData.error || "Failed to release project");
       }
 
       // Refresh projects list
@@ -277,15 +301,15 @@ const ProjectManagement = () => {
       await fetchProjects();
       alert(`Project "${project.name}" has been released successfully!`);
     } catch (error) {
-      console.error('Error releasing project:', error);
+      console.error("Error releasing project:", error);
       alert(`Failed to release project: ${error.message}`);
     }
   };
 
   // Filter projects based on user role and permissions
   const getVisibleProjects = () => {
-  // Tampilkan hanya project yang statusnya bukan RELEASED (untuk dashboard aktif)
-  return projectList.filter((project) => canViewProject(project) && project.status !== 'RELEASED');
+    // Tampilkan hanya project dengan status ACTIVE
+    return projectList.filter((project) => project.status === "ACTIVE" && canViewProject(project));
   };
 
   const getProjectStats = (project) => {
@@ -350,6 +374,15 @@ const ProjectManagement = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
+            {/* Filter Status Project */}
+            <div className="mb-4 flex gap-2 items-center">
+              <label className="text-sm font-medium">Filter Status:</label>
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border rounded px-2 py-1 text-sm">
+                <option value="all">All</option>
+                <option value="active">Active</option>
+                <option value="released">Released</option>
+              </select>
+            </div>
             <h2 className="text-2xl font-bold text-slate-800">Projects</h2>
             <p className="text-slate-600">Loading projects...</p>
           </div>
@@ -365,7 +398,7 @@ const ProjectManagement = () => {
             </Card>
           ))}
         </div>
-  </div>
+      </div>
     );
   }
 
@@ -428,56 +461,64 @@ const ProjectManagement = () => {
         <TabsContent value="active" className="space-y-6">
           {/* Projects Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {getVisibleProjects().map((project) => {
-          const stats = getProjectStats(project);
-          const canManageProjectActions = canManageProject(project.ownerId);
-          const canManageMembers = canManageProjectMembers(project.ownerId, project);
-          
-          return (
-            <Card key={project.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg">{project.name}</CardTitle>
-                  </div>
+            {getVisibleProjects().map((project) => {
+              const stats = getProjectStats(project);
+              const canManageProjectActions = canManageProject(project.ownerId);
+              const canManageMembers = canManageProjectMembers(project.ownerId, project);
 
-                  {(canManageProjectActions || canManageMembers) && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical size={16} />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {canManageProjectActions && (
-                          <DropdownMenuItem onClick={() => handleEditProject(project)} className="flex items-center gap-2">
-                            <Edit size={14} />
-                            Edit Project
-                          </DropdownMenuItem>
-                        )}
-                        {canManageMembers && (
-                          <DropdownMenuItem onClick={() => handleManageMembers(project)} className="flex items-center gap-2">
-                            <Users size={14} />
-                            Manage Members
-                          </DropdownMenuItem>
-                        )}
-                        {canManageProjectActions && project.status !== 'RELEASED' && (
-                          <DropdownMenuItem onClick={() => handleReleaseProject(project)} className="flex items-center gap-2 text-blue-600">
-                            <Archive size={14} />
-                            Release Project
-                          </DropdownMenuItem>
-                        )}
-                        {canManageProjectActions && (
-                          <DropdownMenuItem onClick={() => handleDeleteProject(project)} className="flex items-center gap-2 text-red-600">
-                            <Trash2 size={14} />
-                            Delete Project
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
-              </CardHeader>
+              return (
+                <Card key={project.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg">{project.name}</CardTitle>
+                      </div>
+
+                      {(canManageProjectActions || canManageMembers) && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical size={16} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {canManageProjectActions && (
+                              <DropdownMenuItem onClick={() => handleEditProject(project)} className="flex items-center gap-2">
+                                <Edit size={14} />
+                                Edit Project
+                              </DropdownMenuItem>
+                            )}
+                            {canManageMembers && (
+                              <>
+                                <DropdownMenuItem onClick={() => handleManageMembers(project)} className="flex items-center gap-2">
+                                  <Users size={14} />
+                                  Manage Members
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleCommentsProject(project)} className="flex items-center gap-2">
+                                  <MessageCircleMore size={14} />
+                                  Comments Project
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {canManageProjectActions && project.status !== "RELEASED" && (
+                              <DropdownMenuItem onClick={() => handleReleaseProject(project)} className="flex items-center gap-2 text-blue-600">
+                                <Archive size={14} />
+                                Release Project
+                              </DropdownMenuItem>
+                            )}
+                            {canManageProjectActions && (
+                              <>
+                                <DropdownMenuItem onClick={() => handleDeleteProject(project)} className="flex items-center gap-2 text-red-600">
+                                  <Trash2 size={14} />
+                                  Delete Project
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  </CardHeader>
 
                   <CardContent className="space-y-4">
                     <p className="text-sm text-slate-600 line-clamp-2">{project.description}</p>
@@ -492,8 +533,11 @@ const ProjectManagement = () => {
                           <span className="font-medium">Scrum Master:</span> {getScrumMasterName(project.scrumMaster)}
                         </p>
                       )}
-                    <Badge variant={getStatusBadgeVariant(project.status)}>{getStatusDisplay(project.status, project.department)}</Badge>
-                  </div>
+                    </div>
+
+                    <div className="flex items-center justify-end">
+                      <Badge variant={getStatusBadgeVariant(project.status)}>{getStatusDisplay(project.status, project.department)}</Badge>
+                    </div>
 
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
@@ -510,60 +554,6 @@ const ProjectManagement = () => {
                           <div className="font-semibold text-gray-600">{stats.todo}</div>
                           <div className="text-gray-500">To Do</div>
                         </div>
-                {/* Archive Tab: Project RELEASED */}
-                <TabsContent value="archive" className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {projectList.filter(project => canViewProject(project) && project.status === 'RELEASED').map(project => {
-                      const canManageProjectActions = canManageProject(project.ownerId);
-                      return (
-                        <Card key={project.id} className="hover:shadow-lg transition-shadow">
-                          <CardHeader className="pb-3">
-                            <div className="flex items-start justify-between">
-                              <div className="space-y-1">
-                                <CardTitle className="text-lg">{project.name}</CardTitle>
-                              </div>
-                              {canManageProjectActions && (
-                                <div className="flex gap-2">
-                                  <Button variant="outline" size="sm" onClick={() => handleRestoreProject(project)}>
-                                    Restore Project
-                                  </Button>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="sm">
-                                        <MoreVertical size={16} />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => handleDeleteProject(project)} className="flex items-center gap-2 text-red-600">
-                                        <Trash2 size={14} />
-                                        Soft Delete Project
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </div>
-                              )}
-                            </div>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <p className="text-sm text-slate-600 line-clamp-2">{project.description}</p>
-                            <div className="space-y-1">
-                              <p className="text-sm text-slate-600">
-                                <span className="font-medium">Owner:</span> {getProjectOwnerName(project.owner)}
-                              </p>
-                              {getScrumMasterName(project.scrumMaster) && (
-                                <p className="text-sm text-slate-600">
-                                  <span className="font-medium">Scrum Master:</span> {getScrumMasterName(project.scrumMaster)}
-                                </p>
-                              )}
-                              <Badge variant={getStatusBadgeVariant(project.status)}>{getStatusDisplay(project.status, project.department)}</Badge>
-                            </div>
-                            {/* ...existing code... */}
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </TabsContent>
                         <div className="text-center p-2 bg-blue-50 rounded">
                           <div className="font-semibold text-blue-600">{stats.inProgress}</div>
                           <div className="text-gray-500">In Progress</div>
@@ -589,9 +579,7 @@ const ProjectManagement = () => {
                         <Calendar size={14} />
                         <span>{project.endDate ? new Date(project.endDate).toLocaleDateString() : "No end date"}</span>
                         {/* Tambahkan keterangan short/long term di samping tanggal */}
-                        <span className="ml-2 px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">
-                          {project.duration === 'LONG_TERM' ? 'Long Term' : 'Short Term'}
-                        </span>
+                        <span className="ml-2 px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">{project.duration === "LONG_TERM" ? "Long Term" : "Short Term"}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Users size={14} />
@@ -599,19 +587,15 @@ const ProjectManagement = () => {
                       </div>
                     </div>
 
-                <div className="pt-4 flex justify-end">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.location.href = `/tasks?projectId=${project.id}`}
-                  >
-                    View Tasks
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                    <div className="pt-4 flex justify-end">
+                      <Button variant="outline" size="sm" onClick={() => (window.location.href = `/tasks?projectId=${project.id}`)}>
+                        View Tasks
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
           {getVisibleProjects().length === 0 && (
@@ -641,16 +625,14 @@ const ProjectManagement = () => {
             {deletedProjects.map((project) => {
               const stats = getProjectStats(project);
               const canManageProjectActions = canManageProject(project.ownerId);
-              
+
               return (
                 <Card key={project.id} className="hover:shadow-lg transition-shadow border-red-200 bg-red-50">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
                         <CardTitle className="text-lg text-red-800">{project.name}</CardTitle>
-                        <p className="text-xs text-red-600">
-                          Deleted: {project.deletedAt ? new Date(project.deletedAt).toLocaleDateString() : 'Unknown'}
-                        </p>
+                        <p className="text-xs text-red-600">Deleted: {project.deletedAt ? new Date(project.deletedAt).toLocaleDateString() : "Unknown"}</p>
                       </div>
 
                       {canManageProjectActions && (
@@ -741,20 +723,10 @@ const ProjectManagement = () => {
                     </div>
 
                     <div className="pt-4 flex justify-between">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRestoreProject(project)}
-                        className="text-green-600 border-green-600 hover:bg-green-50"
-                      >
+                      <Button variant="outline" size="sm" onClick={() => handleRestoreProject(project)} className="text-green-600 border-green-600 hover:bg-green-50">
                         Restore
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePermanentDeleteProject(project)}
-                        className="text-red-600 border-red-600 hover:bg-red-50"
-                      >
+                      <Button variant="outline" size="sm" onClick={() => handlePermanentDeleteProject(project)} className="text-red-600 border-red-600 hover:bg-red-50">
                         Delete Permanently
                       </Button>
                     </div>
@@ -778,13 +750,29 @@ const ProjectManagement = () => {
 
       {/* Modal for Manage Members */}
       <ModalManageMember isOpen={isManageMembersOpen} onClose={handleCloseMembersModal} project={selectedProject} />
-      
+
       {/* Modal for Edit Project */}
-      <EditProjectModal 
-        isOpen={isEditModalOpen} 
-        onClose={handleCloseEditModal} 
-        project={selectedProject}
-        onProjectUpdated={handleProjectUpdated}
+      <EditProjectModal isOpen={isEditModalOpen} onClose={handleCloseEditModal} project={selectedProject} onProjectUpdated={handleProjectUpdated} />
+
+      {/* Sheet for Project Comments */}
+      <ProjectCommentsSheet
+        open={isCommentsSheetOpen}
+        onOpenChange={setIsCommentsSheetOpen}
+        user={user}
+        projectId={selectedProjectForComments?.id}
+        canComment={
+          !!user && (
+            user.role === "SUPERADMIN" ||
+            user.role === "PROJECT_OWNER" ||
+            user.role === "SCRUM_MASTER" ||
+            (user.role === "TEAM_MEMBER" &&
+              (
+                selectedProjectForComments?.members?.some(m => m.id === user.id) ||
+                selectedProjectForComments?.assignees?.some(a => a.id === user.id)
+              )
+            )
+          )
+        }
       />
     </div>
   );
@@ -836,7 +824,7 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
     }
 
     // Log value yang dikirim
-    console.log('Form submit:', formData);
+    console.log("Form submit:", formData);
 
     try {
       setLoading(true);
@@ -944,8 +932,12 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
               <SelectValue placeholder="Select duration type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="SHORT_TERM" onClick={() => handleSelectChange("duration", "SHORT_TERM")}>Short Term Project</SelectItem>
-              <SelectItem value="LONG_TERM" onClick={() => handleSelectChange("duration", "LONG_TERM")}>Long Term Project</SelectItem>
+              <SelectItem value="SHORT_TERM" onClick={() => handleSelectChange("duration", "SHORT_TERM")}>
+                Short Term Project
+              </SelectItem>
+              <SelectItem value="LONG_TERM" onClick={() => handleSelectChange("duration", "LONG_TERM")}>
+                Long Term Project
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>

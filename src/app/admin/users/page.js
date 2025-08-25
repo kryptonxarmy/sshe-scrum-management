@@ -9,50 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { 
-  Users, 
-  UserPlus, 
-  Edit, 
-  Trash2, 
-  MoreHorizontal, 
-  Eye, 
-  EyeOff,
-  Shield,
-  UserCheck,
-  UserX,
-  Search,
-  Filter,
-  Download
-} from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Users, UserPlus, Edit, Trash2, MoreHorizontal, Eye, EyeOff, Shield, UserCheck, UserX, Search, Filter, Download } from "lucide-react";
 
 const AdminUsersPage = () => {
   const { user, hasPermission } = useAuth();
@@ -62,21 +23,21 @@ const AdminUsersPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
-  
+
   // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  
+
   // Form states
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'TEAM_MEMBER',
-    department: '',
-    isActive: true
+    name: "",
+    email: "",
+    password: "",
+    role: "TEAM_MEMBER",
+    department: "",
+    isActive: true,
   });
   const [formLoading, setFormLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -87,23 +48,23 @@ const AdminUsersPage = () => {
       setLoading(true);
       const response = await fetch(`/api/admin/users?currentUserId=${user.id}`);
       const data = await response.json();
-      
+
       if (data.success) {
         // Ensure all users have _count property
-        const usersWithCount = data.users.map(user => ({
+        const usersWithCount = data.users.map((user) => ({
           ...user,
           _count: user._count || {
             ownedProjects: 0,
             assignedTasks: 0,
-            projectMemberships: 0
-          }
+            projectMemberships: 0,
+          },
         }));
         setUsers(usersWithCount);
       } else {
-        console.error('Failed to fetch users:', data.error);
+        console.error("Failed to fetch users:", data.error);
       }
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error("Error fetching users:", error);
     } finally {
       setLoading(false);
     }
@@ -112,13 +73,13 @@ const AdminUsersPage = () => {
   // Check if user is superadmin
   useEffect(() => {
     if (!user) return;
-    
-    const isSuperadmin = user.role === 'SUPERADMIN' || user.role === 'superadmin';
+
+    const isSuperadmin = user.role === "SUPERADMIN" || user.role === "superadmin";
     if (!isSuperadmin) {
-      router.push('/unauthorized');
+      router.push("/unauthorized");
       return;
     }
-    
+
     fetchUsers();
   }, [user, router, fetchUsers]);
 
@@ -127,14 +88,14 @@ const AdminUsersPage = () => {
     setFormLoading(true);
 
     try {
-      const response = await fetch('/api/admin/users', {
-        method: 'POST',
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...formData,
-          currentUserId: user.id
+          currentUserId: user.id,
         }),
       });
 
@@ -147,27 +108,27 @@ const AdminUsersPage = () => {
           _count: result.user._count || {
             ownedProjects: 0,
             assignedTasks: 0,
-            projectMemberships: 0
-          }
+            projectMemberships: 0,
+          },
         };
-        setUsers(prev => [newUser, ...prev]);
+        setUsers((prev) => [newUser, ...prev]);
         setFormData({
-          name: '',
-          email: '',
-          password: '',
-          role: 'TEAM_MEMBER',
-          department: '',
-          isActive: true
+          name: "",
+          email: "",
+          password: "",
+          role: "TEAM_MEMBER",
+          department: "",
+          isActive: true,
         });
         setShowPassword(false);
         setIsCreateDialogOpen(false);
-        alert('User berhasil dibuat!');
+        alert("User berhasil dibuat!");
       } else {
         alert(`Error: ${result.error}`);
       }
     } catch (error) {
-      console.error('Error creating user:', error);
-      alert('Gagal membuat user. Silakan coba lagi.');
+      console.error("Error creating user:", error);
+      alert("Gagal membuat user. Silakan coba lagi.");
     } finally {
       setFormLoading(false);
     }
@@ -179,13 +140,13 @@ const AdminUsersPage = () => {
 
     try {
       const response = await fetch(`/api/admin/users/${selectedUser.id}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...formData,
-          currentUserId: user.id
+          currentUserId: user.id,
         }),
       });
 
@@ -198,20 +159,20 @@ const AdminUsersPage = () => {
           _count: result.user._count || {
             ownedProjects: 0,
             assignedTasks: 0,
-            projectMemberships: 0
-          }
+            projectMemberships: 0,
+          },
         };
-        setUsers(prev => prev.map(u => u.id === selectedUser.id ? updatedUser : u));
+        setUsers((prev) => prev.map((u) => (u.id === selectedUser.id ? updatedUser : u)));
         setIsEditDialogOpen(false);
         setSelectedUser(null);
         setShowEditPassword(false);
-        alert('User berhasil diupdate!');
+        alert("User berhasil diupdate!");
       } else {
         alert(`Error: ${result.error}`);
       }
     } catch (error) {
-      console.error('Error updating user:', error);
-      alert('Gagal mengupdate user. Silakan coba lagi.');
+      console.error("Error updating user:", error);
+      alert("Gagal mengupdate user. Silakan coba lagi.");
     } finally {
       setFormLoading(false);
     }
@@ -224,50 +185,53 @@ const AdminUsersPage = () => {
 
     try {
       const response = await fetch(`/api/admin/users/${userId}?currentUserId=${user.id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       const result = await response.json();
 
       if (result.success) {
-        setUsers(prev => prev.filter(u => u.id !== userId));
-        alert('User berhasil dihapus!');
+        setUsers((prev) => prev.filter((u) => u.id !== userId));
+        alert("User berhasil dihapus!");
       } else {
         alert(`Error: ${result.error}`);
       }
     } catch (error) {
-      console.error('Error deleting user:', error);
-      alert('Gagal menghapus user. Silakan coba lagi.');
+      console.error("Error deleting user:", error);
+      alert("Gagal menghapus user. Silakan coba lagi.");
     }
   };
 
   const openEditDialog = (user) => {
-    setSelectedUser(user);
-    setFormData({
-      name: user.name,
-      email: user.email,
-      password: '', // Keep empty for security
-      role: user.role,
-      department: user.department || '',
-      isActive: user.isActive
-    });
-    setIsEditDialogOpen(true);
+    document.activeElement?.blur();
+    setTimeout(() => {
+      setSelectedUser(user);
+      setFormData({
+        name: user.name,
+        email: user.email,
+        password: "", // Keep empty for security
+        role: user.role,
+        department: user.department || "",
+        isActive: user.isActive,
+      });
+      setIsEditDialogOpen(true);
+    }, 50);
   };
 
   const openViewDialog = (user) => {
-    setSelectedUser(user);
-    setIsViewDialogOpen(true);
+    document.activeElement?.blur();
+    setTimeout(() => {
+      setSelectedUser(user);
+      setIsViewDialogOpen(true);
+    }, 50);
   };
 
   // Filter users based on search and filters
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = filterRole === 'all' || user.role === filterRole;
-    const matchesStatus = filterStatus === 'all' || 
-                         (filterStatus === 'active' && user.isActive) ||
-                         (filterStatus === 'inactive' && !user.isActive);
-    
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = filterRole === "all" || user.role === filterRole;
+    const matchesStatus = filterStatus === "all" || (filterStatus === "active" && user.isActive) || (filterStatus === "inactive" && !user.isActive);
+
     return matchesSearch && matchesRole && matchesStatus;
   });
 
@@ -282,14 +246,10 @@ const AdminUsersPage = () => {
       PROJECT_OWNER: "Project Owner",
       TEAM_MEMBER: "Team Member",
     };
-    return (
-      <Badge variant={variants[role] || "outline"}>
-        {labels[role] || role}
-      </Badge>
-    );
+    return <Badge variant={variants[role] || "outline"}>{labels[role] || role}</Badge>;
   };
 
-  if (!user || (user.role !== 'SUPERADMIN' && user.role !== 'superadmin')) {
+  if (!user || (user.role !== "SUPERADMIN" && user.role !== "superadmin")) {
     return null;
   }
 
@@ -306,7 +266,7 @@ const AdminUsersPage = () => {
               </h1>
               <p className="text-gray-600 mt-2">Kelola semua user dan role dalam sistem</p>
             </div>
-            
+
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-blue-600 hover:bg-blue-700">
@@ -321,25 +281,12 @@ const AdminUsersPage = () => {
                 <form onSubmit={handleCreateUser} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nama Lengkap *</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))}
-                      placeholder="Masukkan nama lengkap"
-                      required
-                    />
+                    <Input id="name" value={formData.name} onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))} placeholder="Masukkan nama lengkap" required />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))}
-                      placeholder="Masukkan email"
-                      required
-                    />
+                    <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))} placeholder="Masukkan email" required />
                   </div>
 
                   <div className="space-y-2">
@@ -349,28 +296,20 @@ const AdminUsersPage = () => {
                         id="password"
                         type={showPassword ? "text" : "password"}
                         value={formData.password}
-                        onChange={(e) => setFormData(prev => ({...prev, password: e.target.value}))}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
                         placeholder="Masukkan password"
                         required
                         className="pr-10"
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="role">Role *</Label>
-                    <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({...prev, role: value}))}>
+                    <Select value={formData.role} onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -384,23 +323,22 @@ const AdminUsersPage = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="department">Department</Label>
-                    <Input
-                      id="department"
-                      value={formData.department}
-                      onChange={(e) => setFormData(prev => ({...prev, department: e.target.value}))}
-                      placeholder="Masukkan department (opsional)"
-                    />
+                    <Input id="department" value={formData.department} onChange={(e) => setFormData((prev) => ({ ...prev, department: e.target.value }))} placeholder="Masukkan department (opsional)" />
                   </div>
 
                   <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => {
-                      setIsCreateDialogOpen(false);
-                      setShowPassword(false);
-                    }}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsCreateDialogOpen(false);
+                        setShowPassword(false);
+                      }}
+                    >
                       Batal
                     </Button>
                     <Button type="submit" disabled={formLoading}>
-                      {formLoading ? 'Menyimpan...' : 'Buat User'}
+                      {formLoading ? "Menyimpan..." : "Buat User"}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -415,14 +353,9 @@ const AdminUsersPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Cari nama atau email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+                <Input placeholder="Cari nama atau email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
-              
+
               <Select value={filterRole} onValueChange={setFilterRole}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filter by Role" />
@@ -489,11 +422,9 @@ const AdminUsersPage = () => {
                           <div className="text-sm text-gray-500">{user.email}</div>
                         </div>
                       </TableCell>
+                      <TableCell>{getRoleBadge(user.role)}</TableCell>
                       <TableCell>
-                        {getRoleBadge(user.role)}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">{user.department || '-'}</span>
+                        <span className="text-sm">{user.department || "-"}</span>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -511,14 +442,12 @@ const AdminUsersPage = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-500">
-                          {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString('id-ID') : 'Never'}
-                        </span>
+                        <span className="text-sm text-gray-500">{user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString("id-ID") : "Never"}</span>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <div>{(user._count?.ownedProjects) || 0} projects</div>
-                          <div className="text-gray-500">{(user._count?.assignedTasks) || 0} tasks</div>
+                          <div>{user._count?.ownedProjects || 0} projects</div>
+                          <div className="text-gray-500">{user._count?.assignedTasks || 0} tasks</div>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -538,10 +467,7 @@ const AdminUsersPage = () => {
                               Edit User
                             </DropdownMenuItem>
                             {user.id !== user.id && (
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteUser(user.id, user.name)}
-                                className="text-red-600"
-                              >
+                              <DropdownMenuItem onClick={() => handleDeleteUser(user.id, user.name)} className="text-red-600">
                                 <Trash2 className="w-4 h-4 mr-2" />
                                 Delete User
                               </DropdownMenuItem>
@@ -566,23 +492,12 @@ const AdminUsersPage = () => {
             <form onSubmit={handleEditUser} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-name">Nama Lengkap *</Label>
-                <Input
-                  id="edit-name"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))}
-                  required
-                />
+                <Input id="edit-name" value={formData.name} onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))} required />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="edit-email">Email *</Label>
-                <Input
-                  id="edit-email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))}
-                  required
-                />
+                <Input id="edit-email" type="email" value={formData.email} onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))} required />
               </div>
 
               <div className="space-y-2">
@@ -592,27 +507,19 @@ const AdminUsersPage = () => {
                     id="edit-password"
                     type={showEditPassword ? "text" : "password"}
                     value={formData.password}
-                    onChange={(e) => setFormData(prev => ({...prev, password: e.target.value}))}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
                     placeholder="Masukkan password baru atau kosongkan"
                     className="pr-10"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowEditPassword(!showEditPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showEditPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                  <button type="button" onClick={() => setShowEditPassword(!showEditPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showEditPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="edit-role">Role *</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({...prev, role: value}))}>
+                <Select value={formData.role} onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -626,32 +533,27 @@ const AdminUsersPage = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="edit-department">Department</Label>
-                <Input
-                  id="edit-department"
-                  value={formData.department}
-                  onChange={(e) => setFormData(prev => ({...prev, department: e.target.value}))}
-                />
+                <Input id="edit-department" value={formData.department} onChange={(e) => setFormData((prev) => ({ ...prev, department: e.target.value }))} />
               </div>
 
               <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="edit-isActive"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData(prev => ({...prev, isActive: e.target.checked}))}
-                />
+                <input type="checkbox" id="edit-isActive" checked={formData.isActive} onChange={(e) => setFormData((prev) => ({ ...prev, isActive: e.target.checked }))} />
                 <Label htmlFor="edit-isActive">User Active</Label>
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => {
-                  setIsEditDialogOpen(false);
-                  setShowEditPassword(false);
-                }}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditDialogOpen(false);
+                    setShowEditPassword(false);
+                  }}
+                >
                   Batal
                 </Button>
                 <Button type="submit" disabled={formLoading}>
-                  {formLoading ? 'Menyimpan...' : 'Update User'}
+                  {formLoading ? "Menyimpan..." : "Update User"}
                 </Button>
               </DialogFooter>
             </form>
@@ -681,7 +583,7 @@ const AdminUsersPage = () => {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Department</Label>
-                    <p className="text-sm">{selectedUser.department || '-'}</p>
+                    <p className="text-sm">{selectedUser.department || "-"}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Status</Label>
@@ -701,7 +603,7 @@ const AdminUsersPage = () => {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Last Login</Label>
-                    <p className="text-sm">{selectedUser.lastLoginAt ? new Date(selectedUser.lastLoginAt).toLocaleDateString('id-ID') : 'Never'}</p>
+                    <p className="text-sm">{selectedUser.lastLoginAt ? new Date(selectedUser.lastLoginAt).toLocaleDateString("id-ID") : "Never"}</p>
                   </div>
                 </div>
 
@@ -727,19 +629,17 @@ const AdminUsersPage = () => {
                   <Label className="text-sm font-medium text-gray-500">Account Info</Label>
                   <div className="grid grid-cols-2 gap-4 mt-2 text-sm">
                     <div>
-                      <span className="text-gray-500">Created:</span> {new Date(selectedUser.createdAt).toLocaleDateString('id-ID')}
+                      <span className="text-gray-500">Created:</span> {new Date(selectedUser.createdAt).toLocaleDateString("id-ID")}
                     </div>
                     <div>
-                      <span className="text-gray-500">Updated:</span> {new Date(selectedUser.updatedAt).toLocaleDateString('id-ID')}
+                      <span className="text-gray-500">Updated:</span> {new Date(selectedUser.updatedAt).toLocaleDateString("id-ID")}
                     </div>
                   </div>
                 </div>
               </div>
             )}
             <DialogFooter>
-              <Button onClick={() => setIsViewDialogOpen(false)}>
-                Tutup
-              </Button>
+              <Button onClick={() => setIsViewDialogOpen(false)}>Tutup</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

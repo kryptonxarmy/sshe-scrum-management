@@ -316,9 +316,9 @@ export const taskOperations = {
         function: true,
         sprint: true,
         comments: {
-          include: {
-            author: true,
-          },
+          // include: {
+          //   author: true,
+          // },
           orderBy: {
             createdAt: "desc",
           },

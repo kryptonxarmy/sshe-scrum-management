@@ -46,47 +46,63 @@ const ArchiveProjects = () => {
   const getProjectStats = (project) => {
     const tasks = project.tasks || [];
     const total = tasks.length;
-    
+
     if (total === 0) {
       return {
         total: 0,
         todo: 0,
         inProgress: 0,
         done: 0,
-        completionRate: 0
+        completionRate: 0,
       };
     }
 
-    const todo = tasks.filter(task => task.status === 'TODO').length;
-    const inProgress = tasks.filter(task => task.status === 'IN_PROGRESS').length;
-    const done = tasks.filter(task => task.status === 'DONE').length;
-    
+    const todo = tasks.filter((task) => task.status === "TODO").length;
+    const inProgress = tasks.filter((task) => task.status === "IN_PROGRESS").length;
+    const done = tasks.filter((task) => task.status === "DONE").length;
+
     return {
       total,
       todo,
-      inProgress, 
+      inProgress,
       done,
-      completionRate: Math.round((done / total) * 100)
+      completionRate: Math.round((done / total) * 100),
     };
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   const getPriorityColor = (priority) => {
     const colors = {
       LOW: "bg-green-100 text-green-800",
-      MEDIUM: "bg-yellow-100 text-yellow-800", 
+      MEDIUM: "bg-yellow-100 text-yellow-800",
       HIGH: "bg-orange-100 text-orange-800",
-      CRITICAL: "bg-red-100 text-red-800"
+      CRITICAL: "bg-red-100 text-red-800",
     };
     return colors[priority] || colors.MEDIUM;
+  };
+
+  const handleRestoreToActive = async (projectId) => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}/release`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "active" }),
+      });
+      if (!response.ok) throw new Error("Failed to restore project to ACTIVE");
+      // Refresh released projects
+      const data = await response.json();
+      setReleasedProjects((prev) => prev.filter((p) => p.id !== projectId));
+    } catch (err) {
+      setError("Gagal mengembalikan project ke ACTIVE");
+    }
   };
 
   if (loading) {
@@ -136,9 +152,7 @@ const ArchiveProjects = () => {
           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
             {releasedProjects.length} Released Projects
           </Badge>
-          <div className="text-sm text-slate-500">
-            Total Value: {releasedProjects.length} Projects
-          </div>
+          <div className="text-sm text-slate-500">Total Value: {releasedProjects.length} Projects</div>
         </div>
       </div>
 
@@ -159,15 +173,15 @@ const ArchiveProjects = () => {
             <div>
               <p className="text-blue-100 text-sm">Avg Completion</p>
               <p className="text-3xl font-bold">
-                {releasedProjects.length > 0 
+                {releasedProjects.length > 0
                   ? Math.round(
                       releasedProjects.reduce((acc, project) => {
                         const stats = getProjectStats(project);
                         return acc + stats.completionRate;
                       }, 0) / releasedProjects.length
                     )
-                  : 0
-                }%
+                  : 0}
+                %
               </p>
             </div>
             <Users className="h-10 w-10 text-blue-200" />
@@ -215,14 +229,13 @@ const ArchiveProjects = () => {
                   <div className="space-y-2 flex-1">
                     <CardTitle className="text-lg leading-6">{project.name}</CardTitle>
                     <div className="flex items-center gap-2">
-                      <Badge className={getPriorityColor(project.priority)}>
-                        {project.priority}
-                      </Badge>
-                      <Badge className="bg-green-100 text-green-800">
-                        RELEASED
-                      </Badge>
+                      <Badge className={getPriorityColor(project.priority)}>{project.priority}</Badge>
+                      <Badge className="bg-green-100 text-green-800">RELEASED</Badge>
                     </div>
                   </div>
+                  <Button variant="outline" size="sm" className="text-blue-600 border-blue-600 hover:bg-blue-50" onClick={() => handleRestoreToActive(project.id)}>
+                    Restore to ACTIVE
+                  </Button>
                 </div>
               </CardHeader>
 
