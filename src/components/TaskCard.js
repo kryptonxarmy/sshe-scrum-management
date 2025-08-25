@@ -144,7 +144,7 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
 
   return (
     <>
-      <Card className="cursor-grab transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 relative group min-h-[120px]">
+      <Card className={`cursor-grab transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 relative group min-h-[120px] ${task.status === 'OVERDUE' ? 'border-2 border-red-500 bg-red-50' : ''} min-h-[120px]`}>
         {/* Task Type Badge */}
         <Badge variant={getTypeBadgeVariant(task.type)} className="absolute top-2 right-2 text-xs">
           {getDisplayType()}

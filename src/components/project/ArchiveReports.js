@@ -23,19 +23,8 @@ const ArchiveReports = () => {
     longTermCount: 0
   });
 
-  useEffect(() => {
-    if (user?.id) {
-      fetchReleasedProjects();
-    }
-  }, [user?.id, fetchReleasedProjects]);
-
-  useEffect(() => {
-    calculateStats();
-  }, [projects, timeFilter, durationFilter, calculateStats]);
-
   const fetchReleasedProjects = async () => {
     if (!user?.id) return;
-    
     try {
       setLoading(true);
       // Menggunakan API projects biasa untuk mendapatkan project yang belum rilis
@@ -54,6 +43,16 @@ const ArchiveReports = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchReleasedProjects();
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    calculateStats();
+  }, [projects, timeFilter, durationFilter]);
 
   const calculateStats = () => {
     if (projects.length === 0) {

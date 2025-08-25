@@ -183,10 +183,11 @@ const GanttChart = ({ projects = [], timeFilter = "3months" }) => {
                   <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
                     <h4 className="font-medium text-slate-800 text-sm mb-1">{project.name}</h4>
                     <div className="flex items-center gap-2 mb-2">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        project.duration === 'LONG_TERM' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {project.duration === 'LONG_TERM' ? 'Long Term' : 'Short Term'}
+                      {/* Progress bar & label */}
+                      <span className={`px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700`}>
+                        Progress: {project.tasks && project.tasks.length > 0
+                          ? `${Math.round((project.tasks.filter(t => t.status === 'DONE').length / project.tasks.length) * 100)}%`
+                          : '0%'}
                       </span>
                     </div>
                     <p className="text-xs text-slate-500">
@@ -207,13 +208,12 @@ const GanttChart = ({ projects = [], timeFilter = "3months" }) => {
                       minWidth: barStyle.duration === 1 ? '40px' : 'auto'
                     }}
                   >
-                    {barStyle.duration === 1 ? (
-                      <span className="px-1">1d</span>
-                    ) : barStyle.duration <= 7 ? (
-                      <span className="px-2">{barStyle.duration}d</span>
-                    ) : (
-                      <span className="px-2">{barStyle.duration} days</span>
-                    )}
+                    {/* Show progress percent instead of duration days */}
+                    <span className="px-2">
+                      {project.tasks && project.tasks.length > 0
+                        ? `${Math.round((project.tasks.filter(t => t.status === 'DONE').length / project.tasks.length) * 100)}% Progress`
+                        : '0% Progress'}
+                    </span>
                   </div>
                 </div>
               </div>

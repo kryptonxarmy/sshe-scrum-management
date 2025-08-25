@@ -19,6 +19,7 @@ import ArchiveReports from "@/components/project/ArchiveReports";
 import EditProjectModal from "@/components/project/EditProjectModal";
 
 const ProjectManagement = () => {
+  const [statusFilter, setStatusFilter] = useState("all");
   const { user, canCreateProject, canManageProject, canManageProjectMembers, canViewProject } = useAuth();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -50,6 +51,7 @@ const ProjectManagement = () => {
         }
 
         const data = await response.json();
+    console.log('Fetched projects:', data.projects);
         setProjectList(data.projects || []);
       } catch (error) {
         console.error("Error fetching projects:", error);
@@ -254,9 +256,8 @@ const ProjectManagement = () => {
 
   // Filter projects based on user role and permissions
   const getVisibleProjects = () => {
-    return projectList.filter((project) => 
-      canViewProject(project) && project.status !== 'RELEASED'
-    );
+  // Tampilkan semua project tanpa filter status
+  return projectList.filter((project) => canViewProject(project));
   };
 
   const getProjectStats = (project) => {
@@ -307,10 +308,13 @@ const ProjectManagement = () => {
   };
 
   const getStatusDisplay = (status, department) => {
-    if (status === "PLANNING" || status === "ACTIVE") {
-      return department;
+    if (status === "ACTIVE") {
+      return "Active";
     }
-    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    if (status === "RELEASED") {
+      return "Released";
+    }
+    return "Unknown";
   };
 
   if (loading) {
@@ -318,6 +322,19 @@ const ProjectManagement = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
+            {/* Filter Status Project */}
+            <div className="mb-4 flex gap-2 items-center">
+              <label className="text-sm font-medium">Filter Status:</label>
+              <select
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
+                className="border rounded px-2 py-1 text-sm"
+              >
+                <option value="all">All</option>
+                <option value="active">Active</option>
+                <option value="released">Released</option>
+              </select>
+            </div>
             <h2 className="text-2xl font-bold text-slate-800">Projects</h2>
             <p className="text-slate-600">Loading projects...</p>
           </div>
@@ -505,6 +522,10 @@ const ProjectManagement = () => {
                       <div className="flex items-center gap-1">
                         <Calendar size={14} />
                         <span>{project.endDate ? new Date(project.endDate).toLocaleDateString() : "No end date"}</span>
+                        {/* Tambahkan keterangan short/long term di samping tanggal */}
+                        <span className="ml-2 px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">
+                          {project.duration === 'LONG_TERM' ? 'Long Term' : 'Short Term'}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Users size={14} />
@@ -714,6 +735,7 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
     duration: "SHORT_TERM",
     startDate: "",
     endDate: "",
+    status: "ACTIVE", // Project baru otomatis ACTIVE
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
