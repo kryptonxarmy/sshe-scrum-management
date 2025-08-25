@@ -578,8 +578,10 @@ const ProjectManagement = () => {
                       <div className="flex items-center gap-1">
                         <Calendar size={14} />
                         <span>{project.endDate ? new Date(project.endDate).toLocaleDateString() : "No end date"}</span>
-                        {/* Tambahkan keterangan short/long term di samping tanggal */}
-                        <span className="ml-2 px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">{project.duration === "LONG_TERM" ? "Long Term" : "Short Term"}</span>
+                        {/* Tambahkan keterangan short/long period di samping tanggal */}
+                        <span className="ml-2 px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">
+                          {project.duration === 'LONG_TERM' ? 'Long Period' : 'Short Period'}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Users size={14} />
@@ -932,12 +934,8 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
               <SelectValue placeholder="Select duration type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="SHORT_TERM" onClick={() => handleSelectChange("duration", "SHORT_TERM")}>
-                Short Term Project
-              </SelectItem>
-              <SelectItem value="LONG_TERM" onClick={() => handleSelectChange("duration", "LONG_TERM")}>
-                Long Term Project
-              </SelectItem>
+              <SelectItem value="SHORT_TERM" onClick={() => handleSelectChange("duration", "SHORT_TERM")}>Short Period Project</SelectItem>
+              <SelectItem value="LONG_TERM" onClick={() => handleSelectChange("duration", "LONG_TERM")}>Long Period Project</SelectItem>
             </SelectContent>
           </Select>
         </div>
