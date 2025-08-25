@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { Edit, Trash2, CheckCircle, AlertTriangle, Loader2, AlertCircle } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -144,12 +144,17 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
 
   return (
     <>
-      <Card className={`cursor-grab transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 relative group min-h-[120px] ${task.status === 'OVERDUE' ? 'border-2 border-red-500 bg-red-50' : ''} min-h-[120px]`}>
+      <Card className={`cursor-grab transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 relative group min-h-[120px] ${task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'DONE' ? 'border-2 border-red-600 bg-red-50' : ''} min-h-[120px]`}>
+        {task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'DONE' && (
+          <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded shadow z-10">
+            <AlertCircle className="h-4 w-4 text-white" />
+            Overdue!
+          </div>
+        )}
         {/* Task Type Badge */}
         <Badge variant={getTypeBadgeVariant(task.type)} className="absolute top-2 right-2 text-xs">
           {getDisplayType()}
         </Badge>
-
         {/* Edit Button - Only visible to Scrum Master and Project Owner */}
         {canEditTask() && (
           <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
@@ -164,7 +169,6 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
             >
               <Edit className="h-3 w-3" />
             </Button>
-
             <AlertDialog
               open={showDeleteDialog}
               onOpenChange={(open) => {
@@ -205,11 +209,9 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
             </AlertDialog>
           </div>
         )}
-
         <CardContent className="p-4">
           {/* Task Title */}
           <div className="font-semibold text-slate-800 mb-3 mr-16 leading-tight text-sm">{task.title || "Untitled Task"}</div>
-
           {/* Task Meta */}
           <div className="flex flex-col gap-1 text-xs text-slate-600">
             <Badge variant={getPriorityBadgeVariant(task.priority)} className="text-xs mb-1">
@@ -221,7 +223,6 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
           </div>
         </CardContent>
       </Card>
-
       {/* Edit Task Modal */}
       <EditTaskModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} task={task} onTaskUpdated={handleTaskUpdated} />
     </>

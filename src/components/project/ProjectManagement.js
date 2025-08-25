@@ -1,4 +1,32 @@
 "use client";
+import React from "react";
+// Komponen gabungan InfoIcon + Tooltip untuk Project Duration
+function InfoWithTooltip() {
+  const [show, setShow] = React.useState(false);
+  return (
+    <span style={{ position: 'relative', display: 'inline-block' }}>
+      <span
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        style={{ display: 'inline-block' }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 cursor-pointer">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="16" x2="12" y2="12" />
+          <line x1="12" y1="8" x2="12" y2="8" />
+        </svg>
+      </span>
+      {show && (
+        <div style={{
+          position: 'absolute', top: '22px', left: '-10px', minWidth: '220px', background: '#f3f4f6', color: '#374151', fontSize: '12px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', padding: '10px', zIndex: 50
+        }}>
+          <div><b>Short Term:</b> Proyek dengan durasi singkat, maksimal 6 bulan.</div>
+          <div style={{ marginTop: '4px' }}><b>Long Term:</b> Proyek dengan durasi lebih dari 6 bulan.</div>
+        </div>
+      )}
+    </span>
+  );
+}
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -256,8 +284,8 @@ const ProjectManagement = () => {
 
   // Filter projects based on user role and permissions
   const getVisibleProjects = () => {
-  // Tampilkan semua project tanpa filter status
-  return projectList.filter((project) => canViewProject(project));
+  // Tampilkan hanya project yang statusnya bukan RELEASED (untuk dashboard aktif)
+  return projectList.filter((project) => canViewProject(project) && project.status !== 'RELEASED');
   };
 
   const getProjectStats = (project) => {
@@ -322,19 +350,6 @@ const ProjectManagement = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            {/* Filter Status Project */}
-            <div className="mb-4 flex gap-2 items-center">
-              <label className="text-sm font-medium">Filter Status:</label>
-              <select
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
-                className="border rounded px-2 py-1 text-sm"
-              >
-                <option value="all">All</option>
-                <option value="active">Active</option>
-                <option value="released">Released</option>
-              </select>
-            </div>
             <h2 className="text-2xl font-bold text-slate-800">Projects</h2>
             <p className="text-slate-600">Loading projects...</p>
           </div>
@@ -350,7 +365,7 @@ const ProjectManagement = () => {
             </Card>
           ))}
         </div>
-      </div>
+  </div>
     );
   }
 
@@ -477,11 +492,8 @@ const ProjectManagement = () => {
                           <span className="font-medium">Scrum Master:</span> {getScrumMasterName(project.scrumMaster)}
                         </p>
                       )}
-                    </div>
-
-                <div className="flex items-center justify-end">
-                  <Badge variant={getStatusBadgeVariant(project.status)}>{getStatusDisplay(project.status, project.department)}</Badge>
-                </div>
+                    <Badge variant={getStatusBadgeVariant(project.status)}>{getStatusDisplay(project.status, project.department)}</Badge>
+                  </div>
 
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
@@ -498,6 +510,60 @@ const ProjectManagement = () => {
                           <div className="font-semibold text-gray-600">{stats.todo}</div>
                           <div className="text-gray-500">To Do</div>
                         </div>
+                {/* Archive Tab: Project RELEASED */}
+                <TabsContent value="archive" className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {projectList.filter(project => canViewProject(project) && project.status === 'RELEASED').map(project => {
+                      const canManageProjectActions = canManageProject(project.ownerId);
+                      return (
+                        <Card key={project.id} className="hover:shadow-lg transition-shadow">
+                          <CardHeader className="pb-3">
+                            <div className="flex items-start justify-between">
+                              <div className="space-y-1">
+                                <CardTitle className="text-lg">{project.name}</CardTitle>
+                              </div>
+                              {canManageProjectActions && (
+                                <div className="flex gap-2">
+                                  <Button variant="outline" size="sm" onClick={() => handleRestoreProject(project)}>
+                                    Restore Project
+                                  </Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm">
+                                        <MoreVertical size={16} />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleDeleteProject(project)} className="flex items-center gap-2 text-red-600">
+                                        <Trash2 size={14} />
+                                        Soft Delete Project
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              )}
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <p className="text-sm text-slate-600 line-clamp-2">{project.description}</p>
+                            <div className="space-y-1">
+                              <p className="text-sm text-slate-600">
+                                <span className="font-medium">Owner:</span> {getProjectOwnerName(project.owner)}
+                              </p>
+                              {getScrumMasterName(project.scrumMaster) && (
+                                <p className="text-sm text-slate-600">
+                                  <span className="font-medium">Scrum Master:</span> {getScrumMasterName(project.scrumMaster)}
+                                </p>
+                              )}
+                              <Badge variant={getStatusBadgeVariant(project.status)}>{getStatusDisplay(project.status, project.department)}</Badge>
+                            </div>
+                            {/* ...existing code... */}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </TabsContent>
                         <div className="text-center p-2 bg-blue-50 rounded">
                           <div className="font-semibold text-blue-600">{stats.inProgress}</div>
                           <div className="text-gray-500">In Progress</div>
@@ -732,7 +798,7 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
     description: "",
     department: "",
     scrumMasterId: "",
-    duration: "SHORT_TERM",
+    duration: "",
     startDate: "",
     endDate: "",
     status: "ACTIVE", // Project baru otomatis ACTIVE
@@ -764,6 +830,13 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
       setError("User not authenticated");
       return;
     }
+    if (!formData.duration) {
+      setError("Project duration must be selected.");
+      return;
+    }
+
+    // Log value yang dikirim
+    console.log('Form submit:', formData);
 
     try {
       setLoading(true);
@@ -828,19 +901,18 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
               <SelectValue placeholder="Select function" />
             </SelectTrigger>
             <SelectContent>
-              {departments.map((dept) => (
-                <SelectItem key={dept} value={dept}>
-                  {dept}
-                </SelectItem>
-              ))}
+              <SelectItem value="Process Safety">Process Safety</SelectItem>
+              <SelectItem value="Personnel Safety">Personnel Safety</SelectItem>
+              <SelectItem value="Emergency Preparedness">Emergency Preparedness</SelectItem>
+              <SelectItem value="Environmental">Environmental</SelectItem>
+              <SelectItem value="Planning">Planning</SelectItem>
             </SelectContent>
           </Select>
         </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea id="description" name="description" value={formData.description} onChange={handleChange} disabled={loading} rows={3} />
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
+          <Textarea id="description" name="description" value={formData.description} onChange={handleChange} disabled={loading} rows={3} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -863,14 +935,17 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
         </div>
 
         <div className="space-y-2">
-          <Label>Project Duration</Label>
+          <div className="flex items-center gap-2 mb-1">
+            <Label>Project Duration</Label>
+            <InfoWithTooltip />
+          </div>
           <Select value={formData.duration} onValueChange={(value) => handleSelectChange("duration", value)} disabled={loading}>
             <SelectTrigger>
               <SelectValue placeholder="Select duration type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="SHORT_TERM">Short Term Project</SelectItem>
-              <SelectItem value="LONG_TERM">Long Term Project</SelectItem>
+              <SelectItem value="SHORT_TERM" onClick={() => handleSelectChange("duration", "SHORT_TERM")}>Short Term Project</SelectItem>
+              <SelectItem value="LONG_TERM" onClick={() => handleSelectChange("duration", "LONG_TERM")}>Long Term Project</SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -66,6 +66,21 @@ const ProjectOwnerReports = () => {
     setRefreshing(false);
   };
 
+
+  // Defensive fallback for missing/incorrect reportData fields
+  const safe = (obj, key, def) => (obj && obj[key] !== undefined ? obj[key] : def);
+  const metrics = safe(reportData, 'performanceMetrics', {});
+  const projects = safe(reportData, 'projectOverview', []);
+  const taskDistribution = Array.isArray(reportData?.taskDistribution) ? reportData.taskDistribution : [];
+  const priorityBreakdown = Array.isArray(reportData?.priorityBreakdown) ? reportData.priorityBreakdown : [];
+  const completionTrends = Array.isArray(reportData?.completionTrends) ? reportData.completionTrends : [];
+
+  // Patch window.reportData for FilteredTaskList fallback
+  if (typeof window !== 'undefined') {
+    window.reportData = window.reportData || {};
+    window.reportData.tasks = Array.isArray(reportData?.tasks) ? reportData.tasks : [];
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -113,34 +128,34 @@ const ProjectOwnerReports = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           title="Total Projects"
-          value={reportData.performanceMetrics.totalProjects}
-          subtitle={`${reportData.performanceMetrics.activeProjects} active`}
+          value={safe(metrics, 'totalProjects', 0)}
+          subtitle={`${safe(metrics, 'activeProjects', 0)} active`}
           icon={FolderOpen}
           color="blue"
           trend={null}
         />
         <MetricCard
           title="Total Tasks"
-          value={reportData.performanceMetrics.totalTasks}
-          subtitle={`${reportData.performanceMetrics.completedTasks} completed`}
+          value={safe(metrics, 'totalTasks', 0)}
+          subtitle={`${safe(metrics, 'completedTasks', 0)} completed`}
           icon={CheckCircle}
           color="green"
-          trend={reportData.performanceMetrics.completionRate}
+          trend={safe(metrics, 'completionRate', null)}
         />
         <MetricCard
           title="Completion Rate"
-          value={`${reportData.performanceMetrics.completionRate}%`}
+          value={`${safe(metrics, 'completionRate', 0)}%`}
           subtitle="Overall progress"
           icon={Target}
           color="purple"
-          trend={reportData.performanceMetrics.completionRate > 70 ? "up" : "down"}
+          trend={safe(metrics, 'completionRate', 0) > 70 ? "up" : "down"}
         />
         <MetricCard
           title="Overdue Tasks"
-          value={reportData.performanceMetrics.overdueTasks}
-          subtitle={reportData.performanceMetrics.overdueTasks > 0 ? "Need attention" : "All on track"}
+          value={safe(metrics, 'overdueTasks', 0)}
+          subtitle={safe(metrics, 'overdueTasks', 0) > 0 ? "Need attention" : "All on track"}
           icon={AlertTriangle}
-          color={reportData.performanceMetrics.overdueTasks > 0 ? "red" : "green"}
+          color={safe(metrics, 'overdueTasks', 0) > 0 ? "red" : "green"}
           trend={null}
         />
       </div>
@@ -169,16 +184,16 @@ const ProjectOwnerReports = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={reportData.taskDistribution}
+                        data={taskDistribution}
                         cx="50%"
                         cy="50%"
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="value"
-                        label={({ name, percentage }) => `${name}: ${percentage}%`}
+                        label={({ name, percentage }) => `${name}: ${percentage ?? 0}%`}
                       >
-                        {reportData.taskDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        {taskDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color ?? '#8884d8'} />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -199,14 +214,14 @@ const ProjectOwnerReports = () => {
               <CardContent>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={reportData.priorityBreakdown}>
+                    <BarChart data={priorityBreakdown}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
                       <YAxis />
                       <Tooltip />
                       <Bar dataKey="value" fill="#8884d8">
-                        {reportData.priorityBreakdown.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        {priorityBreakdown.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color ?? '#8884d8'} />
                         ))}
                       </Bar>
                     </BarChart>
@@ -227,7 +242,7 @@ const ProjectOwnerReports = () => {
             <CardContent>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={reportData.completionTrends}>
+                  <LineChart data={completionTrends}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="day" />
                     <YAxis />
@@ -247,14 +262,14 @@ const ProjectOwnerReports = () => {
         </TabsContent>
 
         <TabsContent value="projects" className="space-y-6">
-          <ProjectsOverview projects={reportData.projectOverview} />
+          <ProjectsOverview projects={projects} />
         </TabsContent>
 
         <TabsContent value="tasks" className="space-y-6">
           <TasksAnalysis 
-            distribution={reportData.taskDistribution}
-            priorities={reportData.priorityBreakdown}
-            trends={reportData.completionTrends}
+            distribution={taskDistribution}
+            priorities={priorityBreakdown}
+            trends={completionTrends}
           />
         </TabsContent>
 
@@ -355,7 +370,17 @@ const ProjectsOverview = ({ projects }) => (
 const TasksAnalysis = ({ distribution, priorities, trends }) => (
   <div className="space-y-6">
     <h3 className="text-lg font-semibold text-gray-900">Task Analysis</h3>
-    
+    {/* Filter Dropdown */}
+    <div className="mb-4 flex gap-2 items-center">
+      <label className="text-sm font-medium">Filter Task Status:</label>
+      <select id="taskStatusFilter" className="border rounded px-2 py-1 text-sm" value={window.taskStatusFilter || "all"} onChange={e => { window.taskStatusFilter = e.target.value; window.dispatchEvent(new Event('taskStatusFilterChange')); }}>
+        <option value="all">All</option>
+        <option value="TODO">To Do</option>
+        <option value="IN_PROGRESS">In Progress</option>
+        <option value="DONE">Done</option>
+        <option value="OVERDUE">Overdue</option>
+      </select>
+    </div>
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
         <CardHeader>
@@ -404,8 +429,53 @@ const TasksAnalysis = ({ distribution, priorities, trends }) => (
         </CardContent>
       </Card>
     </div>
+    {/* Task List Filtered */}
+    <div className="mt-6">
+      <h4 className="text-md font-semibold mb-2">Filtered Tasks</h4>
+      <FilteredTaskList />
+    </div>
   </div>
+
 );
+
+// Komponen untuk menampilkan task hasil filter
+const FilteredTaskList = () => {
+  const [tasks, setTasks] = React.useState([]);
+  const [filter, setFilter] = React.useState(window.taskStatusFilter || "all");
+
+  React.useEffect(() => {
+    const updateFilter = () => setFilter(window.taskStatusFilter || "all");
+    window.addEventListener('taskStatusFilterChange', updateFilter);
+    return () => window.removeEventListener('taskStatusFilterChange', updateFilter);
+  }, []);
+
+  React.useEffect(() => {
+    // Ambil data task dari window.reportData jika tersedia
+    if (window.reportData && window.reportData.tasks) {
+      let filtered = window.reportData.tasks;
+      if (filter === "TODO") filtered = filtered.filter(t => t.status === "TODO");
+      else if (filter === "IN_PROGRESS") filtered = filtered.filter(t => t.status === "IN_PROGRESS");
+      else if (filter === "DONE") filtered = filtered.filter(t => t.status === "DONE");
+      else if (filter === "OVERDUE") filtered = filtered.filter(t => t.isOverdue);
+      setTasks(filtered);
+    }
+  }, [filter]);
+
+  if (!tasks.length) return <div className="text-gray-500 text-sm">No tasks found for this filter.</div>;
+
+  return (
+    <ul className="space-y-2">
+      {tasks.map(task => (
+        <li key={task.id} className="border rounded p-2 flex justify-between items-center">
+          <span>{task.title}</span>
+          <Badge variant={task.status === "DONE" ? "success" : task.status === "IN_PROGRESS" ? "default" : task.status === "TODO" ? "outline" : "destructive"}>
+            {task.status === "OVERDUE" ? "Overdue" : task.status.replace("_", " ")}
+          </Badge>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 // Team Performance Analysis Component
 const TeamPerformanceAnalysis = ({ productivity, metrics }) => (
