@@ -20,8 +20,8 @@ function InfoWithTooltip() {
         <div style={{
           position: 'absolute', top: '22px', left: '-10px', minWidth: '220px', background: '#f3f4f6', color: '#374151', fontSize: '12px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', padding: '10px', zIndex: 50
         }}>
-          <div><b>Short Term:</b> Proyek dengan durasi singkat, maksimal 6 bulan.</div>
-          <div style={{ marginTop: '4px' }}><b>Long Term:</b> Proyek dengan durasi lebih dari 6 bulan.</div>
+          <div><b>Short Period:</b> Proyek dengan durasi singkat, maksimal 6 bulan.</div>
+          <div style={{ marginTop: '4px' }}><b>Long Period:</b> Proyek dengan durasi lebih dari 6 bulan.</div>
         </div>
       )}
     </span>
@@ -120,8 +120,12 @@ const ProjectManagement = () => {
   }, [activeTab, user, fetchDeletedProjects]);
 
   const handleManageMembers = (project) => {
-    setSelectedProject(project);
-    setIsManageMembersOpen(true);
+    // Close all dropdowns before opening modal
+    document.activeElement?.blur();
+    setTimeout(() => {
+      setSelectedProject(project);
+      setIsManageMembersOpen(true);
+    }, 50);
   };
 
   const handleCloseMembersModal = () => {
@@ -130,8 +134,12 @@ const ProjectManagement = () => {
   };
 
   const handleEditProject = (project) => {
-    setSelectedProject(project);
-    setIsEditModalOpen(true);
+    // Close all dropdowns before opening modal
+    document.activeElement?.blur();
+    setTimeout(() => {
+      setSelectedProject(project);
+      setIsEditModalOpen(true);
+    }, 50);
   };
 
   const handleCloseEditModal = () => {
@@ -588,9 +596,9 @@ const ProjectManagement = () => {
                       <div className="flex items-center gap-1">
                         <Calendar size={14} />
                         <span>{project.endDate ? new Date(project.endDate).toLocaleDateString() : "No end date"}</span>
-                        {/* Tambahkan keterangan short/long term di samping tanggal */}
+                        {/* Tambahkan keterangan short/long period di samping tanggal */}
                         <span className="ml-2 px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">
-                          {project.duration === 'LONG_TERM' ? 'Long Term' : 'Short Term'}
+                          {project.duration === 'LONG_TERM' ? 'Long Period' : 'Short Period'}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
@@ -944,8 +952,8 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
               <SelectValue placeholder="Select duration type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="SHORT_TERM" onClick={() => handleSelectChange("duration", "SHORT_TERM")}>Short Term Project</SelectItem>
-              <SelectItem value="LONG_TERM" onClick={() => handleSelectChange("duration", "LONG_TERM")}>Long Term Project</SelectItem>
+              <SelectItem value="SHORT_TERM" onClick={() => handleSelectChange("duration", "SHORT_TERM")}>Short Period Project</SelectItem>
+              <SelectItem value="LONG_TERM" onClick={() => handleSelectChange("duration", "LONG_TERM")}>Long Period Project</SelectItem>
             </SelectContent>
           </Select>
         </div>
