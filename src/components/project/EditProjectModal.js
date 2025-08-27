@@ -239,8 +239,8 @@ const EditProjectModal = ({ isOpen, onClose, project, onProjectUpdated }) => {
                   <SelectValue placeholder="Select duration type" />
                 </SelectTrigger>
                 <SelectContent style={{zIndex: 999}}>
-                  <SelectItem value="SHORT_TERM">Short Term Project</SelectItem>
-                  <SelectItem value="LONG_TERM">Long Term Project</SelectItem>
+                  <SelectItem value="SHORT_TERM">Short Period Project</SelectItem>
+                  <SelectItem value="LONG_TERM">Long Period Project</SelectItem>
                 </SelectContent>
               </Select>
             </div>

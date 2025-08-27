@@ -20,8 +20,8 @@ function InfoWithTooltip() {
         <div style={{
           position: 'absolute', top: '22px', left: '-10px', minWidth: '220px', background: '#f3f4f6', color: '#374151', fontSize: '12px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', padding: '10px', zIndex: 50
         }}>
-          <div><b>Short Period:</b> Proyek dengan durasi singkat, maksimal 6 bulan.</div>
-          <div style={{ marginTop: '4px' }}><b>Long Period:</b> Proyek dengan durasi lebih dari 6 bulan.</div>
+          <div><b>Short Period:</b> Proyek dengan durasi singkat, maksimal 1 bulan.</div>
+          <div style={{ marginTop: '4px' }}><b>Long Period:</b> Proyek dengan durasi lebih dari 1 bulan.</div>
         </div>
       )}
     </span>
@@ -45,6 +45,7 @@ import { Plus, MoreVertical, Edit, Trash2, Users, Calendar, AlertTriangle, Archi
 import ModalManageMember from "@/components/project/_partials/ModalManageMember";
 import ArchiveReports from "@/components/project/ArchiveReports";
 import EditProjectModal from "@/components/project/EditProjectModal";
+import KanbanBoard from "@/components/KanbanBoard";
 
 const ProjectManagement = () => {
   const [statusFilter, setStatusFilter] = useState("all");
@@ -794,6 +795,14 @@ const ProjectManagement = () => {
         project={selectedProject}
         onProjectUpdated={handleProjectUpdated}
       />
+
+      {/* Render KanbanBoard dengan project detail */}
+      {selectedProject && (
+        <div className="mt-8">
+          <h3 className="text-xl font-bold text-slate-800 mb-4">Project Kanban Board</h3>
+          <KanbanBoard functionId={selectedProject.id} filter={statusFilter} project={selectedProject} />
+        </div>
+      )}
     </div>
   );
 };
@@ -880,10 +889,25 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
   };
 
   const handleSelectChange = (field, value) => {
-    setFormData({
-      ...formData,
-      [field]: value,
-    });
+    // If duration is set to SHORT_TERM, set startDate to today and endDate to +1 month
+    if (field === "duration" && value === "SHORT_TERM") {
+      const today = new Date();
+      const startDate = today.toISOString().slice(0, 10);
+      const endDateObj = new Date(today);
+      endDateObj.setMonth(endDateObj.getMonth() + 1);
+      const endDate = endDateObj.toISOString().slice(0, 10);
+      setFormData({
+        ...formData,
+        duration: value,
+        startDate,
+        endDate,
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [field]: value,
+      });
+    }
   };
 
   const departments = ["Process Safety", "Personnel Safety", "Emergency Preparedness", "Planning", "Environmental"];
@@ -931,7 +955,7 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
               <SelectValue placeholder="Select Scrum Master" />
             </SelectTrigger>
             <SelectContent>
-              {members.map((member) => (
+              {members.filter(member => member.role !== 'SUPERADMIN').map((member) => (
                 <SelectItem key={member.id} value={member.id}>
                   {member.name}
                 </SelectItem>

@@ -41,6 +41,16 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
     return false;
   };
 
+  // Check if user can update status to DONE (strict: only project owner & scrum master)
+  const canUpdateToDone = () => {
+    if (!user) return false;
+    // Only allow if user is project owner of this project
+    if (task.project && task.project.ownerId === user.id) return true;
+    // Or user is scrum master of this project
+    if (task.project && task.project.scrumMasterId === user.id) return true;
+    return false;
+  };
+
   const handleTaskUpdated = (updatedTask) => {
     if (onTaskUpdated) {
       onTaskUpdated(updatedTask);
@@ -221,6 +231,7 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
             {task.sprint && <span className="text-xs text-slate-500">Sprint: {task.sprint.name}</span>}
             <span className="text-xs text-slate-500">Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric" }) : "No due date"}</span>
           </div>
+          {/* Fitur Mark as Done dihapus */}
         </CardContent>
       </Card>
       {/* Edit Task Modal */}
