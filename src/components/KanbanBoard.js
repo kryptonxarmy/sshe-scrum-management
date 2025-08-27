@@ -1,28 +1,32 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import TaskCard from "./TaskCard";
 import { CheckCircle2, Circle, Clock } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import CompletedTasksList from "./CompletedTasksList";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 const KanbanBoard = ({ functionId, filter = "all" }) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [tasks, setTasks] = useState({
     todo: [],
     progress: [],
     done: [],
   });
+  const [error, setError] = useState(null);
+  const [project, setProject] = useState(null);
 
+  // Fetch tasks
   const fetchTasks = async () => {
     try {
       const response = await fetch(`/api/tasks?projectId=${functionId}`);
       if (!response.ok) {
         throw new Error("Failed to fetch tasks");
       }
+      if (!response.ok) throw new Error('Failed to fetch tasks');
       const data = await response.json();
-      // Organize tasks by status
       const organizedTasks = {
         todo: data.tasks.filter((task) => task.status === "TODO"),
         progress: data.tasks.filter((task) => task.status === "IN_PROGRESS"),
@@ -30,47 +34,51 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
       };
       setTasks(organizedTasks);
     } catch (error) {
-      console.error("Error fetching tasks:", error);
+      setError(error.message);
+      console.error('Error fetching tasks:', error);
+    }
+  };
+
+  // Fetch project detail
+  const fetchProject = async () => {
+    try {
+      const response = await fetch(`/api/projects/${functionId}`);
+      if (!response.ok) throw new Error('Failed to fetch project');
+      const data = await response.json();
+      setProject(data.project);
+    } catch (error) {
+      setError(error.message);
+      console.error('Error fetching project:', error);
     }
   };
 
   useEffect(() => {
-    const fetchTasksData = async () => {
-      try {
-        const response = await fetch(`/api/tasks?projectId=${functionId}`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch tasks");
-        }
-        const data = await response.json();
-        // Organize tasks by status
-        const organizedTasks = {
-          todo: data.tasks.filter((task) => task.status === "TODO"),
-          progress: data.tasks.filter((task) => task.status === "IN_PROGRESS"),
-          done: data.tasks.filter((task) => task.status === "DONE"),
-        };
-        setTasks(organizedTasks);
-      } catch (error) {
-        console.error("Error fetching tasks:", error);
-      }
-    };
-
-    if (functionId) {
-      fetchTasksData();
+    if (!functionId) {
+      setError('Project ID tidak ditemukan. Tidak bisa mengambil data tasks.');
+      return;
     }
+    fetchTasks();
+    fetchProject();
   }, [functionId]);
 
   const handleTaskUpdated = () => {
-    // Refresh tasks after update
     fetchTasks();
   };
 
   const handleTaskDeleted = (deletedTaskId) => {
-    // Remove the deleted task from the state
-    setTasks((prevTasks) => ({
-      todo: prevTasks.todo.filter((task) => task.id !== deletedTaskId),
-      progress: prevTasks.progress.filter((task) => task.id !== deletedTaskId),
-      done: prevTasks.done.filter((task) => task.id !== deletedTaskId),
+    setTasks(prevTasks => ({
+      todo: prevTasks.todo.filter(task => task.id !== deletedTaskId),
+      progress: prevTasks.progress.filter(task => task.id !== deletedTaskId),
+      done: prevTasks.done.filter(task => task.id !== deletedTaskId)
     }));
+  };
+
+  // Fungsi untuk cek apakah user boleh drag ke DONE
+  const canDragToDone = () => {
+    if (!user || !project) return false;
+    if (user.id === project.ownerId) return true;
+    if (user.id === project.scrumMasterId) return true;
+    return false;
   };
 
   const handleDragEnd = async (result) => {
@@ -78,6 +86,17 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
 
     // Dropped outside the list
     if (!destination) return;
+
+    // Cegah drag ke DONE jika user bukan owner/scrum master
+    if (destination.droppableId === 'done' && !canDragToDone()) {
+      toast({
+        title: 'Akses Ditolak',
+        description: 'Hanya Project Owner atau Scrum Master yang boleh memindahkan task ke DONE.',
+        variant: 'destructive',
+        className: 'text-base px-6 py-5 rounded-xl bg-red-600 text-white', // warna merah
+      });
+      return;
+    }
 
     // Same position
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
@@ -90,9 +109,10 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
     const [movedTask] = sourceList.splice(source.index, 1);
 
     // Update task status based on destination
-    const newStatus = destination.droppableId === "todo" ? "TODO" : destination.droppableId === "progress" ? "IN_PROGRESS" : "DONE";
-
-    // Add task to destination list
+    const newStatus = 
+      destination.droppableId === 'todo' ? 'TODO' :
+      destination.droppableId === 'progress' ? 'IN_PROGRESS' :
+      'DONE';
     destList.splice(destination.index, 0, { ...movedTask, status: newStatus });
 
     // Update state (optimistic)
@@ -184,6 +204,11 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
 
   return (
     <>
+      {error && (
+        <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
+          <b>Error:</b> {error}
+        </div>
+      )}
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className={`grid gap-6 mb-12 ${filter === "all" ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1"}`}>
           {columns.map((column) => {
@@ -191,15 +216,14 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
             return (
               <Droppable key={column.id} droppableId={column.id} isDropDisabled={false}>
                 {(provided, snapshot) => (
-                  <div ref={provided.innerRef} {...provided.droppableProps} className={`rounded-lg border border-slate-200 overflow-hidden ${column.bgClass} ${snapshot.isDraggingOver ? "ring-2 ring-blue-400 ring-opacity-50" : ""}`}>
-                    <div className="bg-white border-b border-slate-200 px-4 py-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Icon className={`w-5 h-5 ${column.headerClass}`} />
-                          <h3 className={`text-lg font-semibold ${column.headerClass}`}>{column.title}</h3>
-                        </div>
-                        <span className="text-sm font-medium text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200">{column.tasks.length}</span>
-                      </div>
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={`rounded-lg border border-slate-200 overflow-hidden ${column.bgClass} ${snapshot.isDraggingOver ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
+                  >
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white">
+                      <h3 className={`text-lg font-semibold ${column.headerClass}`}>{column.title}</h3>
+                      <span className="text-sm font-medium text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200">{column.tasks.length}</span>
                     </div>
                     <div className="p-4">
                       {column.tasks.length > 0 ? (
@@ -229,11 +253,8 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
           })}
         </div>
       </DragDropContext>
-
-      {/* Completed Tasks List */}
       <CompletedTasksList tasks={tasks.done} />
     </>
   );
-};
-
+}
 export default KanbanBoard;

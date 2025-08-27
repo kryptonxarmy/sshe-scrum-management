@@ -40,44 +40,15 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
     return false;
   };
 
-  // Check if user can view/comment
-  const canComment = () => {
+  // Check if user can update status to DONE (strict: only project owner & scrum master)
+  const canUpdateToDone = () => {
     if (!user) return false;
-    // Project Owner
-    if (user.role === "PROJECT_OWNER") return true;
-    // Scrum Master
+    // Only allow if user is project owner of this project
+    if (task.project && task.project.ownerId === user.id) return true;
+    // Or user is scrum master of this project
     if (task.project && task.project.scrumMasterId === user.id) return true;
-    // Team member assigned to this task (multiple assignees)
-    if (
-      user.role === "TEAM_MEMBER" &&
-      task.assignees &&
-      Array.isArray(task.assignees) &&
-      task.assignees.some((assignee) => {
-        const userId = assignee.user ? assignee.user.id : assignee.userId;
-        // Fallback: jika projectRole tidak ada, tetap izinkan jika user adalah assignee
-        if (userId === user.id) {
-          if (!assignee.projectRole || assignee.projectRole === "TEAM_MEMBER") {
-            return true;
-          }
-        }
-        return false;
-      })
-    ) return true;
-    // Team member assigned (single assignee format)
-    if (
-      user.role === "TEAM_MEMBER" &&
-      task.assignee &&
-      task.assignee.id === user.id &&
-      (!task.assignee.projectRole || task.assignee.projectRole === "TEAM_MEMBER")
-    ) return true;
-    // Fallback: jika hanya ada assigneeId
-    if (
-      user.role === "TEAM_MEMBER" &&
-      task.assigneeId &&
-      task.assigneeId === user.id
-    ) return true;
     return false;
-};
+  };
 
   const handleTaskUpdated = (updatedTask) => {
     if (onTaskUpdated) {
@@ -263,15 +234,7 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
             {task.sprint && <span className="text-xs text-slate-500">Sprint: {task.sprint.name}</span>}
             <span className="text-xs text-slate-500">Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric" }) : "No due date"}</span>
           </div>
-
-          {/* Comments Button */}
-          <div className="flex gap-2 mt-2">
-            {canComment() && (
-              <Button variant="outline" size="sm" onClick={() => setIsCommentsSheetOpen(true)}>
-                Comments
-              </Button>
-            )}
-          </div>
+          {/* Fitur Mark as Done dihapus */}
         </CardContent>
       </Card>
       {/* Edit Task Modal */}
