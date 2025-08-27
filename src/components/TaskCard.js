@@ -151,6 +151,34 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
     return task.priority ? task.priority.charAt(0).toUpperCase() + task.priority.slice(1) : "Medium";
   };
 
+  // Check if user can view/comment
+  const canComment = () => {
+    console.log("Checking comment permissions");
+    console.log("User:", user);
+    console.log("Task:", task);
+    if (!user) return false;
+    // Project Owner
+    if (user.role === "PROJECT_OWNER") return true;
+    // Scrum Master
+    if (user.role === "SCRUM_MASTER" && task.project && task.project.scrumMasterId === user.id) return true;
+    // Team member assigned to this task (multiple assignees)
+    if (user.role === "TEAM_MEMBER") {
+      let assigned = false;
+      if (task.assignees && Array.isArray(task.assignees)) {
+        assigned = task.assignees.some((assignee) => {
+          const userId = assignee.user ? assignee.user.id : assignee.userId;
+          return userId === user.id;
+        });
+      }
+      if (task.assignee && task.assignee.id === user.id) {
+        assigned = true;
+      }
+      console.log("User assigned to this task:", assigned);
+      if (assigned) return true;
+    }
+    return false;
+  };
+
   return (
     <>
       <Card
@@ -234,14 +262,21 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
             {task.sprint && <span className="text-xs text-slate-500">Sprint: {task.sprint.name}</span>}
             <span className="text-xs text-slate-500">Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric" }) : "No due date"}</span>
           </div>
-          {/* Fitur Mark as Done dihapus */}
+          {/* Tombol Komentar & Sheet Komentar */}
+          {canComment() ? (
+            <>
+              <div className="mt-2 flex justify-end">
+                <Button variant="outline" size="sm" onClick={() => setIsCommentsSheetOpen(true)}>
+                  Comment
+                </Button>
+              </div>
+              <TaskCommentsSheet open={isCommentsSheetOpen} onOpenChange={setIsCommentsSheetOpen} user={user} taskId={task.id} taskName={task.title} />
+            </>
+          ) : null}
         </CardContent>
       </Card>
       {/* Edit Task Modal */}
       <EditTaskModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} task={task} onTaskUpdated={handleTaskUpdated} />
-
-      {/* Task Comments Sheet */}
-      {<TaskCommentsSheet open={isCommentsSheetOpen} onOpenChange={setIsCommentsSheetOpen} user={user} taskId={task.id} taskName={task.title} />}
     </>
   );
 };

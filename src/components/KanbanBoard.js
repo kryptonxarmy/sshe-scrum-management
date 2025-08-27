@@ -76,7 +76,9 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
   // Fungsi untuk cek apakah user boleh drag ke DONE
   const canDragToDone = () => {
     if (!user || !project) return false;
+    // Project Owner
     if (user.id === project.ownerId) return true;
+    // Scrum Master (regardless of role)
     if (user.id === project.scrumMasterId) return true;
     return false;
   };
@@ -158,14 +160,20 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
 
   // Helper: apakah user team_member dan tidak di-assign di task
   const isTeamMemberAndNotAssigned = (task) => {
-    if (!user || user.role !== "TEAM_MEMBER") return false;
-    if (task.assignees && Array.isArray(task.assignees)) {
-      return !task.assignees.some((assignee) => {
-        const userId = assignee.user ? assignee.user.id : assignee.userId;
-        return userId === user.id;
-      });
+    // Project Owner & Scrum Master always can drag any task
+    if (!user) return false;
+    if (project && (user.id === project.ownerId || user.id === project.scrumMasterId)) return false;
+    // Team member: only if assigned
+    if (user.role === "TEAM_MEMBER") {
+      if (task.assignees && Array.isArray(task.assignees)) {
+        return !task.assignees.some((assignee) => {
+          const userId = assignee.user ? assignee.user.id : assignee.userId;
+          return userId === user.id;
+        });
+      }
+      return true;
     }
-    return true;
+    return false;
   };
 
   let columns = [
