@@ -241,7 +241,7 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
       <EditTaskModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} task={task} onTaskUpdated={handleTaskUpdated} />
 
       {/* Task Comments Sheet */}
-      {canComment() && <TaskCommentsSheet open={isCommentsSheetOpen} onOpenChange={setIsCommentsSheetOpen} user={user} taskId={task.id} taskName={task.title} />}
+      {<TaskCommentsSheet open={isCommentsSheetOpen} onOpenChange={setIsCommentsSheetOpen} user={user} taskId={task.id} taskName={task.title} />}
     </>
   );
 };
