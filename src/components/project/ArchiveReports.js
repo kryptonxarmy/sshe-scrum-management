@@ -80,15 +80,9 @@ const ArchiveReports = () => {
     }
 
     const totalProjects = filteredProjects.length;
-<<<<<<< HEAD
-    // Remove priority count, only count short/long term
-    const shortTermCount = filteredProjects.filter((project) => project.duration === "SHORT_TERM").length;
-    const longTermCount = filteredProjects.filter((project) => project.duration === "LONG_TERM").length;
-=======
   // Remove priority count, only count short/long period
   const shortTermCount = filteredProjects.filter(project => project.duration === 'SHORT_TERM').length;
   const longTermCount = filteredProjects.filter(project => project.duration === 'LONG_TERM').length;
->>>>>>> 0cb58a04aedd986339d33b6bdcecbbd7954d410f
 
     // Calculate average duration
     const durations = filteredProjects.map((project) => {
