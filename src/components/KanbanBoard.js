@@ -25,7 +25,7 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
       if (!response.ok) {
         throw new Error("Failed to fetch tasks");
       }
-      if (!response.ok) throw new Error('Failed to fetch tasks');
+      if (!response.ok) throw new Error("Failed to fetch tasks");
       const data = await response.json();
       const organizedTasks = {
         todo: data.tasks.filter((task) => task.status === "TODO"),
@@ -35,7 +35,7 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
       setTasks(organizedTasks);
     } catch (error) {
       setError(error.message);
-      console.error('Error fetching tasks:', error);
+      console.error("Error fetching tasks:", error);
     }
   };
 
@@ -43,18 +43,18 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
   const fetchProject = async () => {
     try {
       const response = await fetch(`/api/projects/${functionId}`);
-      if (!response.ok) throw new Error('Failed to fetch project');
+      if (!response.ok) throw new Error("Failed to fetch project");
       const data = await response.json();
       setProject(data.project);
     } catch (error) {
       setError(error.message);
-      console.error('Error fetching project:', error);
+      console.error("Error fetching project:", error);
     }
   };
 
   useEffect(() => {
     if (!functionId) {
-      setError('Project ID tidak ditemukan. Tidak bisa mengambil data tasks.');
+      setError("Project ID tidak ditemukan. Tidak bisa mengambil data tasks.");
       return;
     }
     fetchTasks();
@@ -66,10 +66,10 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
   };
 
   const handleTaskDeleted = (deletedTaskId) => {
-    setTasks(prevTasks => ({
-      todo: prevTasks.todo.filter(task => task.id !== deletedTaskId),
-      progress: prevTasks.progress.filter(task => task.id !== deletedTaskId),
-      done: prevTasks.done.filter(task => task.id !== deletedTaskId)
+    setTasks((prevTasks) => ({
+      todo: prevTasks.todo.filter((task) => task.id !== deletedTaskId),
+      progress: prevTasks.progress.filter((task) => task.id !== deletedTaskId),
+      done: prevTasks.done.filter((task) => task.id !== deletedTaskId),
     }));
   };
 
@@ -89,32 +89,50 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
     // Dropped outside the list
     if (!destination) return;
 
-    // Cegah drag ke DONE jika user bukan owner/scrum master
-    if (destination.droppableId === 'done' && !canDragToDone()) {
-      toast({
-        title: 'Akses Ditolak',
-        description: 'Hanya Project Owner atau Scrum Master yang boleh memindahkan task ke DONE.',
-        variant: 'destructive',
-        className: 'text-base px-6 py-5 rounded-xl bg-red-600 text-white', // warna merah
-      });
-      return;
-    }
-
     // Same position
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
     // Get source and destination lists
     const sourceList = tasks[source.droppableId];
     const destList = tasks[destination.droppableId];
-
-    // Get the task being moved
     const [movedTask] = sourceList.splice(source.index, 1);
 
+    // Prevent moving DONE tasks back to IN_PROGRESS or TODO
+    if (source.droppableId === "done" && destination.droppableId !== "done") {
+      toast({
+        title: "Akses Ditolak",
+        description: "Task yang sudah selesai (DONE) tidak bisa dipindahkan kembali.",
+        variant: "destructive",
+        className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
+      });
+      // Revert local change
+      setTasks({
+        ...tasks,
+        [source.droppableId]: [...sourceList.slice(0, source.index), movedTask, ...sourceList.slice(source.index)],
+        [destination.droppableId]: destList,
+      });
+      return;
+    }
+
+    // Prevent moving to DONE if not owner/scrum master
+    if (destination.droppableId === "done" && !canDragToDone()) {
+      toast({
+        title: "Akses Ditolak",
+        description: "Hanya Project Owner atau Scrum Master yang boleh memindahkan task ke DONE.",
+        variant: "destructive",
+        className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
+      });
+      // Revert local change
+      setTasks({
+        ...tasks,
+        [source.droppableId]: [...sourceList.slice(0, source.index), movedTask, ...sourceList.slice(source.index)],
+        [destination.droppableId]: destList,
+      });
+      return;
+    }
+
     // Update task status based on destination
-    const newStatus = 
-      destination.droppableId === 'todo' ? 'TODO' :
-      destination.droppableId === 'progress' ? 'IN_PROGRESS' :
-      'DONE';
+    const newStatus = destination.droppableId === "todo" ? "TODO" : destination.droppableId === "progress" ? "IN_PROGRESS" : "DONE";
     destList.splice(destination.index, 0, { ...movedTask, status: newStatus });
 
     // Update state (optimistic)
@@ -224,11 +242,7 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
             return (
               <Droppable key={column.id} droppableId={column.id} isDropDisabled={false}>
                 {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className={`rounded-lg border border-slate-200 overflow-hidden ${column.bgClass} ${snapshot.isDraggingOver ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
-                  >
+                  <div ref={provided.innerRef} {...provided.droppableProps} className={`rounded-lg border border-slate-200 overflow-hidden ${column.bgClass} ${snapshot.isDraggingOver ? "ring-2 ring-blue-400 ring-opacity-50" : ""}`}>
                     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white">
                       <h3 className={`text-lg font-semibold ${column.headerClass}`}>{column.title}</h3>
                       <span className="text-sm font-medium text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200">{column.tasks.length}</span>
@@ -264,5 +278,5 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
       <CompletedTasksList tasks={tasks.done} />
     </>
   );
-}
+};
 export default KanbanBoard;

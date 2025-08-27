@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, CheckCircle, AlertTriangle, Loader2, AlertCircle } from "lucide-react";
+import { useEffect } from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +17,49 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isCommentsSheetOpen, setIsCommentsSheetOpen] = useState(false);
+  const [hasUnreadComment, setHasUnreadComment] = useState(false);
+  // Track last read comment per user per task in localStorage
+  useEffect(() => {
+    if (!task?.id || !user?.id) return;
+    // Fetch comments for this task
+    fetch(`/api/comments?taskId=${task.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const comments = data.comments || [];
+        // Find latest comment not by current user
+        const latestOtherComment = comments.filter((c) => c.userId !== user.id).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+        if (!latestOtherComment) {
+          setHasUnreadComment(false);
+          return;
+        }
+        // Get last read timestamp from localStorage
+        const key = `task-${task.id}-user-${user.id}-lastReadComment`;
+        const lastRead = localStorage.getItem(key);
+        if (!lastRead || new Date(latestOtherComment.createdAt) > new Date(lastRead)) {
+          setHasUnreadComment(true);
+        } else {
+          setHasUnreadComment(false);
+        }
+      });
+  }, [task.id, user?.id, isCommentsSheetOpen]);
+
+  // When comments sheet is opened, mark all as read
+  useEffect(() => {
+    if (isCommentsSheetOpen && task?.id && user?.id) {
+      // Mark latest comment as read
+      fetch(`/api/comments?taskId=${task.id}`)
+        .then((res) => res.json())
+        .then((data) => {
+          const comments = data.comments || [];
+          const latestOtherComment = comments.filter((c) => c.userId !== user.id).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+          if (latestOtherComment) {
+            const key = `task-${task.id}-user-${user.id}-lastReadComment`;
+            localStorage.setItem(key, latestOtherComment.createdAt);
+            setHasUnreadComment(false);
+          }
+        });
+    }
+  }, [isCommentsSheetOpen, task.id, user?.id]);
 
   // Null check untuk task object
   if (!task) {
@@ -265,10 +309,15 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
           {/* Tombol Komentar & Sheet Komentar */}
           {canComment() ? (
             <>
-              <div className="mt-2 flex justify-end">
+              <div className="mt-2 flex justify-end items-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => setIsCommentsSheetOpen(true)}>
                   Comment
                 </Button>
+                {hasUnreadComment && (
+                  <span title="Komentar baru belum dibaca">
+                    <AlertCircle className="h-5 w-5 text-orange-500 animate-bounce" />
+                  </span>
+                )}
               </div>
               <TaskCommentsSheet open={isCommentsSheetOpen} onOpenChange={setIsCommentsSheetOpen} user={user} taskId={task.id} taskName={task.title} />
             </>
