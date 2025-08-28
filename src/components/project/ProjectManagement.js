@@ -44,7 +44,7 @@ import EditProjectModal from "@/components/project/EditProjectModal";
 import KanbanBoard from "@/components/KanbanBoard";
 
 const ProjectManagement = () => {
-  const [statusFilter, setStatusFilter] = useState("all");
+  // const [statusFilter, setStatusFilter] = useState("all");
   const { user, canCreateProject, canManageProject, canManageProjectMembers, canViewProject } = useAuth();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -358,15 +358,6 @@ const ProjectManagement = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            {/* Filter Status Project */}
-            <div className="mb-4 flex gap-2 items-center">
-              <label className="text-sm font-medium">Filter Status:</label>
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border rounded px-2 py-1 text-sm">
-                <option value="all">All</option>
-                <option value="active">Active</option>
-                <option value="released">Released</option>
-              </select>
-            </div>
             <h2 className="text-2xl font-bold text-slate-800">Projects</h2>
             <p className="text-slate-600">Loading projects...</p>
           </div>
@@ -749,7 +740,7 @@ const ProjectManagement = () => {
       {selectedProject && (
         <div className="mt-8">
           <h3 className="text-xl font-bold text-slate-800 mb-4">Project Kanban Board</h3>
-          <KanbanBoard functionId={selectedProject.id} filter={statusFilter} project={selectedProject} />
+          <KanbanBoard functionId={selectedProject.id} project={selectedProject} />
         </div>
       )}
     </div>
