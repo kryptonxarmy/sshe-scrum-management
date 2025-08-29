@@ -22,6 +22,9 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
   const fetchTasks = async () => {
     try {
       const response = await fetch(`/api/tasks?projectId=${functionId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch tasks");
+      }
       if (!response.ok) throw new Error("Failed to fetch tasks");
       const data = await response.json();
       const organizedTasks = {
@@ -84,7 +87,94 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
   // Cek apakah user boleh create task
   const canCreateTask = () => hasFullControl();
 
-  // Helper: team member boleh drag hanya jika dia assigned
+    // Same position
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+
+    // Get source and destination lists
+    const sourceList = tasks[source.droppableId];
+    const destList = tasks[destination.droppableId];
+    const [movedTask] = sourceList.splice(source.index, 1);
+
+    // Prevent moving DONE tasks back to IN_PROGRESS or TODO
+    if (source.droppableId === "done" && destination.droppableId !== "done") {
+      toast({
+        title: "Akses Ditolak",
+        description: "Task yang sudah selesai (DONE) tidak bisa dipindahkan kembali.",
+        variant: "destructive",
+        className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
+      });
+      // Revert local change
+      setTasks({
+        ...tasks,
+        [source.droppableId]: [...sourceList.slice(0, source.index), movedTask, ...sourceList.slice(source.index)],
+        [destination.droppableId]: destList,
+      });
+      return;
+    }
+
+    // Prevent moving to DONE if not owner/scrum master
+    if (destination.droppableId === "done" && !canDragToDone()) {
+      toast({
+        title: "Akses Ditolak",
+        description: "Hanya Project Owner atau Scrum Master yang boleh memindahkan task ke DONE.",
+        variant: "destructive",
+        className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
+      });
+      // Revert local change
+      setTasks({
+        ...tasks,
+        [source.droppableId]: [...sourceList.slice(0, source.index), movedTask, ...sourceList.slice(source.index)],
+        [destination.droppableId]: destList,
+      });
+      return;
+    }
+
+    // Update task status based on destination
+    const newStatus = destination.droppableId === "todo" ? "TODO" : destination.droppableId === "progress" ? "IN_PROGRESS" : "DONE";
+    destList.splice(destination.index, 0, { ...movedTask, status: newStatus });
+
+    // Update state (optimistic)
+    setTasks({
+      ...tasks,
+      [source.droppableId]: sourceList,
+      [destination.droppableId]: destList,
+    });
+
+    // Update task status and order in backend
+    try {
+      console.log("Updating task status:", { taskId: movedTask.id, newStatus });
+      const response = await fetch(`/api/tasks/${movedTask.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: newStatus,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Failed to update task status:", errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log("Task status updated successfully:", result);
+
+      // Refetch tasks from backend to ensure sync
+      fetchTasks();
+    } catch (error) {
+      console.error("Failed to update task status:", error);
+      // Revert optimistic update on error
+      const revertedTasks = { ...tasks };
+      revertedTasks[destination.droppableId].splice(destination.index, 1);
+      revertedTasks[source.droppableId].splice(source.index, 0, movedTask);
+      setTasks(revertedTasks);
+    }
+  };
+
+  // Helper: apakah user team_member dan tidak di-assign di task
   const isTeamMemberAndNotAssigned = (task) => {
     // Project Owner & Scrum Master always can drag any task
     if (!user) return false;
@@ -216,13 +306,7 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
             return (
               <Droppable key={column.id} droppableId={column.id}>
                 {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className={`rounded-lg border border-slate-200 overflow-hidden ${
-                      column.bgClass
-                    } ${snapshot.isDraggingOver ? "ring-2 ring-blue-400 ring-opacity-50" : ""}`}
-                  >
+                  <div ref={provided.innerRef} {...provided.droppableProps} className={`rounded-lg border border-slate-200 overflow-hidden ${column.bgClass} ${snapshot.isDraggingOver ? "ring-2 ring-blue-400 ring-opacity-50" : ""}`}>
                     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white">
                       <h3 className={`text-lg font-semibold ${column.headerClass}`}>
                         {column.title}
