@@ -44,7 +44,7 @@ import EditProjectModal from "@/components/project/EditProjectModal";
 import KanbanBoard from "@/components/KanbanBoard";
 
 const ProjectManagement = () => {
-  // const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const { user, canCreateProject, canManageProject, canManageProjectMembers, canViewProject } = useAuth();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -358,6 +358,8 @@ const ProjectManagement = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
+            {/* Filter Status Project */}
+            {/* Filter Status Project deleted as requested */}
             <h2 className="text-2xl font-bold text-slate-800">Projects</h2>
             <p className="text-slate-600">Loading projects...</p>
           </div>
@@ -392,12 +394,40 @@ const ProjectManagement = () => {
     );
   }
 
+  // Dynamic greeting logic
+  const getGreeting = () => {
+    const now = new Date();
+    const hour = now.getHours();
+    let greeting = "";
+    if (hour >= 5 && hour < 12) {
+      greeting = `Good Morning, ${user?.name || "User"} 👋`;
+    } else if (hour >= 12 && hour < 17) {
+      greeting = `Good Afternoon, ${user?.name || "User"} 🌞`;
+    } else if (hour >= 17 && hour < 21) {
+      greeting = `Good Evening, ${user?.name || "User"} 🌆`;
+    } else {
+      greeting = `Good Night, ${user?.name || "User"} 🌙`;
+    }
+    return greeting;
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with dynamic greeting and elegant background */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Projects</h2>
+          <div className="relative inline-block mb-4">
+            {/* Soft pastel abstract gradient background shape, only behind greeting */}
+            <span
+              aria-hidden="true"
+              className="absolute -top-4 -left-6 w-48 h-12 rounded-full blur-2xl opacity-60 z-0 pointer-events-none"
+              style={{
+                background: "linear-gradient(90deg, #a5b4fc 0%, #fbc2eb 60%, #fcd1d1 100%)",
+                filter: "blur(24px)",
+              }}
+            ></span>
+            <h2 className="relative z-10 text-3xl font-bold text-slate-800">{getGreeting()}</h2>
+          </div>
           <p className="text-slate-600">Manage your SSHE projects and track progress</p>
         </div>
 
@@ -740,7 +770,7 @@ const ProjectManagement = () => {
       {selectedProject && (
         <div className="mt-8">
           <h3 className="text-xl font-bold text-slate-800 mb-4">Project Kanban Board</h3>
-          <KanbanBoard functionId={selectedProject.id} project={selectedProject} />
+          <KanbanBoard functionId={selectedProject.id} filter={statusFilter} project={selectedProject} />
         </div>
       )}
     </div>
