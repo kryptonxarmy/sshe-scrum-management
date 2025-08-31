@@ -15,6 +15,21 @@ function TasksPageContent() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [project, setProject] = useState(null);
   const [filter, setFilter] = useState("all");
+  const [sprints, setSprints] = useState([]);
+  const [selectedSprint, setSelectedSprint] = useState("");
+  const [selectedAssignee, setSelectedAssignee] = useState("");
+  // Fetch sprints for filter
+  useEffect(() => {
+    if (!projectId) return;
+    fetch(`/api/projects/${projectId}/sprints`)
+      .then((res) => res.json())
+      .then((data) => {
+        setSprints(data.sprints || []);
+        if (data.sprints && data.sprints.length > 0) {
+          setSelectedSprint(data.sprints[0].id);
+        }
+      });
+  }, [projectId]);
   const [refreshTasks, setRefreshTasks] = useState(0);
   const [teamMembers, setTeamMembers] = useState([]);
   const { user } = useAuth();
@@ -186,23 +201,37 @@ function TasksPageContent() {
             </div>
           </div>
 
-          {/* Filter Tabs */}
+          {/* Filter Tabs & Sprint/Assignee Filter */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3 mb-6">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
               {["all", "todo", "progress", "done"].map((f) => (
                 <button key={f} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === f ? "bg-blue-50 text-blue-700 border-blue-200 shadow-sm" : "text-slate-600 hover:bg-slate-50"}`} onClick={() => setFilter(f)}>
                   {f === "all" ? "🔄 All Tasks" : f === "todo" ? "📋 To Do" : f === "progress" ? "⏳ In Progress" : "✅ Done"}
                 </button>
               ))}
+              {/* Sprint Filter */}
+              <select value={selectedSprint} onChange={(e) => setSelectedSprint(e.target.value)} className="ml-4 px-3 py-2 rounded border text-sm">
+                <option value="">All Sprints</option>
+                {sprints.map((sprint) => (
+                  <option key={sprint.id} value={sprint.id}>
+                    {sprint.name}
+                  </option>
+                ))}
+              </select>
+              {/* Assignee Filter */}
+              <select value={selectedAssignee} onChange={(e) => setSelectedAssignee(e.target.value)} className="ml-2 px-3 py-2 rounded border text-sm">
+                <option value="">All Assignees</option>
+                {teamMembers.map((member) => (
+                  <option key={member.id || member.userId} value={member.id || member.userId}>
+                    {member.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
           {/* Kanban Board */}
-          <KanbanBoard
-            functionId={projectId}
-            filter={filter}
-            key={refreshTasks} // Force re-render when tasks change
-          />
+          <KanbanBoard functionId={projectId} filter={filter} sprintId={selectedSprint} assigneeId={selectedAssignee} key={refreshTasks} />
         </div>
 
         <CreateTaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} projectId={projectId} onTaskCreated={() => setRefreshTasks((prev) => prev + 1)} />

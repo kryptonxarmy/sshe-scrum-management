@@ -1,34 +1,30 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { 
-  TrendingUp, TrendingDown, Users, FolderOpen, 
-  CheckCircle, Clock, AlertTriangle, BarChart3,
-  Calendar, Target, Activity, Award,
-  RefreshCw, Download, Filter
-} from "lucide-react";
-import dynamic from 'next/dynamic';
+import SprintProjectsReport from "@/components/reports/SprintProjectsReport";
+import { TrendingUp, TrendingDown, Users, FolderOpen, CheckCircle, Clock, AlertTriangle, BarChart3, Calendar, Target, Activity, Award, RefreshCw, Download, Filter } from "lucide-react";
+import dynamic from "next/dynamic";
 
 // Dynamic chart imports to avoid SSR issues
-const PieChart = dynamic(() => import('recharts').then(mod => mod.PieChart), { ssr: false });
-const Pie = dynamic(() => import('recharts').then(mod => mod.Pie), { ssr: false });
-const Cell = dynamic(() => import('recharts').then(mod => mod.Cell), { ssr: false });
-const BarChart = dynamic(() => import('recharts').then(mod => mod.BarChart), { ssr: false });
-const Bar = dynamic(() => import('recharts').then(mod => mod.Bar), { ssr: false });
-const LineChart = dynamic(() => import('recharts').then(mod => mod.LineChart), { ssr: false });
-const Line = dynamic(() => import('recharts').then(mod => mod.Line), { ssr: false });
-const XAxis = dynamic(() => import('recharts').then(mod => mod.XAxis), { ssr: false });
-const YAxis = dynamic(() => import('recharts').then(mod => mod.YAxis), { ssr: false });
-const CartesianGrid = dynamic(() => import('recharts').then(mod => mod.CartesianGrid), { ssr: false });
-const Tooltip = dynamic(() => import('recharts').then(mod => mod.Tooltip), { ssr: false });
-const Legend = dynamic(() => import('recharts').then(mod => mod.Legend), { ssr: false });
-const ResponsiveContainer = dynamic(() => import('recharts').then(mod => mod.ResponsiveContainer), { ssr: false });
+const PieChart = dynamic(() => import("recharts").then((mod) => mod.PieChart), { ssr: false });
+const Pie = dynamic(() => import("recharts").then((mod) => mod.Pie), { ssr: false });
+const Cell = dynamic(() => import("recharts").then((mod) => mod.Cell), { ssr: false });
+const BarChart = dynamic(() => import("recharts").then((mod) => mod.BarChart), { ssr: false });
+const Bar = dynamic(() => import("recharts").then((mod) => mod.Bar), { ssr: false });
+const LineChart = dynamic(() => import("recharts").then((mod) => mod.LineChart), { ssr: false });
+const Line = dynamic(() => import("recharts").then((mod) => mod.Line), { ssr: false });
+const XAxis = dynamic(() => import("recharts").then((mod) => mod.XAxis), { ssr: false });
+const YAxis = dynamic(() => import("recharts").then((mod) => mod.YAxis), { ssr: false });
+const CartesianGrid = dynamic(() => import("recharts").then((mod) => mod.CartesianGrid), { ssr: false });
+const Tooltip = dynamic(() => import("recharts").then((mod) => mod.Tooltip), { ssr: false });
+const Legend = dynamic(() => import("recharts").then((mod) => mod.Legend), { ssr: false });
+const ResponsiveContainer = dynamic(() => import("recharts").then((mod) => mod.ResponsiveContainer), { ssr: false });
 
 const ProjectOwnerReports = () => {
   const { user } = useAuth();
@@ -38,19 +34,19 @@ const ProjectOwnerReports = () => {
 
   const fetchReportData = useCallback(async () => {
     if (!user?.id) return;
-    
+
     try {
       setLoading(true);
       const response = await fetch(`/api/reports/project-owner?userId=${user.id}`);
       const result = await response.json();
-      
+
       if (response.ok) {
         setReportData(result.data);
       } else {
-        console.error('Failed to fetch report data:', result.error);
+        console.error("Failed to fetch report data:", result.error);
       }
     } catch (error) {
-      console.error('Error fetching report data:', error);
+      console.error("Error fetching report data:", error);
     } finally {
       setLoading(false);
     }
@@ -66,17 +62,16 @@ const ProjectOwnerReports = () => {
     setRefreshing(false);
   };
 
-
   // Defensive fallback for missing/incorrect reportData fields
   const safe = (obj, key, def) => (obj && obj[key] !== undefined ? obj[key] : def);
-  const metrics = safe(reportData, 'performanceMetrics', {});
-  const projects = safe(reportData, 'projectOverview', []);
+  const metrics = safe(reportData, "performanceMetrics", {});
+  const projects = safe(reportData, "projectOverview", []);
   const taskDistribution = Array.isArray(reportData?.taskDistribution) ? reportData.taskDistribution : [];
   const priorityBreakdown = Array.isArray(reportData?.priorityBreakdown) ? reportData.priorityBreakdown : [];
   const completionTrends = Array.isArray(reportData?.completionTrends) ? reportData.completionTrends : [];
 
   // Patch window.reportData for FilteredTaskList fallback
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     window.reportData = window.reportData || {};
     window.reportData.tasks = Array.isArray(reportData?.tasks) ? reportData.tasks : [];
   }
@@ -114,7 +109,7 @@ const ProjectOwnerReports = () => {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
             Refresh
           </Button>
           <Button variant="outline" size="sm">
@@ -126,47 +121,27 @@ const ProjectOwnerReports = () => {
 
       {/* Key Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard
-          title="Total Projects"
-          value={safe(metrics, 'totalProjects', 0)}
-          subtitle={`${safe(metrics, 'activeProjects', 0)} active`}
-          icon={FolderOpen}
-          color="blue"
-          trend={null}
-        />
-        <MetricCard
-          title="Total Tasks"
-          value={safe(metrics, 'totalTasks', 0)}
-          subtitle={`${safe(metrics, 'completedTasks', 0)} completed`}
-          icon={CheckCircle}
-          color="green"
-          trend={safe(metrics, 'completionRate', null)}
-        />
-        <MetricCard
-          title="Completion Rate"
-          value={`${safe(metrics, 'completionRate', 0)}%`}
-          subtitle="Overall progress"
-          icon={Target}
-          color="purple"
-          trend={safe(metrics, 'completionRate', 0) > 70 ? "up" : "down"}
-        />
+        <MetricCard title="Total Projects" value={safe(metrics, "totalProjects", 0)} subtitle={`${safe(metrics, "activeProjects", 0)} active`} icon={FolderOpen} color="blue" trend={null} />
+        <MetricCard title="Total Tasks" value={safe(metrics, "totalTasks", 0)} subtitle={`${safe(metrics, "completedTasks", 0)} completed`} icon={CheckCircle} color="green" trend={safe(metrics, "completionRate", null)} />
+        <MetricCard title="Completion Rate" value={`${safe(metrics, "completionRate", 0)}%`} subtitle="Overall progress" icon={Target} color="purple" trend={safe(metrics, "completionRate", 0) > 70 ? "up" : "down"} />
         <MetricCard
           title="Overdue Tasks"
-          value={safe(metrics, 'overdueTasks', 0)}
-          subtitle={safe(metrics, 'overdueTasks', 0) > 0 ? "Need attention" : "All on track"}
+          value={safe(metrics, "overdueTasks", 0)}
+          subtitle={safe(metrics, "overdueTasks", 0) > 0 ? "Need attention" : "All on track"}
           icon={AlertTriangle}
-          color={safe(metrics, 'overdueTasks', 0) > 0 ? "red" : "green"}
+          color={safe(metrics, "overdueTasks", 0) > 0 ? "red" : "green"}
           trend={null}
         />
       </div>
 
       {/* Charts Section */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="projects">Projects</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
+          <TabsTrigger value="sprints">Sprints</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -183,17 +158,9 @@ const ProjectOwnerReports = () => {
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie
-                        data={taskDistribution}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={({ name, percentage }) => `${name}: ${percentage ?? 0}%`}
-                      >
+                      <Pie data={taskDistribution} cx="50%" cy="50%" outerRadius={80} fill="#8884d8" dataKey="value" label={({ name, percentage }) => `${name}: ${percentage ?? 0}%`}>
                         {taskDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color ?? '#8884d8'} />
+                          <Cell key={`cell-${index}`} fill={entry.color ?? "#8884d8"} />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -221,7 +188,7 @@ const ProjectOwnerReports = () => {
                       <Tooltip />
                       <Bar dataKey="value" fill="#8884d8">
                         {priorityBreakdown.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color ?? '#8884d8'} />
+                          <Cell key={`cell-${index}`} fill={entry.color ?? "#8884d8"} />
                         ))}
                       </Bar>
                     </BarChart>
@@ -247,13 +214,7 @@ const ProjectOwnerReports = () => {
                     <XAxis dataKey="day" />
                     <YAxis />
                     <Tooltip />
-                    <Line 
-                      type="monotone" 
-                      dataKey="completed" 
-                      stroke="#10b981" 
-                      strokeWidth={2}
-                      dot={{ fill: '#10b981', strokeWidth: 2 }}
-                    />
+                    <Line type="monotone" dataKey="completed" stroke="#10b981" strokeWidth={2} dot={{ fill: "#10b981", strokeWidth: 2 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -266,18 +227,16 @@ const ProjectOwnerReports = () => {
         </TabsContent>
 
         <TabsContent value="tasks" className="space-y-6">
-          <TasksAnalysis 
-            distribution={taskDistribution}
-            priorities={priorityBreakdown}
-            trends={completionTrends}
-          />
+          <TasksAnalysis distribution={taskDistribution} priorities={priorityBreakdown} trends={completionTrends} />
         </TabsContent>
 
         <TabsContent value="performance" className="space-y-6">
-          <TeamPerformanceAnalysis 
-            productivity={reportData.teamProductivity}
-            metrics={reportData.performanceMetrics}
-          />
+          <TeamPerformanceAnalysis productivity={reportData.teamProductivity} metrics={reportData.performanceMetrics} />
+        </TabsContent>
+
+        <TabsContent value="sprints" className="space-y-6">
+          {/* SprintProjectsReport tab: pass all projects for filter */}
+          <SprintProjectsReport projects={projects} />
         </TabsContent>
       </Tabs>
     </div>
@@ -287,11 +246,11 @@ const ProjectOwnerReports = () => {
 // Metric Card Component
 const MetricCard = ({ title, value, subtitle, icon: Icon, color, trend }) => {
   const colorClasses = {
-    blue: 'bg-blue-50 text-blue-600 border-blue-200',
-    green: 'bg-green-50 text-green-600 border-green-200',
-    purple: 'bg-purple-50 text-purple-600 border-purple-200',
-    red: 'bg-red-50 text-red-600 border-red-200',
-    orange: 'bg-orange-50 text-orange-600 border-orange-200'
+    blue: "bg-blue-50 text-blue-600 border-blue-200",
+    green: "bg-green-50 text-green-600 border-green-200",
+    purple: "bg-purple-50 text-purple-600 border-purple-200",
+    red: "bg-red-50 text-red-600 border-red-200",
+    orange: "bg-orange-50 text-orange-600 border-orange-200",
   };
 
   return (
@@ -309,14 +268,8 @@ const MetricCard = ({ title, value, subtitle, icon: Icon, color, trend }) => {
         </div>
         {trend && (
           <div className="mt-2 flex items-center gap-1">
-            {trend === "up" ? (
-              <TrendingUp className="h-4 w-4 text-green-500" />
-            ) : (
-              <TrendingDown className="h-4 w-4 text-red-500" />
-            )}
-            <span className={`text-sm ${trend === "up" ? "text-green-600" : "text-red-600"}`}>
-              {typeof trend === 'number' ? `${trend}%` : 'Trending'}
-            </span>
+            {trend === "up" ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-red-500" />}
+            <span className={`text-sm ${trend === "up" ? "text-green-600" : "text-red-600"}`}>{typeof trend === "number" ? `${trend}%` : "Trending"}</span>
           </div>
         )}
       </CardContent>
@@ -336,12 +289,8 @@ const ProjectsOverview = ({ projects }) => (
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
                   <h4 className="font-medium text-gray-900">{project.name}</h4>
-                  <Badge variant={getStatusVariant(project.status)}>
-                    {project.status.replace('_', ' ')}
-                  </Badge>
-                  <Badge variant={getPriorityVariant(project.priority)}>
-                    {project.priority}
-                  </Badge>
+                  <Badge variant={getStatusVariant(project.status)}>{project.status.replace("_", " ")}</Badge>
+                  <Badge variant={getPriorityVariant(project.priority)}>{project.priority}</Badge>
                 </div>
                 <p className="text-sm text-gray-600 mb-2">{project.department}</p>
                 <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -353,9 +302,7 @@ const ProjectsOverview = ({ projects }) => (
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-gray-900 mb-1">
-                  {project.completionRate}%
-                </div>
+                <div className="text-2xl font-bold text-gray-900 mb-1">{project.completionRate}%</div>
                 <Progress value={project.completionRate} className="w-20" />
               </div>
             </div>
@@ -373,7 +320,15 @@ const TasksAnalysis = ({ distribution, priorities, trends }) => (
     {/* Filter Dropdown */}
     <div className="mb-4 flex gap-2 items-center">
       <label className="text-sm font-medium">Filter Task Status:</label>
-      <select id="taskStatusFilter" className="border rounded px-2 py-1 text-sm" value={window.taskStatusFilter || "all"} onChange={e => { window.taskStatusFilter = e.target.value; window.dispatchEvent(new Event('taskStatusFilterChange')); }}>
+      <select
+        id="taskStatusFilter"
+        className="border rounded px-2 py-1 text-sm"
+        value={window.taskStatusFilter || "all"}
+        onChange={(e) => {
+          window.taskStatusFilter = e.target.value;
+          window.dispatchEvent(new Event("taskStatusFilterChange"));
+        }}
+      >
         <option value="all">All</option>
         <option value="TODO">To Do</option>
         <option value="IN_PROGRESS">In Progress</option>
@@ -391,10 +346,7 @@ const TasksAnalysis = ({ distribution, priorities, trends }) => (
             {distribution.map((item) => (
               <div key={item.name} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div 
-                    className="w-4 h-4 rounded-full" 
-                    style={{ backgroundColor: item.color }}
-                  />
+                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: item.color }} />
                   <span className="text-sm font-medium">{item.name}</span>
                 </div>
                 <div className="text-right">
@@ -416,10 +368,7 @@ const TasksAnalysis = ({ distribution, priorities, trends }) => (
             {priorities.map((item) => (
               <div key={item.name} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div 
-                    className="w-4 h-4 rounded-full" 
-                    style={{ backgroundColor: item.color }}
-                  />
+                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: item.color }} />
                   <span className="text-sm font-medium">{item.name}</span>
                 </div>
                 <div className="font-semibold">{item.value}</div>
@@ -435,7 +384,6 @@ const TasksAnalysis = ({ distribution, priorities, trends }) => (
       <FilteredTaskList />
     </div>
   </div>
-
 );
 
 // Komponen untuk menampilkan task hasil filter
@@ -445,18 +393,18 @@ const FilteredTaskList = () => {
 
   React.useEffect(() => {
     const updateFilter = () => setFilter(window.taskStatusFilter || "all");
-    window.addEventListener('taskStatusFilterChange', updateFilter);
-    return () => window.removeEventListener('taskStatusFilterChange', updateFilter);
+    window.addEventListener("taskStatusFilterChange", updateFilter);
+    return () => window.removeEventListener("taskStatusFilterChange", updateFilter);
   }, []);
 
   React.useEffect(() => {
     // Ambil data task dari window.reportData jika tersedia
     if (window.reportData && window.reportData.tasks) {
       let filtered = window.reportData.tasks;
-      if (filter === "TODO") filtered = filtered.filter(t => t.status === "TODO");
-      else if (filter === "IN_PROGRESS") filtered = filtered.filter(t => t.status === "IN_PROGRESS");
-      else if (filter === "DONE") filtered = filtered.filter(t => t.status === "DONE");
-      else if (filter === "OVERDUE") filtered = filtered.filter(t => t.isOverdue);
+      if (filter === "TODO") filtered = filtered.filter((t) => t.status === "TODO");
+      else if (filter === "IN_PROGRESS") filtered = filtered.filter((t) => t.status === "IN_PROGRESS");
+      else if (filter === "DONE") filtered = filtered.filter((t) => t.status === "DONE");
+      else if (filter === "OVERDUE") filtered = filtered.filter((t) => t.isOverdue);
       setTasks(filtered);
     }
   }, [filter]);
@@ -465,23 +413,21 @@ const FilteredTaskList = () => {
 
   return (
     <ul className="space-y-2">
-      {tasks.map(task => (
+      {tasks.map((task) => (
         <li key={task.id} className="border rounded p-2 flex justify-between items-center">
           <span>{task.title}</span>
-          <Badge variant={task.status === "DONE" ? "success" : task.status === "IN_PROGRESS" ? "default" : task.status === "TODO" ? "outline" : "destructive"}>
-            {task.status === "OVERDUE" ? "Overdue" : task.status.replace("_", " ")}
-          </Badge>
+          <Badge variant={task.status === "DONE" ? "success" : task.status === "IN_PROGRESS" ? "default" : task.status === "TODO" ? "outline" : "destructive"}>{task.status === "OVERDUE" ? "Overdue" : task.status.replace("_", " ")}</Badge>
         </li>
       ))}
     </ul>
   );
-}
+};
 
 // Team Performance Analysis Component
 const TeamPerformanceAnalysis = ({ productivity, metrics }) => (
   <div className="space-y-6">
     <h3 className="text-lg font-semibold text-gray-900">Performance Metrics</h3>
-    
+
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <Card>
         <CardContent className="p-6 text-center">
@@ -490,7 +436,7 @@ const TeamPerformanceAnalysis = ({ productivity, metrics }) => (
           <p className="text-sm text-gray-600">Story Points Completed</p>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardContent className="p-6 text-center">
           <Clock className="h-8 w-8 text-blue-500 mx-auto mb-2" />
@@ -498,7 +444,7 @@ const TeamPerformanceAnalysis = ({ productivity, metrics }) => (
           <p className="text-sm text-gray-600">Avg. Days to Complete</p>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardContent className="p-6 text-center">
           <Activity className="h-8 w-8 text-green-500 mx-auto mb-2" />
@@ -535,23 +481,23 @@ const TeamPerformanceAnalysis = ({ productivity, metrics }) => (
 // Helper functions
 const getStatusVariant = (status) => {
   const variants = {
-    PLANNING: 'secondary',
-    ACTIVE: 'default',
-    ON_HOLD: 'destructive',
-    COMPLETED: 'default',
-    CANCELLED: 'outline'
+    PLANNING: "secondary",
+    ACTIVE: "default",
+    ON_HOLD: "destructive",
+    COMPLETED: "default",
+    CANCELLED: "outline",
   };
-  return variants[status] || 'outline';
+  return variants[status] || "outline";
 };
 
 const getPriorityVariant = (priority) => {
   const variants = {
-    LOW: 'outline',
-    MEDIUM: 'secondary',
-    HIGH: 'destructive',
-    CRITICAL: 'destructive'
+    LOW: "outline",
+    MEDIUM: "secondary",
+    HIGH: "destructive",
+    CRITICAL: "destructive",
   };
-  return variants[priority] || 'outline';
+  return variants[priority] || "outline";
 };
 
 export default ProjectOwnerReports;
