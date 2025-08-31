@@ -46,11 +46,18 @@ export async function GET(request) {
 
 		// Build unique projects array from assigned tasks
 		const projectMap = {};
-		rawTasks.forEach(task => {
+		for (const task of rawTasks) {
 			if (task.project && task.project.id) {
-				projectMap[task.project.id] = task.project;
+				// Fetch full project data including scrumMaster
+				if (!projectMap[task.project.id]) {
+					const fullProject = await projectOperations.findById(task.project.id, true);
+					projectMap[task.project.id] = {
+						...task.project,
+						scrumMasterName: fullProject?.scrumMaster?.name || "-"
+					};
+				}
 			}
-		});
+		}
 		const projects = Object.values(projectMap);
 
 		// Map tasks to always include required fields for frontend
@@ -112,7 +119,7 @@ export async function GET(request) {
 				startDate: project.startDate,
 				endDate: project.endDate,
 				department: project.department,
-				scrumMasterName: project.scrumMaster ? project.scrumMaster.name : "N/A"
+				scrumMasterName: project.scrumMasterName || "-"
 			};
 		});
 

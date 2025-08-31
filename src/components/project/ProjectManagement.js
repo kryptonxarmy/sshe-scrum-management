@@ -42,6 +42,7 @@ import ModalManageMember from "@/components/project/_partials/ModalManageMember"
 import ArchiveReports from "@/components/project/ArchiveReports";
 import EditProjectModal from "@/components/project/EditProjectModal";
 import KanbanBoard from "@/components/KanbanBoard";
+import TeamMemberReports from "@/components/reports/TeamMemberReports";
 
 const ProjectManagement = () => {
   const [statusFilter, setStatusFilter] = useState("all");
@@ -766,11 +767,13 @@ const ProjectManagement = () => {
         onProjectUpdated={handleProjectUpdated}
       />
 
-      {/* Render KanbanBoard dengan project detail */}
+      {/* Render KanbanBoard or TeamMemberReports based on role */}
       {selectedProject && (
         <div className="mt-8">
           <h3 className="text-xl font-bold text-slate-800 mb-4">Project Kanban Board</h3>
-          <KanbanBoard functionId={selectedProject.id} filter={statusFilter} project={selectedProject} />
+          {user?.role === "TEAM_MEMBER"
+            ? <TeamMemberReports projectId={selectedProject.id} />
+            : <KanbanBoard functionId={selectedProject.id} filter={statusFilter} project={selectedProject} />}
         </div>
       )}
     </div>

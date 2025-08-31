@@ -53,7 +53,7 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
 
   useEffect(() => {
     if (!functionId) {
-      setError("Project ID tidak ditemukan. Tidak bisa mengambil data tasks.");
+  setError("Project ID not found. Unable to fetch tasks.");
       return;
     }
     fetchTasks();
@@ -119,8 +119,8 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
     // Prevent moving DONE tasks back to IN_PROGRESS or TODO
     if (source.droppableId === "done" && destination.droppableId !== "done") {
       toast({
-        title: "Akses Ditolak",
-        description: "Task yang sudah selesai (DONE) tidak bisa dipindahkan kembali.",
+        title: "Access Denied",
+        description: "Completed (DONE) tasks cannot be moved back.",
         variant: "destructive",
         className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
       });
@@ -130,8 +130,8 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
     // Prevent moving to DONE if not owner/scrum master
     if (destination.droppableId === "done" && !canDragToDone()) {
       toast({
-        title: "Akses Ditolak",
-        description: "Hanya Project Owner atau Scrum Master yang boleh memindahkan task ke DONE.",
+        title: "Access Denied",
+        description: "Only Project Owner or Scrum Master can move tasks to DONE.",
         variant: "destructive",
         className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
       });
@@ -141,8 +141,8 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
     // Check if team member can drag this task
     if (isTeamMemberAndNotAssigned(movedTask)) {
       toast({
-        title: "Akses Ditolak",
-        description: "Anda hanya bisa memindahkan task yang di-assign kepada Anda.",
+        title: "Access Denied",
+        description: "You can only move tasks assigned to you.",
         variant: "destructive",
         className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
       });
@@ -202,7 +202,7 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
       
       toast({
         title: "Error",
-        description: "Gagal memperbarui status task. Silakan coba lagi.",
+        description: "Failed to update task status. Please try again.",
         variant: "destructive",
         className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
       });

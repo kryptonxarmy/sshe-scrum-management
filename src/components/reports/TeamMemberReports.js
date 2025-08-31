@@ -386,7 +386,7 @@ const TeamMemberReports = () => {
                   <Card key={project.id || idx}>
                     <CardHeader>
                       <CardTitle className="text-xl font-bold">{project.name}</CardTitle>
-                      <div className="text-sm text-gray-500">Scrum Master: <span className="font-semibold">{project.scrumMasterName}</span></div>
+                      <div className="text-sm text-gray-500">Scrum Master: <span className="font-semibold">{project.scrumMasterName && project.scrumMasterName !== 'N/A' ? project.scrumMasterName : '-'}</span></div>
                     </CardHeader>
                     <CardContent>
                       <HealthIndicators
@@ -406,11 +406,70 @@ const TeamMemberReports = () => {
         </TabsContent>
 
         <TabsContent value="tasks" className="space-y-6">
-          <TasksAnalysis 
-            distribution={taskDistribution}
-            priorities={priorityBreakdown}
-            trends={completionTrends}
-          />
+          <div className="mt-8">
+            {/* <h3 className="text-2xl font-extrabold mb-6 text-blue-700 flex items-center gap-2">
+              <Target className="h-6 w-6 text-blue-500" /> My Assigned Tasks
+            </h3> */}
+            {Array.isArray(reportData.allTasks) && reportData.allTasks.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {reportData.allTasks.map((task) => {
+                  const statusColor =
+                    task.status === "DONE" ? "bg-green-100 text-green-700" :
+                    task.status === "IN_PROGRESS" ? "bg-yellow-100 text-yellow-700" :
+                    task.status === "OVERDUE" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700";
+                  return (
+                    <Card key={task.id} className={`p-6 shadow-lg border-2 border-blue-100 rounded-xl hover:scale-[1.02] transition-transform duration-200 ${statusColor}`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-blue-200 flex items-center justify-center text-blue-700 font-bold text-lg">
+                            {task.title ? task.title[0].toUpperCase() : "T"}
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-lg">{task.title}</h4>
+                            <span className="text-xs text-gray-500">{task.project?.name || '-'}</span>
+                          </div>
+                        </div>
+                        <Badge variant={
+                          task.status === "DONE" ? "secondary" :
+                          task.status === "IN_PROGRESS" ? "default" :
+                          task.status === "OVERDUE" ? "destructive" : "outline"
+                        } className="px-3 py-1 text-sm font-semibold">
+                          {task.status.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                      <div className="flex flex-col gap-2 text-sm mt-2">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-blue-400" />
+                          <span className="font-medium">Due:</span> {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '-'}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-purple-400" />
+                          <span className="font-medium">Assignee:</span> {task.assignee?.name || '-'}
+                        </div>
+                        {task.completedAt && (
+                          <div className="flex items-center gap-2 text-green-600">
+                            <CheckCircle className="h-4 w-4" />
+                            <span className="font-medium">Completed:</span> {new Date(task.completedAt).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                      {/* Add a bottom bar for status and quick info */}
+                      <div className="mt-4 flex items-center justify-between">
+                        <span className="text-xs font-semibold px-2 py-1 rounded bg-white border border-blue-200 text-blue-700">
+                          {task.priority ? `Priority: ${task.priority}` : "No priority"}
+                        </span>
+                        {task.status === "OVERDUE" && (
+                          <span className="text-xs font-bold text-red-600">Overdue!</span>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-gray-500 text-center">No assigned tasks found.</div>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
     </div>
