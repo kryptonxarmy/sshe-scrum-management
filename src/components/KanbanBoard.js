@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import TaskCard from "./TaskCard";
-import { CheckCircle2, Circle, Clock } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Plus } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import CompletedTasksList from "./CompletedTasksList";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,16 +56,14 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
 
   useEffect(() => {
     if (!functionId) {
-      setError("Project ID tidak ditemukan. Tidak bisa mengambil data tasks.");
+  setError("Project ID not found. Unable to fetch tasks.");
       return;
     }
     fetchTasks();
     fetchProject();
   }, [functionId, sprintId, assigneeId]);
 
-  const handleTaskUpdated = () => {
-    fetchTasks();
-  };
+  const handleTaskUpdated = () => fetchTasks();
 
   const handleTaskDeleted = (deletedTaskId) => {
     setTasks((prevTasks) => ({
@@ -75,8 +73,8 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
     }));
   };
 
-  // Fungsi untuk cek apakah user boleh drag ke DONE
-  const canDragToDone = () => {
+  // Owner & Scrum Master punya full control
+  const hasFullControl = () => {
     if (!user || !project) return false;
     // Project Owner
     if (user.id === project.ownerId) return true;
@@ -85,33 +83,49 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
     return false;
   };
 
+  // Cek apakah user boleh drag ke DONE
+  const canDragToDone = () => hasFullControl();
+
+  // Cek apakah user boleh create task
+  const canCreateTask = () => hasFullControl();
+
+  // Helper: apakah user team_member dan tidak di-assign di task
+  const isTeamMemberAndNotAssigned = (task) => {
+    // Project Owner & Scrum Master always can drag any task
+    if (!user) return false;
+    if (project && (user.id === project.ownerId || user.id === project.scrumMasterId)) return false;
+    // Team member: only if assigned
+    if (user.role === "TEAM_MEMBER") {
+      if (task.assignees && Array.isArray(task.assignees)) {
+        return !task.assignees.some((assignee) => {
+          const userId = assignee.user ? assignee.user.id : assignee.userId;
+          return userId === user.id;
+        });
+      }
+      return true;
+    }
+    return false;
+  };
+
   const handleDragEnd = async (result) => {
     const { source, destination } = result;
-
-    // Dropped outside the list
     if (!destination) return;
 
     // Same position
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
     // Get source and destination lists
-    const sourceList = tasks[source.droppableId];
-    const destList = tasks[destination.droppableId];
+    const sourceList = [...tasks[source.droppableId]];
+    const destList = source.droppableId === destination.droppableId ? sourceList : [...tasks[destination.droppableId]];
     const [movedTask] = sourceList.splice(source.index, 1);
 
     // Prevent moving DONE tasks back to IN_PROGRESS or TODO
     if (source.droppableId === "done" && destination.droppableId !== "done") {
       toast({
-        title: "Akses Ditolak",
-        description: "Task yang sudah selesai (DONE) tidak bisa dipindahkan kembali.",
+        title: "Access Denied",
+        description: "Completed (DONE) tasks cannot be moved back.",
         variant: "destructive",
         className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
-      });
-      // Revert local change
-      setTasks({
-        ...tasks,
-        [source.droppableId]: [...sourceList.slice(0, source.index), movedTask, ...sourceList.slice(source.index)],
-        [destination.droppableId]: destList,
       });
       return;
     }
@@ -119,16 +133,21 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
     // Prevent moving to DONE if not owner/scrum master
     if (destination.droppableId === "done" && !canDragToDone()) {
       toast({
-        title: "Akses Ditolak",
-        description: "Hanya Project Owner atau Scrum Master yang boleh memindahkan task ke DONE.",
+        title: "Access Denied",
+        description: "Only Project Owner or Scrum Master can move tasks to DONE.",
         variant: "destructive",
         className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
       });
-      // Revert local change
-      setTasks({
-        ...tasks,
-        [source.droppableId]: [...sourceList.slice(0, source.index), movedTask, ...sourceList.slice(source.index)],
-        [destination.droppableId]: destList,
+      return;
+    }
+
+    // Check if team member can drag this task
+    if (isTeamMemberAndNotAssigned(movedTask)) {
+      toast({
+        title: "Access Denied",
+        description: "You can only move tasks assigned to you.",
+        variant: "destructive",
+        className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
       });
       return;
     }
@@ -172,28 +191,25 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
       console.error("Failed to update task status:", error);
       // Revert optimistic update on error
       const revertedTasks = { ...tasks };
-      revertedTasks[destination.droppableId].splice(destination.index, 1);
-      revertedTasks[source.droppableId].splice(source.index, 0, movedTask);
-      setTasks(revertedTasks);
+      const originalSourceList = [...tasks[source.droppableId]];
+      const originalDestList = [...tasks[destination.droppableId]];
+      
+      // Add the task back to original position
+      originalSourceList.splice(source.index, 0, movedTask);
+      
+      setTasks({
+        ...revertedTasks,
+        [source.droppableId]: originalSourceList,
+        [destination.droppableId]: originalDestList,
+      });
+      
+      toast({
+        title: "Error",
+        description: "Failed to update task status. Please try again.",
+        variant: "destructive",
+        className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
+      });
     }
-  };
-
-  // Helper: apakah user team_member dan tidak di-assign di task
-  const isTeamMemberAndNotAssigned = (task) => {
-    // Project Owner & Scrum Master always can drag any task
-    if (!user) return false;
-    if (project && (user.id === project.ownerId || user.id === project.scrumMasterId)) return false;
-    // Team member: only if assigned
-    if (user.role === "TEAM_MEMBER") {
-      if (task.assignees && Array.isArray(task.assignees)) {
-        return !task.assignees.some((assignee) => {
-          const userId = assignee.user ? assignee.user.id : assignee.userId;
-          return userId === user.id;
-        });
-      }
-      return true;
-    }
-    return false;
   };
 
   let columns = [
@@ -238,25 +254,57 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
         </div>
       )}
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className={`grid gap-6 mb-12 ${filter === "all" ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1"}`}>
+        <div
+          className={`grid gap-6 mb-12 ${
+            filter === "all" ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1"
+          }`}
+        >
           {columns.map((column) => {
             const Icon = column.icon;
             return (
-              <Droppable key={column.id} droppableId={column.id} isDropDisabled={false}>
+              <Droppable key={column.id} droppableId={column.id}>
                 {(provided, snapshot) => (
                   <div ref={provided.innerRef} {...provided.droppableProps} className={`rounded-lg border border-slate-200 overflow-hidden ${column.bgClass} ${snapshot.isDraggingOver ? "ring-2 ring-blue-400 ring-opacity-50" : ""}`}>
                     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white">
-                      <h3 className={`text-lg font-semibold ${column.headerClass}`}>{column.title}</h3>
-                      <span className="text-sm font-medium text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200">{column.tasks.length}</span>
+                      <h3 className={`text-lg font-semibold ${column.headerClass}`}>
+                        {column.title}
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200">
+                          {column.tasks.length}
+                        </span>
+                        {canCreateTask() && (
+                          <button
+                            onClick={() => console.log("Open create task modal for:", column.id)}
+                            className="ml-2 text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
+                          >
+                            + Add
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="p-4">
                       {column.tasks.length > 0 ? (
                         <div className="space-y-3">
                           {column.tasks.map((task, index) => (
-                            <Draggable key={task.id} draggableId={task.id.toString()} index={index} isDragDisabled={isTeamMemberAndNotAssigned(task)}>
+                            <Draggable
+                              key={task.id}
+                              draggableId={task.id.toString()}
+                              index={index}
+                              isDragDisabled={!hasFullControl() && isTeamMemberAndNotAssigned(task)}
+                            >
                               {(provided, snapshot) => (
-                                <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className={snapshot.isDragging ? "opacity-80" : ""}>
-                                  <TaskCard task={task} onTaskUpdated={handleTaskUpdated} onTaskDeleted={handleTaskDeleted} />
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  className={snapshot.isDragging ? "opacity-80" : ""}
+                                >
+                                  <TaskCard
+                                    task={task}
+                                    onTaskUpdated={handleTaskUpdated}
+                                    onTaskDeleted={handleTaskDeleted}
+                                  />
                                 </div>
                               )}
                             </Draggable>
@@ -281,4 +329,5 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
     </>
   );
 };
+
 export default KanbanBoard;

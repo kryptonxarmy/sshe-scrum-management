@@ -42,6 +42,7 @@ import ModalManageMember from "@/components/project/_partials/ModalManageMember"
 import ArchiveReports from "@/components/project/ArchiveReports";
 import EditProjectModal from "@/components/project/EditProjectModal";
 import KanbanBoard from "@/components/KanbanBoard";
+import TeamMemberReports from "@/components/reports/TeamMemberReports";
 
 const ProjectManagement = () => {
   const [statusFilter, setStatusFilter] = useState("all");
@@ -359,14 +360,7 @@ const ProjectManagement = () => {
         <div className="flex items-center justify-between">
           <div>
             {/* Filter Status Project */}
-            <div className="mb-4 flex gap-2 items-center">
-              <label className="text-sm font-medium">Filter Status:</label>
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border rounded px-2 py-1 text-sm">
-                <option value="all">All</option>
-                <option value="active">Active</option>
-                <option value="released">Released</option>
-              </select>
-            </div>
+            {/* Filter Status Project deleted as requested */}
             <h2 className="text-2xl font-bold text-slate-800">Projects</h2>
             <p className="text-slate-600">Loading projects...</p>
           </div>
@@ -401,12 +395,40 @@ const ProjectManagement = () => {
     );
   }
 
+  // Dynamic greeting logic
+  const getGreeting = () => {
+    const now = new Date();
+    const hour = now.getHours();
+    let greeting = "";
+    if (hour >= 5 && hour < 12) {
+      greeting = `Good Morning, ${user?.name || "User"} 👋`;
+    } else if (hour >= 12 && hour < 17) {
+      greeting = `Good Afternoon, ${user?.name || "User"} 🌞`;
+    } else if (hour >= 17 && hour < 21) {
+      greeting = `Good Evening, ${user?.name || "User"} 🌆`;
+    } else {
+      greeting = `Good Night, ${user?.name || "User"} 🌙`;
+    }
+    return greeting;
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with dynamic greeting and elegant background */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Projects</h2>
+          <div className="relative inline-block mb-4">
+            {/* Soft pastel abstract gradient background shape, only behind greeting */}
+            <span
+              aria-hidden="true"
+              className="absolute -top-4 -left-6 w-48 h-12 rounded-full blur-2xl opacity-60 z-0 pointer-events-none"
+              style={{
+                background: "linear-gradient(90deg, #a5b4fc 0%, #fbc2eb 60%, #fcd1d1 100%)",
+                filter: "blur(24px)",
+              }}
+            ></span>
+            <h2 className="relative z-10 text-3xl font-bold text-slate-800">{getGreeting()}</h2>
+          </div>
           <p className="text-slate-600">Manage your SSHE projects and track progress</p>
         </div>
 
@@ -745,11 +767,13 @@ const ProjectManagement = () => {
         onProjectUpdated={handleProjectUpdated}
       />
 
-      {/* Render KanbanBoard dengan project detail */}
+      {/* Render KanbanBoard or TeamMemberReports based on role */}
       {selectedProject && (
         <div className="mt-8">
           <h3 className="text-xl font-bold text-slate-800 mb-4">Project Kanban Board</h3>
-          <KanbanBoard functionId={selectedProject.id} filter={statusFilter} project={selectedProject} />
+          {user?.role === "TEAM_MEMBER"
+            ? <TeamMemberReports projectId={selectedProject.id} />
+            : <KanbanBoard functionId={selectedProject.id} filter={statusFilter} project={selectedProject} />}
         </div>
       )}
     </div>
