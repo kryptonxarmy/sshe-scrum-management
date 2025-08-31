@@ -25,7 +25,6 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
       if (!response.ok) {
         throw new Error("Failed to fetch tasks");
       }
-      if (!response.ok) throw new Error("Failed to fetch tasks");
       const data = await response.json();
       const organizedTasks = {
         todo: data.tasks.filter((task) => task.status === "TODO"),
@@ -74,11 +73,11 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
   // Owner & Scrum Master punya full control
   const hasFullControl = () => {
     if (!user || !project) return false;
-  // Project Owner
-  if (user.id === project.ownerId) return true;
-  // Scrum Master (regardless of role)
-  if (user.id === project.scrumMasterId) return true;
-  return false;
+    // Project Owner
+    if (user.id === project.ownerId) return true;
+    // Scrum Master (regardless of role)
+    if (user.id === project.scrumMasterId) return true;
+    return false;
   };
 
   // Cek apakah user boleh drag ke DONE
@@ -87,12 +86,34 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
   // Cek apakah user boleh create task
   const canCreateTask = () => hasFullControl();
 
+  // Helper: apakah user team_member dan tidak di-assign di task
+  const isTeamMemberAndNotAssigned = (task) => {
+    // Project Owner & Scrum Master always can drag any task
+    if (!user) return false;
+    if (project && (user.id === project.ownerId || user.id === project.scrumMasterId)) return false;
+    // Team member: only if assigned
+    if (user.role === "TEAM_MEMBER") {
+      if (task.assignees && Array.isArray(task.assignees)) {
+        return !task.assignees.some((assignee) => {
+          const userId = assignee.user ? assignee.user.id : assignee.userId;
+          return userId === user.id;
+        });
+      }
+      return true;
+    }
+    return false;
+  };
+
+  const handleDragEnd = async (result) => {
+    const { source, destination } = result;
+    if (!destination) return;
+
     // Same position
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
     // Get source and destination lists
-    const sourceList = tasks[source.droppableId];
-    const destList = tasks[destination.droppableId];
+    const sourceList = [...tasks[source.droppableId]];
+    const destList = source.droppableId === destination.droppableId ? sourceList : [...tasks[destination.droppableId]];
     const [movedTask] = sourceList.splice(source.index, 1);
 
     // Prevent moving DONE tasks back to IN_PROGRESS or TODO
@@ -102,12 +123,6 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
         description: "Task yang sudah selesai (DONE) tidak bisa dipindahkan kembali.",
         variant: "destructive",
         className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
-      });
-      // Revert local change
-      setTasks({
-        ...tasks,
-        [source.droppableId]: [...sourceList.slice(0, source.index), movedTask, ...sourceList.slice(source.index)],
-        [destination.droppableId]: destList,
       });
       return;
     }
@@ -120,11 +135,16 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
         variant: "destructive",
         className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
       });
-      // Revert local change
-      setTasks({
-        ...tasks,
-        [source.droppableId]: [...sourceList.slice(0, source.index), movedTask, ...sourceList.slice(source.index)],
-        [destination.droppableId]: destList,
+      return;
+    }
+
+    // Check if team member can drag this task
+    if (isTeamMemberAndNotAssigned(movedTask)) {
+      toast({
+        title: "Akses Ditolak",
+        description: "Anda hanya bisa memindahkan task yang di-assign kepada Anda.",
+        variant: "destructive",
+        className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
       });
       return;
     }
@@ -168,89 +188,24 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
       console.error("Failed to update task status:", error);
       // Revert optimistic update on error
       const revertedTasks = { ...tasks };
-      revertedTasks[destination.droppableId].splice(destination.index, 1);
-      revertedTasks[source.droppableId].splice(source.index, 0, movedTask);
-      setTasks(revertedTasks);
-    }
-  };
-
-  // Helper: apakah user team_member dan tidak di-assign di task
-  const isTeamMemberAndNotAssigned = (task) => {
-    // Project Owner & Scrum Master always can drag any task
-    if (!user) return false;
-    if (project && (user.id === project.ownerId || user.id === project.scrumMasterId)) return false;
-    // Team member: only if assigned
-    if (user.role === "TEAM_MEMBER") {
-      if (task.assignees && Array.isArray(task.assignees)) {
-        return !task.assignees.some((assignee) => {
-          const userId = assignee.user ? assignee.user.id : assignee.userId;
-          return userId === user.id;
-        });
-      }
-      return true;
-    }
-    return false;
-  };
-
-  const handleDragEnd = async (result) => {
-    const { source, destination } = result;
-    if (!destination) return;
-
-    // Cegah drag ke DONE jika bukan owner/scrum master
-    if (destination.droppableId === "done" && !canDragToDone()) {
+      const originalSourceList = [...tasks[source.droppableId]];
+      const originalDestList = [...tasks[destination.droppableId]];
+      
+      // Add the task back to original position
+      originalSourceList.splice(source.index, 0, movedTask);
+      
+      setTasks({
+        ...revertedTasks,
+        [source.droppableId]: originalSourceList,
+        [destination.droppableId]: originalDestList,
+      });
+      
       toast({
-        title: "Akses Ditolak",
-        description: "Hanya Project Owner atau Scrum Master yang boleh memindahkan task ke DONE.",
+        title: "Error",
+        description: "Gagal memperbarui status task. Silakan coba lagi.",
         variant: "destructive",
         className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
       });
-      return;
-    }
-
-    if (
-      source.droppableId === destination.droppableId &&
-      source.index === destination.index
-    )
-      return;
-
-    const sourceList = tasks[source.droppableId];
-    const destList = tasks[destination.droppableId];
-    const [movedTask] = sourceList.splice(source.index, 1);
-
-    const newStatus =
-      destination.droppableId === "todo"
-        ? "TODO"
-        : destination.droppableId === "progress"
-        ? "IN_PROGRESS"
-        : "DONE";
-
-    destList.splice(destination.index, 0, { ...movedTask, status: newStatus });
-
-    setTasks({
-      ...tasks,
-      [source.droppableId]: sourceList,
-      [destination.droppableId]: destList,
-    });
-
-    try {
-      const response = await fetch(`/api/tasks/${movedTask.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-      await response.json();
-      fetchTasks();
-    } catch (error) {
-      console.error("Failed to update task status:", error);
-      const revertedTasks = { ...tasks };
-      revertedTasks[destination.droppableId].splice(destination.index, 1);
-      revertedTasks[source.droppableId].splice(source.index, 0, movedTask);
-      setTasks(revertedTasks);
     }
   };
 
@@ -371,4 +326,5 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
     </>
   );
 };
+
 export default KanbanBoard;
