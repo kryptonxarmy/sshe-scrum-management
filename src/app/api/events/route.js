@@ -94,7 +94,8 @@ export async function POST(request) {
       recurringDayOfWeek,
       recurringEndDate,
       projectId, 
-      createdById 
+      createdById,
+      selectedUserIds = []
     } = body;
 
     if (!title || !startDate || !createdById) {
@@ -134,6 +135,45 @@ export async function POST(request) {
         }
       }
     });
+
+    // Fetch emails of selected users
+    let assigneeEmails = [];
+    if (selectedUserIds && selectedUserIds.length > 0) {
+      assigneeEmails = await prisma.user.findMany({
+        where: {
+          id: { in: selectedUserIds },
+          role: { not: "SUPERADMIN" },
+        },
+        select: { email: true, name: true },
+      });
+    }
+
+    // Send event notification email to assignees
+    if (assigneeEmails.length > 0) {
+      try {
+        const { sendTaskNotification } = require("@/lib/email");
+        const subject = `[SSHE Scrum] Event Baru: ${title}`;
+        const html = `
+          <div style="font-family: Arial, sans-serif;">
+            <h2 style="color: #4B2995;">Undangan Event Baru</h2>
+            <p>Anda diundang untuk event berikut:</p>
+            <table style="border-collapse: collapse; margin-top: 10px;">
+              <tr><td><strong>Judul Event:</strong></td><td>${title}</td></tr>
+              <tr><td><strong>Deskripsi:</strong></td><td>${description || "-"}</td></tr>
+              <tr><td><strong>Waktu Mulai:</strong></td><td>${new Date(startDate).toLocaleString()}</td></tr>
+              <tr><td><strong>Waktu Selesai:</strong></td><td>${endDate ? new Date(endDate).toLocaleString() : "-"}</td></tr>
+              <tr><td><strong>Project:</strong></td><td>${event.project?.name || "-"}</td></tr>
+            </table>
+            <p style="margin-top: 16px;">Silakan cek aplikasi SSHE Scrum Management untuk detail lebih lanjut.</p>
+          </div>
+        `;
+        const to = assigneeEmails.map(u => u.email);
+        await sendTaskNotification({ to, subject, text: `${title}\n${description || ""}`, html });
+      } catch (err) {
+        console.error("Gagal mengirim email event ke assignees:", err);
+        // Optionally, you can return a warning in the response
+      }
+    }
 
     // If recurring, create future instances
     if (isRecurring && recurringType && recurringDayOfWeek !== null) {

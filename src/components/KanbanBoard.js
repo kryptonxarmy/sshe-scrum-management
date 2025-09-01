@@ -7,7 +7,7 @@ import CompletedTasksList from "./CompletedTasksList";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 
-const KanbanBoard = ({ functionId, filter = "all" }) => {
+const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "" }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [tasks, setTasks] = useState({
@@ -21,7 +21,10 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
   // Fetch tasks
   const fetchTasks = async () => {
     try {
-      const response = await fetch(`/api/tasks?projectId=${functionId}`);
+      let url = `/api/tasks?projectId=${functionId}`;
+      if (sprintId) url += `&sprintId=${sprintId}`;
+      if (assigneeId) url += `&assigneeId=${assigneeId}`;
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error("Failed to fetch tasks");
       }
@@ -58,7 +61,7 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
     }
     fetchTasks();
     fetchProject();
-  }, [functionId]);
+  }, [functionId, sprintId, assigneeId]);
 
   const handleTaskUpdated = () => fetchTasks();
 
