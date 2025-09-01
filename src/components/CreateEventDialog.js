@@ -1,12 +1,7 @@
+import UserAssigneeSelector from "@/components/UserAssigneeSelector";
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,39 +10,64 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { CalendarPlus, Clock, Repeat, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import MultiSelect from "./ui/multi-select";
 
 const CreateEventDialog = ({ projects = [], onEventCreated }) => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    startDate: '',
-    startTime: '',
-    endDate: '',
-    endTime: '',
-    projectId: 'no-project',
+    title: "",
+    description: "",
+    startDate: "",
+    startTime: "",
+    endDate: "",
+    endTime: "",
+    projectId: "no-project",
     isRecurring: false,
-    recurringType: 'weekly',
+    recurringType: "weekly",
     recurringDayOfWeek: new Date().getDay(), // Default to today's day
-    recurringEndDate: ''
+    recurringEndDate: "",
   });
 
+  // Fetch projects created by the logged-in project owner
+  const [ownerProjects, setOwnerProjects] = useState([]);
+  React.useEffect(() => {
+    async function fetchOwnerProjects() {
+      if (user?.id) {
+        try {
+          // Use /api/projects?userId=... to get projects created/owned by this user
+          const res = await fetch(`/api/projects?userId=${user.id}`);
+          const data = await res.json();
+          if (Array.isArray(data.projects)) {
+            setOwnerProjects(data.projects);
+          } else {
+            setOwnerProjects([]);
+          }
+        } catch (err) {
+          setOwnerProjects([]);
+        }
+      } else {
+        setOwnerProjects([]);
+      }
+    }
+    fetchOwnerProjects();
+  }, [user?.id]);
+
   const days = [
-    { value: 0, label: 'Minggu' },
-    { value: 1, label: 'Senin' },
-    { value: 2, label: 'Selasa' },
-    { value: 3, label: 'Rabu' },
-    { value: 4, label: 'Kamis' },
-    { value: 5, label: 'Jumat' },
-    { value: 6, label: 'Sabtu' }
+    { value: 0, label: "Minggu" },
+    { value: 1, label: "Senin" },
+    { value: 2, label: "Selasa" },
+    { value: 3, label: "Rabu" },
+    { value: 4, label: "Kamis" },
+    { value: 5, label: "Jumat" },
+    { value: 6, label: "Sabtu" },
   ];
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -56,30 +76,27 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
     setLoading(true);
 
     try {
-      const startDateTime = new Date(`${formData.startDate}T${formData.startTime || '00:00'}`);
-      const endDateTime = formData.endDate && formData.endTime 
-        ? new Date(`${formData.endDate}T${formData.endTime}`)
-        : new Date(startDateTime.getTime() + (60 * 60 * 1000)); // Default 1 hour duration
+      const startDateTime = new Date(`${formData.startDate}T${formData.startTime || "00:00"}`);
+      const endDateTime = formData.endDate && formData.endTime ? new Date(`${formData.endDate}T${formData.endTime}`) : new Date(startDateTime.getTime() + 60 * 60 * 1000); // Default 1 hour duration
 
       const payload = {
         title: formData.title,
         description: formData.description,
         startDate: startDateTime.toISOString(),
         endDate: endDateTime.toISOString(),
-        projectId: formData.projectId === 'no-project' ? null : formData.projectId || null,
+        projectId: formData.projectId === "no-project" ? null : formData.projectId || null,
         isRecurring: formData.isRecurring,
         recurringType: formData.isRecurring ? formData.recurringType : null,
         recurringDayOfWeek: formData.isRecurring ? parseInt(formData.recurringDayOfWeek) : null,
-        recurringEndDate: formData.isRecurring && formData.recurringEndDate 
-          ? new Date(formData.recurringEndDate).toISOString() 
-          : null,
-        createdById: user.id
+        recurringEndDate: formData.isRecurring && formData.recurringEndDate ? new Date(formData.recurringEndDate).toISOString() : null,
+        createdById: user.id,
+        selectedUserIds: formData.selectedUserIds || [],
       };
 
-      const response = await fetch('/api/events', {
-        method: 'POST',
+      const response = await fetch("/api/events", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       });
@@ -89,17 +106,17 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
       if (result.success) {
         // Reset form
         setFormData({
-          title: '',
-          description: '',
-          startDate: '',
-          startTime: '',
-          endDate: '',
-          endTime: '',
-          projectId: 'no-project',
+          title: "",
+          description: "",
+          startDate: "",
+          startTime: "",
+          endDate: "",
+          endTime: "",
+          projectId: "no-project",
           isRecurring: false,
-          recurringType: 'weekly',
+          recurringType: "weekly",
           recurringDayOfWeek: new Date().getDay(),
-          recurringEndDate: ''
+          recurringEndDate: "",
         });
 
         setOpen(false);
@@ -107,26 +124,21 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
           onEventCreated(result.event);
         }
       } else {
-        throw new Error(result.error || 'Failed to create event');
+        throw new Error(result.error || "Failed to create event");
       }
     } catch (error) {
-      console.error('Error creating event:', error);
-      alert('Gagal membuat event. Silakan coba lagi.');
+      console.error("Error creating event:", error);
+      alert("Gagal membuat event. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }
   };
 
   // Check if user has permission to create events
-  const canCreateEvent = user?.role === 'PROJECT_OWNER' || 
-                        user?.role === 'SCRUM_MASTER' || 
-                        user?.role === 'SUPERADMIN' ||
-                        user?.role === 'superadmin' ||
-                        user?.role === 'project_owner' ||
-                        user?.role === 'scrum_master';
+  const canCreateEvent = user?.role === "PROJECT_OWNER" || user?.role === "SCRUM_MASTER" || user?.role === "SUPERADMIN" || user?.role === "superadmin" || user?.role === "project_owner" || user?.role === "scrum_master";
 
-  console.log('User role:', user?.role); // Debug log
-  console.log('Can create event:', canCreateEvent); // Debug log
+  console.log("User role:", user?.role); // Debug log
+  console.log("Can create event:", canCreateEvent); // Debug log
 
   if (!canCreateEvent) {
     return null;
@@ -147,7 +159,7 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
             Buat Event Meeting Baru
           </DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <Card>
@@ -155,41 +167,44 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Judul Event *</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    placeholder="Misal: Sprint Planning Meeting"
-                    required
-                  />
+                  <Input id="title" value={formData.title} onChange={(e) => handleInputChange("title", e.target.value)} placeholder="Misal: Sprint Planning Meeting" required />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="description">Deskripsi</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => handleInputChange('description', e.target.value)}
-                    placeholder="Jelaskan agenda atau tujuan meeting..."
-                    rows={3}
-                  />
+                  <Textarea id="description" value={formData.description} onChange={(e) => handleInputChange("description", e.target.value)} placeholder="Jelaskan agenda atau tujuan meeting..." rows={3} />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="projectId">Project (Opsional)</Label>
-                  <Select value={formData.projectId} onValueChange={(value) => handleInputChange('projectId', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih project terkait" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no-project">Tidak terkait project</SelectItem>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="projectId">Project yang Dibahas *</Label>
+                  <div className="flex gap-2 items-center">
+                    <Select value={formData.projectId} onValueChange={(value) => handleInputChange("projectId", value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih project yang akan dibahas" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ownerProjects.length === 0 ? (
+                          <SelectItem value="no-project" disabled>
+                            Tidak ada project yang Anda buat
+                          </SelectItem>
+                        ) : (
+                          <>
+                            <SelectItem value="no-project">Tidak terkait project</SelectItem>
+                            {ownerProjects.map((project) => (
+                              <SelectItem key={project.id} value={project.id}>
+                                {project.name}
+                              </SelectItem>
+                            ))}
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    {/* MultiSelect user dropdown beside project dropdown */}
+                    {/* User assignee selector below project dropdown for better layout */}
+                  </div>
+                  <div className="mt-2">
+                    <UserAssigneeSelector projectId={formData.projectId} selectedUserIds={formData.selectedUserIds || []} onChange={(ids) => handleInputChange("selectedUserIds", ids)} />
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -207,44 +222,22 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="startDate">Tanggal Mulai *</Label>
-                    <Input
-                      id="startDate"
-                      type="date"
-                      value={formData.startDate}
-                      onChange={(e) => handleInputChange('startDate', e.target.value)}
-                      required
-                    />
+                    <Input id="startDate" type="date" value={formData.startDate} onChange={(e) => handleInputChange("startDate", e.target.value)} required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="startTime">Jam Mulai *</Label>
-                    <Input
-                      id="startTime"
-                      type="time"
-                      value={formData.startTime}
-                      onChange={(e) => handleInputChange('startTime', e.target.value)}
-                      required
-                    />
+                    <Input id="startTime" type="time" value={formData.startTime} onChange={(e) => handleInputChange("startTime", e.target.value)} required />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="endDate">Tanggal Selesai</Label>
-                    <Input
-                      id="endDate"
-                      type="date"
-                      value={formData.endDate}
-                      onChange={(e) => handleInputChange('endDate', e.target.value)}
-                    />
+                    <Input id="endDate" type="date" value={formData.endDate} onChange={(e) => handleInputChange("endDate", e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="endTime">Jam Selesai</Label>
-                    <Input
-                      id="endTime"
-                      type="time"
-                      value={formData.endTime}
-                      onChange={(e) => handleInputChange('endTime', e.target.value)}
-                    />
+                    <Input id="endTime" type="time" value={formData.endTime} onChange={(e) => handleInputChange("endTime", e.target.value)} />
                   </div>
                 </div>
               </div>
@@ -261,11 +254,7 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="isRecurring"
-                    checked={formData.isRecurring}
-                    onCheckedChange={(checked) => handleInputChange('isRecurring', checked)}
-                  />
+                  <Checkbox id="isRecurring" checked={formData.isRecurring} onCheckedChange={(checked) => handleInputChange("isRecurring", checked)} />
                   <Label htmlFor="isRecurring" className="text-sm font-medium">
                     Jadikan meeting rutin
                   </Label>
@@ -275,7 +264,7 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
                   <div className="space-y-4 pl-6 border-l-2 border-green-200">
                     <div className="space-y-2">
                       <Label htmlFor="recurringType">Frekuensi</Label>
-                      <Select value={formData.recurringType} onValueChange={(value) => handleInputChange('recurringType', value)}>
+                      <Select value={formData.recurringType} onValueChange={(value) => handleInputChange("recurringType", value)}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -288,10 +277,7 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
 
                     <div className="space-y-2">
                       <Label htmlFor="recurringDayOfWeek">Hari</Label>
-                      <Select 
-                        value={formData.recurringDayOfWeek.toString()} 
-                        onValueChange={(value) => handleInputChange('recurringDayOfWeek', parseInt(value))}
-                      >
+                      <Select value={formData.recurringDayOfWeek.toString()} onValueChange={(value) => handleInputChange("recurringDayOfWeek", parseInt(value))}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -307,13 +293,7 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
 
                     <div className="space-y-2">
                       <Label htmlFor="recurringEndDate">Berakhir pada</Label>
-                      <Input
-                        id="recurringEndDate"
-                        type="date"
-                        value={formData.recurringEndDate}
-                        onChange={(e) => handleInputChange('recurringEndDate', e.target.value)}
-                        placeholder="Opsional - biarkan kosong untuk tidak ada batas"
-                      />
+                      <Input id="recurringEndDate" type="date" value={formData.recurringEndDate} onChange={(e) => handleInputChange("recurringEndDate", e.target.value)} placeholder="Opsional - biarkan kosong untuk tidak ada batas" />
                     </div>
                   </div>
                 )}
@@ -323,20 +303,11 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
 
           {/* Submit Button */}
           <div className="flex justify-end space-x-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={loading}
-            >
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
               Batal
             </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              {loading ? 'Menyimpan...' : 'Buat Event'}
+            <Button type="submit" disabled={loading} className="bg-purple-600 hover:bg-purple-700">
+              {loading ? "Menyimpan..." : "Buat Event"}
             </Button>
           </div>
         </form>

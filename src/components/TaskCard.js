@@ -23,7 +23,14 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
     if (!task?.id || !user?.id) return;
     // Fetch comments for this task
     fetch(`/api/comments?taskId=${task.id}`)
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (!res.ok) return { comments: [] };
+        try {
+          return await res.json();
+        } catch {
+          return { comments: [] };
+        }
+      })
       .then((data) => {
         const comments = data.comments || [];
         // Find latest comment not by current user
@@ -48,7 +55,14 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
     if (isCommentsSheetOpen && task?.id && user?.id) {
       // Mark latest comment as read
       fetch(`/api/comments?taskId=${task.id}`)
-        .then((res) => res.json())
+        .then(async (res) => {
+          if (!res.ok) return { comments: [] };
+          try {
+            return await res.json();
+          } catch {
+            return { comments: [] };
+          }
+        })
         .then((data) => {
           const comments = data.comments || [];
           const latestOtherComment = comments.filter((c) => c.userId !== user.id).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
