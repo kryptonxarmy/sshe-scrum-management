@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import TaskCard from "./TaskCard";
-import { CheckCircle2, Circle, Clock, Plus } from "lucide-react";
+import { CheckCircle2, Circle, Clock } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import CompletedTasksList from "./CompletedTasksList";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,7 +53,7 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
 
   useEffect(() => {
     if (!functionId) {
-  setError("Project ID not found. Unable to fetch tasks.");
+      setError("Project ID not found. Unable to fetch tasks.");
       return;
     }
     fetchTasks();
@@ -261,7 +261,13 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
             return (
               <Droppable key={column.id} droppableId={column.id}>
                 {(provided, snapshot) => (
-                  <div ref={provided.innerRef} {...provided.droppableProps} className={`rounded-lg border border-slate-200 overflow-hidden ${column.bgClass} ${snapshot.isDraggingOver ? "ring-2 ring-blue-400 ring-opacity-50" : ""}`}>
+                  <div 
+                    ref={provided.innerRef} 
+                    {...provided.droppableProps} 
+                    className={`rounded-lg border border-slate-200 overflow-hidden ${column.bgClass} ${
+                      snapshot.isDraggingOver ? "ring-2 ring-blue-400 ring-opacity-50" : ""
+                    }`}
+                  >
                     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white">
                       <h3 className={`text-lg font-semibold ${column.headerClass}`}>
                         {column.title}
@@ -270,14 +276,7 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
                         <span className="text-sm font-medium text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200">
                           {column.tasks.length}
                         </span>
-                        {canCreateTask() && (
-                          <button
-                            onClick={() => console.log("Open create task modal for:", column.id)}
-                            className="ml-2 text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
-                          >
-                            + Add
-                          </button>
-                        )}
+                        {/* Add button removed as requested */}
                       </div>
                     </div>
                     <div className="p-4">
@@ -286,7 +285,7 @@ const KanbanBoard = ({ functionId, filter = "all" }) => {
                           {column.tasks.map((task, index) => (
                             <Draggable
                               key={task.id}
-                              draggableId={task.id.toString()}
+                              draggableId={String(task.id)}
                               index={index}
                               isDragDisabled={!hasFullControl() && isTeamMemberAndNotAssigned(task)}
                             >
