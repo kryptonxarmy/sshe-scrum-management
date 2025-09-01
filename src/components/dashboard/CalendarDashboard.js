@@ -322,13 +322,13 @@ const CalendarDashboard = ({ tasks }) => {
     <div className="bg-white text-slate-800 p-6 rounded-lg shadow-md">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <button className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs mr-2 border border-purple-200 hover:bg-purple-200 transition" onClick={() => setViewDate(new Date(year, month - 1, 1))}>
+          <button className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs mr-2 border border-gray-200 hover:bg-gray-200 transition" onClick={() => setViewDate(new Date(year, month - 1, 1))}>
             &lt; Prev
           </button>
-          <h2 className="text-xl font-bold text-purple-700">
+          <h2 className="text-xl font-bold text-gray-700">
             {viewDate.toLocaleString("default", { month: "long" })} {year}
           </h2>
-          <button className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs ml-2 border border-purple-200 hover:bg-purple-200 transition" onClick={() => setViewDate(new Date(year, month + 1, 1))}>
+          <button className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs ml-2 border border-gray-200 hover:bg-gray-200 transition" onClick={() => setViewDate(new Date(year, month + 1, 1))}>
             Next &gt;
           </button>
         </div>
@@ -336,15 +336,15 @@ const CalendarDashboard = ({ tasks }) => {
         {/* Add Event Button - Only for Project Owner and Scrum Master */}
         {(hasPermission("canManageProjects") || user?.role === "scrum_master") && <CreateEventDialog onEventCreated={handleEventCreated} />}
       </div>
-      <div className="grid grid-cols-7 gap-1 border border-purple-200 rounded-lg overflow-hidden">
+  <div className="grid grid-cols-7 gap-1 border border-gray-200 rounded-lg overflow-hidden">
         {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((d) => (
-          <div key={d} className="py-2 px-1 text-center font-semibold text-xs border-b border-purple-200 bg-purple-50 text-purple-700">
+          <div key={d} className="py-2 px-1 text-center font-semibold text-xs border-b border-gray-200 bg-gray-50 text-gray-700">
             {d}
           </div>
         ))}
         {calendar.map((week, i) =>
           week.map((day, j) => (
-            <div key={i + "-" + j} className="h-24 border-r border-b border-purple-100 bg-white relative">
+            <div key={i + "-" + j} className="h-24 border-r border-b border-gray-100 bg-white relative">
               {day && (
                 <>
                   <div className="absolute top-1 left-1 text-xs text-slate-400">{day}</div>
@@ -352,14 +352,14 @@ const CalendarDashboard = ({ tasks }) => {
                     {/* Tasks */}
                     {tasksByDate[`${year}-${(month + 1).toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`]?.map((task) => (
                       <TaskHoverCard key={`task-${task.id}`} task={task}>
-                        <div className="bg-purple-100 text-purple-800 rounded px-2 py-1 text-xs truncate border border-purple-300 shadow-sm hover:bg-purple-200 cursor-pointer transition-colors">
+                        <div className="bg-gray-100 text-gray-800 rounded px-2 py-1 text-xs truncate border border-gray-300 shadow-sm hover:bg-gray-200 cursor-pointer transition-colors">
                           <div className="flex items-center gap-1">
                             <span>{getStatusIndicator(task.status)}</span>
                             <span>{getPriorityIndicator(task.priority)}</span>
                             <span className="truncate">{task.title}</span>
                           </div>
                           {task.assignee && (
-                            <div className="flex items-center gap-1 text-xs text-purple-600 mt-1">
+                            <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
                               <User className="w-3 h-3" />
                               <span className="truncate">{task.assignee.name}</span>
                             </div>
@@ -414,9 +414,9 @@ const CalendarDashboard = ({ tasks }) => {
 
                             {event.project && (
                               <div className="flex items-center gap-2">
-                                <FolderOpen className="w-4 h-4 text-purple-600" />
+                                <FolderOpen className="w-4 h-4 text-gray-600" />
                                 <span className="text-xs text-gray-600 font-medium">Project:</span>
-                                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">{event.project.name}</span>
+                                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200">{event.project.name}</span>
                               </div>
                             )}
 

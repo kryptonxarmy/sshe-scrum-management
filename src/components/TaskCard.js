@@ -24,20 +24,8 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
     if (!task?.id || !user?.id) return;
     // Fetch comments for this task
     fetch(`/api/comments?taskId=${task.id}`)
-      .then(async (res) => {
-        if (!res.ok) {
-          console.error('Failed to fetch comments:', res.status);
-          setHasUnreadComment(false);
-          return;
-        }
-        let data = {};
-        try {
-          data = await res.json();
-        } catch (err) {
-          console.error('Failed to parse comments JSON:', err);
-          setHasUnreadComment(false);
-          return;
-        }
+      .then((res) => res.json())
+      .then((data) => {
         const comments = data.comments || [];
         // Find latest comment not by current user
         const latestOtherComment = comments.filter((c) => c.userId !== user.id).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];

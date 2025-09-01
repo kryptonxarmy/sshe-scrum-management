@@ -12,24 +12,25 @@ import { CalendarPlus, Clock, Repeat, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import MultiSelect from "./ui/multi-select";
 
-const CreateEventDialog = ({ projects = [], onEventCreated }) => {
+const CreateEventDialog = ({ projects = [], onEventCreated, event = null, onClose }) => {
   // Error popup state
   const [errorPopup, setErrorPopup] = useState({ open: false, message: "" });
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    startDate: "",
-    startTime: "",
-    endDate: "",
-    endTime: "",
-    projectId: "no-project",
-    isRecurring: false,
-    recurringType: "weekly",
-    recurringDayOfWeek: new Date().getDay(), // Default to today's day
-    recurringEndDate: "",
+    title: event?.title || "",
+    description: event?.description || "",
+    startDate: event?.startDate ? event.startDate.slice(0,10) : "",
+    startTime: event?.startDate ? new Date(event.startDate).toISOString().slice(11,16) : "",
+    endDate: event?.endDate ? event.endDate.slice(0,10) : "",
+    endTime: event?.endDate ? new Date(event.endDate).toISOString().slice(11,16) : "",
+    projectId: event?.projectId || "no-project",
+    isRecurring: event?.isRecurring || false,
+    recurringType: event?.recurringType || "weekly",
+    recurringDayOfWeek: event?.recurringDayOfWeek ?? new Date().getDay(),
+    recurringEndDate: event?.recurringEndDate ? event.recurringEndDate.slice(0,10) : "",
+    selectedUserIds: event?.selectedUserIds || [],
   });
 
   // Fetch projects created by the logged-in project owner
@@ -78,8 +79,7 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
     setLoading(true);
     try {
       const startDateTime = new Date(`${formData.startDate}T${formData.startTime || "00:00"}`);
-      const endDateTime = formData.endDate && formData.endTime ? new Date(`${formData.endDate}T${formData.endTime}`) : new Date(startDateTime.getTime() + 60 * 60 * 1000); // Default 1 hour duration
-
+      const endDateTime = formData.endDate && formData.endTime ? new Date(`${formData.endDate}T${formData.endTime}`) : new Date(startDateTime.getTime() + 60 * 60 * 1000);
       const payload = {
         title: formData.title,
         description: formData.description,
@@ -93,15 +93,21 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
         createdById: user.id,
         selectedUserIds: formData.selectedUserIds || [],
       };
-
-      const response = await fetch("/api/events", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-      const result = await response.json();
+      let response, result;
+      if (event?.id) {
+        response = await fetch(`/api/events/${event.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        response = await fetch("/api/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
+      result = await response.json();
       if (result.success) {
         setFormData({
           title: "",
@@ -115,15 +121,17 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
           recurringType: "weekly",
           recurringDayOfWeek: new Date().getDay(),
           recurringEndDate: "",
+          selectedUserIds: [],
         });
         setOpen(false);
         if (onEventCreated) onEventCreated(result.event);
+        if (onClose) onClose();
       } else {
-        throw new Error(result.error || "Failed to create event");
+        throw new Error(result.error || "Failed to save event");
       }
     } catch (error) {
-      console.error("Error creating event:", error);
-      alert("Gagal membuat event. Silakan coba lagi.");
+      console.error("Error saving event:", error);
+  setErrorPopup({ open: true, message: "Gagal menyimpan event. Silakan coba lagi." });
     } finally {
       setLoading(false);
     }
@@ -140,19 +148,30 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700">
-          <CalendarPlus className="w-4 h-4" />
-          Tambah Event Meeting
-        </Button>
-      </DialogTrigger>
+  <Dialog open={event ? true : open} onOpenChange={(val) => { setOpen(val); if (!val && onClose) onClose(); }}>
+      {!event && (
+        <DialogTrigger asChild>
+          <Button className="flex items-center gap-2 bg-gray-800 hover:bg-gray-900">
+            <CalendarPlus className="w-4 h-4" />
+            Tambah Event Meeting
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-purple-700">
-            <CalendarPlus className="w-5 h-5" />
-            Buat Event Meeting Baru
-          </DialogTitle>
+        <DialogHeader className="flex items-center justify-between">
+          <div className="flex items-center justify-between w-full">
+            <DialogTitle className={`flex items-center gap-2 ${event ? 'text-black' : 'text-purple-700'}`}>
+              {event ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13zm0 0V17a2 2 0 002 2h4" /></svg>
+              ) : (
+                <CalendarPlus className="w-5 h-5" />
+              )}
+              {event ? 'Edit Event Meeting' : 'Buat Event Meeting Baru'}
+            </DialogTitle>
+            <button type="button" aria-label="Close" className="ml-2 p-2 rounded hover:bg-gray-200" onClick={() => { setOpen(false); if (onClose) onClose(); }}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -302,7 +321,7 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
               Batal
             </Button>
             <Button type="submit" disabled={loading} className="bg-purple-600 hover:bg-purple-700">
-              {loading ? "Menyimpan..." : "Buat Event"}
+              {loading ? "Menyimpan..." : event ? "Update Event" : "Buat Event"}
             </Button>
           </div>
         </form>

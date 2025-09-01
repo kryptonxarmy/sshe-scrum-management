@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { projectOperations } from '@/lib/prisma';
 
 // GET /api/users/[id]/projects - Get projects accessible to a user
-export async function GET(request, context) {
+export async function GET(request, { params }) {
   try {
     const { id } = await context.params;
 

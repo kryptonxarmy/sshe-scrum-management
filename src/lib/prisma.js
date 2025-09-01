@@ -51,9 +51,12 @@ export const userOperations = {
   },
 
   async create(data) {
+    // Hash password before saving
+    const hashedPassword = data.password ? await bcrypt.hash(data.password, 10) : undefined;
     return prisma.user.create({
       data: {
         ...data,
+        password: hashedPassword,
         userSettings: {
           create: {}, // Create default settings
         },

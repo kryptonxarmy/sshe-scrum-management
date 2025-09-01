@@ -90,9 +90,9 @@ const TaskHoverCard = ({ task, children }) => {
           {/* Project Info */}
           {task.project && (
             <div className="flex items-center gap-2">
-              <FolderOpen className="w-4 h-4 text-purple-600" />
+              <FolderOpen className="w-4 h-4 text-gray-600" />
               <span className="text-xs text-gray-600 font-medium">Project:</span>
-              <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
+              <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200">
                 {task.project.name}
               </span>
             </div>
@@ -175,56 +175,134 @@ const TaskHoverCard = ({ task, children }) => {
 
 // Event Hover Card Component
 const EventHoverCard = ({ event, children }) => {
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const handleDelete = async () => {
+    setDeleteError("");
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/events/${event.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        window.location.reload(); // Or trigger a refreshEvents callback
+      } else {
+        setDeleteError('Gagal menghapus event');
+      }
+    } catch (err) {
+      setDeleteError('Gagal menghapus event');
+    } finally {
+      setDeleting(false);
+      setConfirmOpen(false);
+    }
+  };
   return (
-    <HoverCard>
-      <HoverCardTrigger asChild>
-        {children}
-      </HoverCardTrigger>
-      <HoverCardContent className="w-80 p-4">
-        <div className="space-y-3">
-          <div>
-            <h4 className="font-semibold text-gray-900 text-sm mb-1">{event.title}</h4>
-            {event.description && (
-              <p className="text-gray-600 text-xs leading-relaxed">{event.description}</p>
-            )}
-          </div>
+    <>
+      <HoverCard>
+        <HoverCardTrigger asChild>
+          {children}
+        </HoverCardTrigger>
+        <HoverCardContent className="w-80 p-4">
+          <div className="space-y-3">
+            <div>
+              <h4 className="font-semibold text-gray-900 text-sm mb-1">{event.title}</h4>
+              {event.description && (
+                <p className="text-gray-600 text-xs leading-relaxed">{event.description}</p>
+              )}
+            </div>
 
-          {/* Project Info */}
-          {event.project && (
+            {/* Project Info */}
+            {event.project && (
+              <div className="flex items-center gap-2">
+                <FolderOpen className="w-4 h-4 text-gray-600" />
+                <span className="text-xs text-gray-600 font-medium">Project:</span>
+                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200">
+                  {event.project.name}
+                </span>
+              </div>
+            )}
+
+            {/* Time Info */}
             <div className="flex items-center gap-2">
-              <FolderOpen className="w-4 h-4 text-purple-600" />
-              <span className="text-xs text-gray-600 font-medium">Project:</span>
-              <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
-                {event.project.name}
+              <Clock className="w-4 h-4 text-blue-600" />
+              <span className="text-xs text-gray-600 font-medium">Time:</span>
+              <span className="text-xs font-medium text-gray-800">
+                {new Date(event.startDate).toLocaleTimeString("id-ID", { 
+                  hour: "2-digit", 
+                  minute: "2-digit" 
+                })} - {new Date(event.endDate).toLocaleTimeString("id-ID", { 
+                  hour: "2-digit", 
+                  minute: "2-digit" 
+                })}
               </span>
             </div>
-          )}
 
-          {/* Time Info */}
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-blue-600" />
-            <span className="text-xs text-gray-600 font-medium">Time:</span>
-            <span className="text-xs font-medium text-gray-800">
-              {new Date(event.startDate).toLocaleTimeString("id-ID", { 
-                hour: "2-digit", 
-                minute: "2-digit" 
-              })} - {new Date(event.endDate).toLocaleTimeString("id-ID", { 
-                hour: "2-digit", 
-                minute: "2-digit" 
-              })}
-            </span>
-          </div>
+            {/* Created By */}
+            {event.createdBy && (
+              <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                <User className="w-3 h-3 text-gray-500" />
+                <span className="text-xs text-gray-500">Created by {event.createdBy.name}</span>
+              </div>
+            )}
 
-          {/* Created By */}
-          {event.createdBy && (
-            <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-              <User className="w-3 h-3 text-gray-500" />
-              <span className="text-xs text-gray-500">Created by {event.createdBy.name}</span>
+            {/* Error Popup for Delete */}
+            {deleteError && (
+              <div className="mb-2 p-2 rounded bg-red-100 text-red-800 border border-red-300 flex items-center justify-between">
+                <span>{deleteError}</span>
+                <button className="ml-2 px-2 py-1 text-xs rounded bg-red-200 hover:bg-red-300" onClick={() => setDeleteError("")}>Tutup</button>
+              </div>
+            )}
+
+            {/* Edit & Delete Buttons */}
+            <div className="flex gap-2 pt-2 border-t border-gray-100">
+              <button
+                className="p-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800"
+                title="Edit"
+                onClick={() => setEditOpen(true)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13zm0 0V17a2 2 0 002 2h4" /></svg>
+              </button>
+              <button
+                className="p-2 rounded bg-red-200 hover:bg-red-300 text-red-800"
+                title="Delete"
+                onClick={() => setConfirmOpen(true)}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M10 3h4a1 1 0 011 1v2H9V4a1 1 0 011-1z" /></svg>
+                )}
+              </button>
             </div>
-          )}
+          </div>
+        </HoverCardContent>
+      </HoverCard>
+      {/* Confirm Delete Popup */}
+      {confirmOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded shadow-lg p-6 min-w-[300px] border border-gray-200">
+            <div className="mb-4 text-gray-800">Yakin ingin menghapus event ini?</div>
+            <div className="flex gap-2 justify-end">
+              <button className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300" onClick={() => setConfirmOpen(false)}>Batal</button>
+              <button className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700" onClick={handleDelete} disabled={deleting}>Hapus</button>
+            </div>
+          </div>
         </div>
-      </HoverCardContent>
-    </HoverCard>
+      )}
+      {/* Edit Dialog (reuse CreateEventDialog, pass event as prop) */}
+      {editOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30">
+          <div className="relative z-[101]">
+            <CreateEventDialog
+              event={event}
+              onEventCreated={() => { setEditOpen(false); window.location.reload(); }}
+              onClose={() => setEditOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
@@ -349,16 +427,16 @@ const CalendarDashboard = ({ tasks }) => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4">
           <button
-            className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs mr-2 border border-purple-200 hover:bg-purple-200 transition"
+            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs mr-2 border border-gray-200 hover:bg-gray-200 transition"
             onClick={() => setViewDate(new Date(year, month - 1, 1))}
           >
             &lt; Prev
           </button>
-          <h2 className="text-xl font-bold text-purple-700">
+          <h2 className="text-xl font-bold text-gray-700">
             {viewDate.toLocaleString("default", { month: "long" })} {year}
           </h2>
           <button
-            className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs ml-2 border border-purple-200 hover:bg-purple-200 transition"
+            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs ml-2 border border-gray-200 hover:bg-gray-200 transition"
             onClick={() => setViewDate(new Date(year, month + 1, 1))}
           >
             Next &gt;
@@ -374,16 +452,16 @@ const CalendarDashboard = ({ tasks }) => {
         )}
       </div>
       
-      <div className="grid grid-cols-7 gap-1 border border-purple-200 rounded-lg overflow-hidden">
+  <div className="grid grid-cols-7 gap-1 border border-gray-200 rounded-lg overflow-hidden">
         {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((d) => (
-          <div key={d} className="py-2 px-1 text-center font-semibold text-xs border-b border-purple-200 bg-purple-50 text-purple-700">
+          <div key={d} className="py-2 px-1 text-center font-semibold text-xs border-b border-gray-200 bg-gray-50 text-gray-700">
             {d}
           </div>
         ))}
         
         {calendar.map((week, i) =>
           week.map((day, j) => (
-            <div key={i + "-" + j} className="h-24 border-r border-b border-purple-100 bg-white relative overflow-hidden">
+            <div key={i + "-" + j} className="h-24 border-r border-b border-gray-100 bg-white relative overflow-hidden">
               {day && (
                 <>
                   <div className="absolute top-1 left-1 text-xs text-slate-400">{day}</div>
@@ -391,14 +469,14 @@ const CalendarDashboard = ({ tasks }) => {
                     {/* Tasks */}
                     {tasksByDate[`${year}-${(month+1).toString().padStart(2,"0")}-${day.toString().padStart(2,"0")}`]?.map((task) => (
                       <TaskHoverCard key={`task-${task.id}`} task={task}>
-                        <div className="bg-purple-100 text-purple-800 rounded px-1 py-1 text-xs truncate border border-purple-300 shadow-sm hover:bg-purple-200 cursor-pointer transition-colors">
+                        <div className="bg-gray-100 text-gray-800 rounded px-1 py-1 text-xs truncate border border-gray-300 shadow-sm hover:bg-gray-200 cursor-pointer transition-colors">
                           <div className="flex items-center gap-1">
                             <span>{getStatusIndicator(task.status)}</span>
                             <span>{getPriorityIndicator(task.priority)}</span>
                             <span className="truncate">{task.title}</span>
                           </div>
                           {task.assignee && (
-                            <div className="flex items-center gap-1 text-xs text-purple-600 mt-1">
+                            <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
                               <User className="w-3 h-3" />
                               <span className="truncate">{task.assignee.name}</span>
                             </div>

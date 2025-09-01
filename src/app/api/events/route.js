@@ -73,8 +73,14 @@ export async function GET(request) {
     });
   } catch (error) {
     console.error('Get events error:', error);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      if (error.stack) console.error('Stack:', error.stack);
+    }
+    if (error.code) console.error('Prisma error code:', error.code);
+    if (error.meta) console.error('Prisma error meta:', error.meta);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error.message || error },
       { status: 500 }
     );
   }
