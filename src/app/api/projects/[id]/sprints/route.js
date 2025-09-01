@@ -4,20 +4,23 @@ import { prisma } from "@/lib/prisma";
 export async function GET(req, { params }) {
   const { projectId } = params;
   try {
-    // Get sprints for the project
+    // Get sprints for the project, include summary info only
     const sprints = await prisma.sprint.findMany({
       where: { projectId },
       orderBy: { startDate: "asc" },
       include: {
         tasks: {
-          include: {
-            assignees: true,
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            dueDate: true,
           },
         },
       },
     });
 
-    // Map sprints with insights and overdue detection
+    // Map sprints with summary insights
     const sprintData = sprints.map((sprint) => {
       const now = new Date();
       const tasks = (sprint.tasks || []).map((task) => {
@@ -32,8 +35,9 @@ export async function GET(req, { params }) {
       });
       const completed = tasks.filter((t) => t.status === "DONE").length;
       const overdue = tasks.filter((t) => t.isOverdue).length;
+      const todo = tasks.filter((t) => t.status === "TODO").length;
+      const inProgress = tasks.filter((t) => t.status === "IN_PROGRESS").length;
       const completionRate = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
-      const backlogCandidates = tasks.filter((t) => t.isOverdue && t.status !== "DONE").length;
       return {
         id: sprint.id,
         name: sprint.name,
@@ -41,9 +45,12 @@ export async function GET(req, { params }) {
         startDate: sprint.startDate,
         endDate: sprint.endDate,
         completionRate,
-        tasks,
-        backlogCandidates,
-        overdue,
+        totalTasks: tasks.length,
+        completedTasks: completed,
+        overdueTasks: overdue,
+        todoTasks: todo,
+        inProgressTasks: inProgress,
+        tasks, // for detail view
       };
     });
 

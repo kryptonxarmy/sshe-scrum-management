@@ -33,6 +33,7 @@ const ProjectOwnerReports = () => {
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedSprintProjectId, setSelectedSprintProjectId] = useState("");
 
   const getTopCompleters = (tasks = []) => {
     const map = {};
@@ -663,7 +664,7 @@ const ProjectOwnerReports = () => {
         </TabsContent>
 
         <TabsContent value="sprints" className="space-y-6">
-          <SprintProjectsReport projects={projects} />
+          <SprintProjectsReport projectOwnerId={user.id}/>
         </TabsContent>
       </Tabs>
     </div>
@@ -809,7 +810,6 @@ const HealthIndicators = ({ velocityData, completionRate, totalTasks, completedT
     </Card>
   );
 };
-// ...existing code...
 
 // Tasks Analysis Component
 const TasksAnalysis = ({ distribution, priorities, trends }) => <TaskAnalysisEnhanced distribution={distribution} priorities={priorities} trends={trends} />;

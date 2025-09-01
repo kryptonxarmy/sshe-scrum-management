@@ -7,12 +7,31 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, ListChecks, CheckCircle, Clock, ArrowUpRight } from "lucide-react";
 
-const SprintProjectsReport = ({ projects }) => {
-  const [selectedProjectId, setSelectedProjectId] = useState(projects?.[0]?.id || "");
+const SprintProjectsReport = ({ projectOwnerId }) => {
+  const [projects, setProjects] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
   const [sprints, setSprints] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Fetch projects for the given userId (projectOwnerId)
+  useEffect(() => {
+    if (!projectOwnerId) return;
+    setLoading(true);
+    fetch(`/api/projects?userId=${projectOwnerId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const userProjects = Array.isArray(data.projects) ? data.projects : [];
+        setProjects(userProjects);
+        if (userProjects.length > 0) {
+          setSelectedProjectId(userProjects[0].id);
+        }
+      })
+      .catch(() => setError("Failed to fetch projects"))
+      .finally(() => setLoading(false));
+  }, [projectOwnerId]);
+
+  // Fetch sprints for selected project
   useEffect(() => {
     if (!selectedProjectId) return;
     setLoading(true);
@@ -47,7 +66,6 @@ const SprintProjectsReport = ({ projects }) => {
             </SelectContent>
           </Select>
         </div>
-
         {selectedProject && (
           <Button asChild variant="outline" size="sm" className="inline-flex self-end items-center">
             <Link href={`/tasks?projectId=${selectedProject.id}`} target="_blank" rel="noopener noreferrer">

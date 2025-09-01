@@ -108,10 +108,13 @@ export async function POST(request) {
         const endDate = new Date();
         endDate.setDate(startDate.getDate() + 14);
 
+        // Compose goal with SprintName, Project, and Task title
+        const sprintGoal = `Goals for ${sprintName} in Project "${projectId}": Task "${title}"`;
+
         sprint = await prisma.sprint.create({
           data: {
             name: sprintName,
-            goal: `Goals for ${sprintName}`,
+            goal: sprintGoal,
             startDate: startDate,
             endDate: endDate,
             projectId: projectId,
