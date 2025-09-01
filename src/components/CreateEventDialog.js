@@ -13,6 +13,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import MultiSelect from "./ui/multi-select";
 
 const CreateEventDialog = ({ projects = [], onEventCreated }) => {
+  // Error popup state
+  const [errorPopup, setErrorPopup] = useState({ open: false, message: "" });
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -74,7 +76,6 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const startDateTime = new Date(`${formData.startDate}T${formData.startTime || "00:00"}`);
       const endDateTime = formData.endDate && formData.endTime ? new Date(`${formData.endDate}T${formData.endTime}`) : new Date(startDateTime.getTime() + 60 * 60 * 1000); // Default 1 hour duration
@@ -100,11 +101,8 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
         },
         body: JSON.stringify(payload),
       });
-
       const result = await response.json();
-
       if (result.success) {
-        // Reset form
         setFormData({
           title: "",
           description: "",
@@ -118,11 +116,8 @@ const CreateEventDialog = ({ projects = [], onEventCreated }) => {
           recurringDayOfWeek: new Date().getDay(),
           recurringEndDate: "",
         });
-
         setOpen(false);
-        if (onEventCreated) {
-          onEventCreated(result.event);
-        }
+        if (onEventCreated) onEventCreated(result.event);
       } else {
         throw new Error(result.error || "Failed to create event");
       }

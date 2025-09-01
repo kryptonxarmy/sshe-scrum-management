@@ -5,7 +5,8 @@ import bcrypt from 'bcryptjs';
 // GET /api/admin/users/[id] - Get user by ID (superadmin only)
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
+    const awaitedParams = await params;
+    const { id } = awaitedParams;
     const { searchParams } = new URL(request.url);
     const currentUserId = searchParams.get('currentUserId');
     
@@ -70,7 +71,8 @@ export async function GET(request, { params }) {
 // PUT /api/admin/users/[id] - Update user (superadmin only)
 export async function PUT(request, { params }) {
   try {
-    const { id } = params;
+    const awaitedParams = await params;
+    const { id } = awaitedParams;
     const body = await request.json();
     const { 
       email, 

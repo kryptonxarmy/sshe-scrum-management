@@ -203,7 +203,12 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
         const errorData = await response.json().catch(() => ({}));
         const errorMsg = errorData.error || "Failed to create task";
         console.error("API Error:", errorData);
-        alert(errorMsg);
+          toast({
+            title: "Error",
+            description: errorMsg,
+            variant: "destructive",
+            icon: <XCircle className="text-red-600" size={22} />,
+          });
         throw new Error(errorMsg);
       }
 

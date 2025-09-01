@@ -30,6 +30,9 @@ const AdminUsersPage = () => {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
+  // Confirmation popup state
+  const [confirmation, setConfirmation] = useState({ open: false, message: "", type: "success" });
+
   // Form states
   const [formData, setFormData] = useState({
     name: "",
@@ -122,13 +125,13 @@ const AdminUsersPage = () => {
         });
         setShowPassword(false);
         setIsCreateDialogOpen(false);
-        alert("User berhasil dibuat!");
+        setConfirmation({ open: true, message: "User created successfully!", type: "success" });
       } else {
-        alert(`Error: ${result.error}`);
+        setConfirmation({ open: true, message: `Error: ${result.error}`, type: "error" });
       }
     } catch (error) {
       console.error("Error creating user:", error);
-      alert("Gagal membuat user. Silakan coba lagi.");
+      setConfirmation({ open: true, message: "Failed to create user. Please try again.", type: "error" });
     } finally {
       setFormLoading(false);
     }
@@ -166,13 +169,13 @@ const AdminUsersPage = () => {
         setIsEditDialogOpen(false);
         setSelectedUser(null);
         setShowEditPassword(false);
-        alert("User berhasil diupdate!");
+        setConfirmation({ open: true, message: "User updated successfully!", type: "success" });
       } else {
-        alert(`Error: ${result.error}`);
+        setConfirmation({ open: true, message: `Error: ${result.error}`, type: "error" });
       }
     } catch (error) {
       console.error("Error updating user:", error);
-      alert("Gagal mengupdate user. Silakan coba lagi.");
+      setConfirmation({ open: true, message: "Failed to update user. Please try again.", type: "error" });
     } finally {
       setFormLoading(false);
     }
@@ -192,13 +195,13 @@ const AdminUsersPage = () => {
 
       if (result.success) {
         setUsers((prev) => prev.filter((u) => u.id !== userId));
-        alert("User berhasil dihapus!");
+        setConfirmation({ open: true, message: "User deleted successfully!", type: "success" });
       } else {
-        alert(`Error: ${result.error}`);
+        setConfirmation({ open: true, message: `Error: ${result.error}`, type: "error" });
       }
     } catch (error) {
       console.error("Error deleting user:", error);
-      alert("Gagal menghapus user. Silakan coba lagi.");
+      setConfirmation({ open: true, message: "Failed to delete user. Please try again.", type: "error" });
     }
   };
 
@@ -255,6 +258,18 @@ const AdminUsersPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      {/* Confirmation Popup */}
+      <Dialog open={confirmation.open} onOpenChange={(open) => setConfirmation((prev) => ({ ...prev, open }))}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{confirmation.type === "success" ? "Success" : "Error"}</DialogTitle>
+          </DialogHeader>
+          <div className={confirmation.type === "success" ? "text-green-600" : "text-red-600"}>{confirmation.message}</div>
+          <DialogFooter>
+            <Button onClick={() => setConfirmation((prev) => ({ ...prev, open: false }))}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">

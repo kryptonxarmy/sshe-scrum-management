@@ -170,10 +170,12 @@ const ProjectManagement = () => {
 
       // Remove project from active list
       setProjectList((prev) => prev.filter((p) => p.id !== project.id));
-      alert(`Project "${project.name}" has been moved to trash successfully!`);
+    // Replace alert with Dialog or toast notification
+    toast.success(`Project "${project.name}" has been moved to trash successfully!`);
     } catch (error) {
       console.error("Error deleting project:", error);
-      alert(`Failed to delete project: ${error.message}`);
+    // Replace alert with Dialog or toast notification
+    toast.error(`Failed to delete project: ${error.message}`);
     }
   };
 
@@ -204,10 +206,12 @@ const ProjectManagement = () => {
       setDeletedProjects((prev) => prev.filter((p) => p.id !== project.id));
       setProjectList((prev) => [...prev, data.project]);
 
-      alert(`Project "${project.name}" has been restored successfully!`);
+    // Replace alert with Dialog or toast notification
+    toast.success(`Project "${project.name}" has been restored successfully!`);
     } catch (error) {
       console.error("Error restoring project:", error);
-      alert(`Failed to restore project: ${error.message}`);
+    // Replace alert with Dialog or toast notification
+    toast.error(`Failed to restore project: ${error.message}`);
     }
   };
 
@@ -230,10 +234,12 @@ const ProjectManagement = () => {
 
       // Remove from deleted list
       setDeletedProjects((prev) => prev.filter((p) => p.id !== project.id));
-      alert(`Project "${project.name}" has been permanently deleted!`);
+    // Replace alert with Dialog or toast notification
+    toast.success(`Project "${project.name}" has been permanently deleted!`);
     } catch (error) {
       console.error("Error permanently deleting project:", error);
-      alert(`Failed to permanently delete project: ${error.message}`);
+    // Replace alert with Dialog or toast notification
+    toast.error(`Failed to permanently delete project: ${error.message}`);
     }
   };
 
@@ -284,10 +290,12 @@ const ProjectManagement = () => {
       };
 
       await fetchProjects();
-      alert(`Project "${project.name}" has been released successfully!`);
+    // Replace alert with Dialog or toast notification
+    toast.success(`Project "${project.name}" has been released successfully!`);
     } catch (error) {
       console.error("Error releasing project:", error);
-      alert(`Failed to release project: ${error.message}`);
+    // Replace alert with Dialog or toast notification
+    toast.error(`Failed to release project: ${error.message}`);
     }
   };
 
