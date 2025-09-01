@@ -24,8 +24,12 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
       let url = `/api/tasks?projectId=${functionId}`;
       if (sprintId) url += `&sprintId=${sprintId}`;
       if (assigneeId) url += `&assigneeId=${assigneeId}`;
+      console.log('Fetching tasks for projectId:', functionId);
       const response = await fetch(url);
+      console.log('Fetch response status:', response.status);
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Fetch error response:', errorText);
         throw new Error("Failed to fetch tasks");
       }
       const data = await response.json();
@@ -39,10 +43,6 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
       setError(error.message);
       console.error("Error fetching tasks:", error);
     }
-  };
-
-  // Fetch project detail
-  const fetchProject = async () => {
     try {
       const response = await fetch(`/api/projects/${functionId}`);
       if (!response.ok) throw new Error("Failed to fetch project");
@@ -60,7 +60,6 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
       return;
     }
     fetchTasks();
-    fetchProject();
   }, [functionId, sprintId, assigneeId]);
 
   const handleTaskUpdated = () => fetchTasks();

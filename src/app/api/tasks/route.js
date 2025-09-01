@@ -33,19 +33,36 @@ export async function GET(request) {
     if (assigneeId) filters.assigneeId = assigneeId;
     if (priority) filters.priority = priority.toUpperCase();
 
+    console.log("[API/tasks] GET called", { projectId, userId, status, assigneeId, priority, filters });
+
     if (projectId) {
-      tasks = await taskOperations.getByProjectId(projectId, filters);
+      try {
+        tasks = await taskOperations.getByProjectId(projectId, filters);
+      } catch (err) {
+        console.error("Error in getByProjectId:", err);
+        return NextResponse.json({ error: "Failed to fetch tasks for project", details: err.message }, { status: 500 });
+      }
     } else if (userId) {
-      tasks = await taskOperations.getByUserId(userId, filters);
+      try {
+        tasks = await taskOperations.getByUserId(userId, filters);
+      } catch (err) {
+        console.error("Error in getByUserId:", err);
+        return NextResponse.json({ error: "Failed to fetch tasks for user", details: err.message }, { status: 500 });
+      }
     } else {
       // Fallback: return empty array (for legacy GET)
       return NextResponse.json({ tasks: [] });
     }
 
+    if (!Array.isArray(tasks)) {
+      console.error("Tasks result is not array:", tasks);
+      return NextResponse.json({ error: "Tasks result is not array", details: tasks }, { status: 500 });
+    }
+
     return NextResponse.json({ tasks });
   } catch (error) {
     console.error("Get tasks error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error", details: error.message }, { status: 500 });
   }
 }
 

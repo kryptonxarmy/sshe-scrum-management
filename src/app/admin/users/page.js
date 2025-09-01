@@ -326,12 +326,12 @@ const AdminUsersPage = () => {
                     <Label htmlFor="role">Role *</Label>
                     <Select value={formData.role} onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Pilih Role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
-                        <SelectItem value="PROJECT_OWNER">Project Owner</SelectItem>
                         <SelectItem value="SUPERADMIN">Super Admin</SelectItem>
+                        <SelectItem value="PROJECT_OWNER">Project Owner</SelectItem>
+                        <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
