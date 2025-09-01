@@ -147,6 +147,8 @@ const Legend = dynamic(() => import('recharts').then(mod => mod.Legend), { ssr: 
 const ResponsiveContainer = dynamic(() => import('recharts').then(mod => mod.ResponsiveContainer), { ssr: false });
 
 const ProjectOwnerReports = () => {
+  // State for project filter in Tasks tab
+  const [selectedProjectId, setSelectedProjectId] = useState('all');
   const { user } = useAuth();
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -558,11 +560,123 @@ const ProjectOwnerReports = () => {
 
 
         <TabsContent value="tasks" className="space-y-6">
-          <TasksAnalysis 
-            distribution={taskDistribution}
-            priorities={priorityBreakdown}
-            trends={completionTrends}
-          />
+          {(() => {
+            let filteredTasks = Array.isArray(reportData?.allTasks) ? reportData.allTasks.map(t => {
+              // Ensure each task has a project object with id
+              if (!t.project && t.projectId) {
+                return { ...t, project: { id: t.projectId } };
+              }
+              return t;
+            }) : [];
+            if (selectedProjectId !== 'all') {
+              filteredTasks = filteredTasks.filter(t => t.project && String(t.project.id) === String(selectedProjectId));
+            }
+            // Debug log: show selected project and filtered tasks
+            if (typeof window !== 'undefined') {
+              console.log('Selected project id:', selectedProjectId);
+              console.log('Filtered tasks count:', filteredTasks.length);
+              console.log('Filtered tasks project ids:', filteredTasks.map(t => t.project && t.project.id));
+            }
+            // Recalculate distribution, priorities, trends for filtered tasks
+            // Distribution
+            const distMap = {};
+            filteredTasks.forEach(t => {
+              distMap[t.status] = (distMap[t.status] || 0) + 1;
+            });
+            const filteredDistribution = Object.entries(distMap).map(([status, value]) => ({ name: status, value }));
+            // Priorities
+            const prioMap = {};
+            filteredTasks.forEach(t => {
+              prioMap[t.priority] = (prioMap[t.priority] || 0) + 1;
+            });
+            const filteredPriorities = Object.entries(prioMap).map(([priority, value]) => ({ name: priority, value }));
+            // Trends
+            let filteredTrends = [];
+            const doneTasks = filteredTasks.filter(t => t.status === 'DONE' && t.completedAt);
+            const trendMap = {};
+            doneTasks.forEach(task => {
+              const dateStr = new Date(task.completedAt).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+              trendMap[dateStr] = (trendMap[dateStr] || 0) + 1;
+            });
+            const today = new Date();
+            filteredTrends = Array.from({ length: 7 }, (_, i) => {
+              const d = new Date(today);
+              d.setDate(today.getDate() - (6 - i));
+              const dateStr = d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+              return {
+                day: dateStr,
+                done: trendMap[dateStr] || 0
+              };
+            });
+            return (
+              <TasksAnalysis 
+                distribution={filteredDistribution}
+                priorities={filteredPriorities}
+                trends={filteredTrends}
+              />
+            );
+          })()}
+          {/* Project Filter Dropdown */}
+          <div className="mb-4 flex items-center gap-2">
+            <label htmlFor="project-filter" className="text-sm font-medium text-gray-700">Filter by Project:</label>
+            <select
+              id="project-filter"
+              value={selectedProjectId}
+              onChange={e => setSelectedProjectId(e.target.value)}
+              className="border rounded px-2 py-1 text-sm"
+            >
+              <option value="all">All Projects</option>
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+          {/* Filter tasks by selected project */}
+          {(() => {
+            let filteredTasks = Array.isArray(reportData?.allTasks) ? reportData.allTasks : [];
+            if (selectedProjectId !== 'all') {
+              filteredTasks = filteredTasks.filter(t => t.project && String(t.project.id) === String(selectedProjectId));
+            }
+            // Debug log for troubleshooting
+            // Recalculate distribution, priorities, trends for filtered tasks
+            // Distribution
+            const distMap = {};
+            filteredTasks.forEach(t => {
+              distMap[t.status] = (distMap[t.status] || 0) + 1;
+            });
+            const filteredDistribution = Object.entries(distMap).map(([status, value]) => ({ name: status, value }));
+            // Priorities
+            const prioMap = {};
+            filteredTasks.forEach(t => {
+              prioMap[t.priority] = (prioMap[t.priority] || 0) + 1;
+            });
+            const filteredPriorities = Object.entries(prioMap).map(([priority, value]) => ({ name: priority, value }));
+            // Trends
+            let filteredTrends = [];
+            const doneTasks = filteredTasks.filter(t => t.status === 'DONE' && t.completedAt);
+            const trendMap = {};
+            doneTasks.forEach(task => {
+              const dateStr = new Date(task.completedAt).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+              trendMap[dateStr] = (trendMap[dateStr] || 0) + 1;
+            });
+            const today = new Date();
+            filteredTrends = Array.from({ length: 7 }, (_, i) => {
+              const d = new Date(today);
+              d.setDate(today.getDate() - (6 - i));
+              const dateStr = d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+              return {
+                day: dateStr,
+                done: trendMap[dateStr] || 0
+              };
+            });
+            return (
+              <TasksAnalysis 
+                distribution={filteredDistribution}
+                priorities={filteredPriorities}
+                trends={filteredTrends}
+              />
+            );
+          })()}
         </TabsContent>
 
         <TabsContent value="performance" className="space-y-6">
