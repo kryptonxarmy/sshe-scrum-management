@@ -3,13 +3,19 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { User, LogOut, Settings, FolderOpen, Users, BarChart3, Plus, Eye, Edit, Trash2, Calendar, Archive } from "lucide-react";
+import { User, LogOut, Settings, FolderOpen, Users, BarChart3, Plus, Eye, Edit, Trash2, Calendar, Archive } from "lucide-react";
 import TaskBoard from "@/components/TaskBoard";
 import ProjectManagement from "@/components/project/ProjectManagement";
+import CalendarDashboardData from "@/components/dashboard/CalendarDashboardData";
+// import ReportsPageFixed from "@/components/reports/ReportsPageFixed";
+import ProjectOwnerReports from "@/components/reports/ProjectOwnerReports";
 import CalendarDashboardData from "@/components/dashboard/CalendarDashboardData";
 // import ReportsPageFixed from "@/components/reports/ReportsPageFixed";
 import ProjectOwnerReports from "@/components/reports/ProjectOwnerReports";
@@ -24,6 +30,17 @@ const Dashboard = () => {
     logout();
     router.push("/login");
   };
+
+  const handleProfileClick = () => {
+    router.push("/profile");
+  };
+
+  // Redirect superadmin to admin panel
+  useEffect(() => {
+    if (user && user.role === 'SUPERADMIN') {
+      router.push("/admin");
+    }
+  }, [user, router]);
 
   const handleProfileClick = () => {
     router.push("/profile");
@@ -80,12 +97,22 @@ const Dashboard = () => {
               <Button variant={activeView === "tasks" ? "default" : "ghost"} onClick={() => setActiveView("tasks")} className="flex items-center gap-2">
                 <Calendar size={16} />
                 Calendar
+                <Calendar size={16} />
+                Calendar
               </Button>
 
               {hasPermission("canManageUsers") && (
                 <Button variant={activeView === "users" ? "default" : "ghost"} onClick={() => setActiveView("users")} className="flex items-center gap-2">
                   <Users size={16} />
                   Users
+                </Button>
+              )}
+
+              {user?.role === 'SUPERADMIN' && (
+               
+                <Button variant="ghost" onClick={() => router.push("/admin")} className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50">
+                  <Settings size={16} />
+                  Admin Panel
                 </Button>
               )}
 
@@ -108,6 +135,13 @@ const Dashboard = () => {
                   Released Projects
                 </Button>
               )}
+
+              {(user?.role === 'SUPERADMIN' || user?.role === 'PROJECT_OWNER') && (
+                <Button variant="ghost" onClick={() => router.push("/archive")} className="flex items-center gap-2">
+                  <Archive size={16} />
+                  Released Projects
+                </Button>
+              )}
             </nav>
 
             {/* User Menu */}
@@ -119,6 +153,7 @@ const Dashboard = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={handleProfileClick} className="flex items-center gap-2">
                 <DropdownMenuItem onClick={handleProfileClick} className="flex items-center gap-2">
                   <User size={16} />
                   Profile
@@ -166,7 +201,9 @@ const TasksView = () => {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-slate-800">Calendar</h2>
+        <h2 className="text-xl font-semibold text-slate-800">Calendar</h2>
       </div>
+      <CalendarDashboardData />
       <CalendarDashboardData />
     </div>
   );
@@ -204,7 +241,20 @@ const UsersView = () => {
 };
 
 // Reports View Component
+// Reports View Component
 const ReportsView = () => {
+  const { user } = useAuth();
+
+  // Determine which report component to show based on user role
+  if (user?.role === 'PROJECT_OWNER') {
+    return <ProjectOwnerReports />;
+  }
+  if (user?.role === 'TEAM_MEMBER') {
+    const TeamMemberReports = require('@/components/reports/TeamMemberReports').default;
+    return <TeamMemberReports />;
+  }
+  // For other roles, show the general reports page
+  // return <ReportsPageFixed />;
   const { user } = useAuth();
 
   // Determine which report component to show based on user role

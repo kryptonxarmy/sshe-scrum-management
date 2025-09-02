@@ -134,6 +134,31 @@ export const AuthProvider = ({ children }) => {
     return false;
   };
 
+  const canCreateTask = () => {
+    if (!user) return false;
+    if (user.role === "SUPERADMIN") return true;
+    if (user.role === "PROJECT_OWNER") return true;
+    if (user.role === "SCRUM_MASTER") return true;
+    return false;
+  };
+
+  const canUpdateTaskProgress = (task) => {
+    if (!user) return false;
+    if (user.role === "SUPERADMIN") return true;
+    if (user.role === "PROJECT_OWNER") return true;
+    if (user.role === "SCRUM_MASTER") return true;
+    if (user.role === "TEAM_MEMBER" && task.assigneeId === user.id) return true;
+    return false;
+  };
+
+  const canDeleteTask = (task) => {
+    if (!user) return false;
+    if (user.role === "SUPERADMIN") return true;
+    if (user.role === "PROJECT_OWNER") return true;
+    if (user.role === "SCRUM_MASTER") return true;
+    return false;
+  };
+
   const value = {
     user,
     loading,
@@ -146,6 +171,9 @@ export const AuthProvider = ({ children }) => {
     canManageProjectMembers,
     canViewProject,
     canEditTask,
+    canCreateTask,
+    canUpdateTaskProgress,
+    canDeleteTask,
     isAuthenticated: !!user,
   };
 
