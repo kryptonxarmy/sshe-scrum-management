@@ -22,20 +22,20 @@ const ReportsSection = () => {
 
   // Render appropriate report based on user role
   switch (user.role) {
-    case "SUPERADMIN":
+    case 'SUPERADMIN':
       // Super admin gets the same view as project owner but with more data access
       return <ProjectOwnerReports />;
-
-    case "PROJECT_OWNER":
+      
+    case 'PROJECT_OWNER':
       return <ProjectOwnerReports />;
-
-    case "SCRUM_MASTER":
+      
+    case 'SCRUM_MASTER':
       // Scrum Master gets specialized reports for sprint management
       return <ScrumMasterReports />;
-
-    case "TEAM_MEMBER":
+      
+    case 'TEAM_MEMBER':
       return <TeamMemberReports />;
-
+      
     default:
       // Fallback to team member reports for unknown roles
       return <TeamMemberReports />;

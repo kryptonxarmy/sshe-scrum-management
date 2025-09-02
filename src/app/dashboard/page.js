@@ -14,7 +14,7 @@ export default function DashboardPage() {
 
   // Redirect superadmin to admin panel
   useEffect(() => {
-    if (user && user.role === "SUPERADMIN") {
+    if (user && user.role === 'SUPERADMIN') {
       router.push("/admin");
     }
   }, [user, router]);
@@ -23,7 +23,7 @@ export default function DashboardPage() {
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
         <Navbar active="dashboard" />
-
+        
         <main className="p-6">
           <div className="space-y-6">
             {/* Projects Section */}

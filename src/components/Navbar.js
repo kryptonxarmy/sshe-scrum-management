@@ -23,7 +23,7 @@ export default function Navbar({ active = "dashboard" }) {
   const getRoleBadgeVariant = (role) => {
     const variants = {
       SUPERADMIN: "default",
-      PROJECT_OWNER: "secondary",
+      PROJECT_OWNER: "secondary", 
       SCRUM_MASTER: "default",
       TEAM_MEMBER: "outline",
     };
@@ -34,7 +34,7 @@ export default function Navbar({ active = "dashboard" }) {
     const labels = {
       SUPERADMIN: "Super Admin",
       PROJECT_OWNER: "Project Owner",
-      SCRUM_MASTER: "Scrum Master",
+      SCRUM_MASTER: "Scrum Master", 
       TEAM_MEMBER: "Team Member",
     };
     return labels[role] || role;
@@ -45,39 +45,39 @@ export default function Navbar({ active = "dashboard" }) {
     const baseItems = [
       {
         key: "dashboard",
-        label: "Dashboard",
+        label: "Dashboard", 
         icon: FolderOpen,
-        href: "/dashboard",
-      },
+        href: "/dashboard"
+      }
     ];
 
     // Add role-specific items
     const roleSpecificItems = [];
 
-    if (user?.role === "SUPERADMIN") {
+    if (user?.role === 'SUPERADMIN') {
       roleSpecificItems.push(
         {
           key: "admin",
           label: "Admin Panel",
           icon: Shield,
           href: "/admin",
-          variant: "destructive",
+          variant: "destructive"
         },
         {
           key: "users",
           label: "Users",
           icon: Users,
-          href: "/admin/users",
+          href: "/admin/users"
         }
       );
     }
 
-    if (user?.role === "PROJECT_OWNER" || user?.role === "SCRUM_MASTER") {
+    if (user?.role === 'PROJECT_OWNER' || user?.role === 'SCRUM_MASTER') {
       roleSpecificItems.push({
-        key: "archive",
+        key: "archive", 
         label: "Archive",
         icon: Archive,
-        href: "/archive",
+        href: "/archive"
       });
     }
 
@@ -86,9 +86,9 @@ export default function Navbar({ active = "dashboard" }) {
       {
         key: "reports",
         label: "Reports",
-        icon: BarChart3,
-        href: "/reports",
-      },
+        icon: BarChart3, 
+        href: "/reports"
+      }
     ];
 
     return [...baseItems, ...roleSpecificItems, ...commonItems];
@@ -114,7 +114,11 @@ export default function Navbar({ active = "dashboard" }) {
                 key={item.key}
                 variant={active === item.key ? "default" : item.variant || "ghost"}
                 onClick={() => router.push(item.href)}
-                className={`flex items-center gap-2 ${item.variant === "destructive" ? "text-red-600 hover:text-red-700 hover:bg-red-50" : ""}`}
+                className={`flex items-center gap-2 ${
+                  item.variant === "destructive" 
+                    ? "text-red-600 hover:text-red-700 hover:bg-red-50" 
+                    : ""
+                }`}
               >
                 <item.icon size={16} />
                 {item.label}
@@ -124,7 +128,9 @@ export default function Navbar({ active = "dashboard" }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">{user.avatar || user.name?.charAt(0) || "U"}</div>
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
+                  {user.avatar || user.name?.charAt(0) || "U"}
+                </div>
                 <span className="hidden md:inline">{user.name}</span>
               </Button>
             </DropdownMenuTrigger>

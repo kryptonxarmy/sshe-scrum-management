@@ -33,11 +33,19 @@ const ArchivePage = () => {
         {/* Tab Navigation */}
         <div className="bg-white border-b border-gray-200 px-6">
           <nav className="flex space-x-8">
-            <Button variant={activeView === "projects" ? "default" : "ghost"} onClick={() => setActiveView("projects")} className="flex items-center gap-2 py-3">
+            <Button
+              variant={activeView === "projects" ? "default" : "ghost"}
+              onClick={() => setActiveView("projects")}
+              className="flex items-center gap-2 py-3"
+            >
               <Archive size={16} />
               Released Projects
             </Button>
-            <Button variant={activeView === "reports" ? "default" : "ghost"} onClick={() => setActiveView("reports")} className="flex items-center gap-2 py-3">
+            <Button
+              variant={activeView === "reports" ? "default" : "ghost"}
+              onClick={() => setActiveView("reports")}
+              className="flex items-center gap-2 py-3"
+            >
               <TrendingUp size={16} />
               Release Reports
             </Button>
@@ -52,7 +60,7 @@ const ArchivePage = () => {
               <ArchiveProjects />
             </div>
           )}
-
+          
           {activeView === "reports" && (
             <div>
               <h2 className="text-xl font-semibold text-slate-800 mb-4">Release Reports</h2>
