@@ -291,11 +291,11 @@ const GanttChart = ({ projects = [], timeFilter = "3months" }) => {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 bg-gradient-to-r from-blue-400 to-blue-600 rounded border border-blue-700"></div>
-                <span className="text-xs text-slate-600">Short Term</span>
+                <span className="text-xs text-slate-600">Short Period</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 bg-gradient-to-r from-orange-400 to-orange-600 rounded border border-orange-700"></div>
-                <span className="text-xs text-slate-600">Long Term</span>
+                <span className="text-xs text-slate-600">Long Period</span>
               </div>
             </div>
           </div>

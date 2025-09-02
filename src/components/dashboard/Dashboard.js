@@ -11,7 +11,7 @@ import { User, LogOut, Settings, FolderOpen, Users, BarChart3, Plus, Eye, Edit, 
 import TaskBoard from "@/components/TaskBoard";
 import ProjectManagement from "@/components/project/ProjectManagement";
 import CalendarDashboardData from "@/components/dashboard/CalendarDashboardData";
-import ReportsPageFixed from "@/components/reports/ReportsPageFixed";
+// import ReportsPageFixed from "@/components/reports/ReportsPageFixed";
 import ProjectOwnerReports from "@/components/reports/ProjectOwnerReports";
 
 const Dashboard = () => {
@@ -211,9 +211,12 @@ const ReportsView = () => {
   if (user?.role === 'PROJECT_OWNER') {
     return <ProjectOwnerReports />;
   }
-
+  if (user?.role === 'TEAM_MEMBER') {
+    const TeamMemberReports = require('@/components/reports/TeamMemberReports').default;
+    return <TeamMemberReports />;
+  }
   // For other roles, show the general reports page
-  return <ReportsPageFixed />;
+  // return <ReportsPageFixed />;
 };
 
 export default Dashboard;

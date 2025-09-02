@@ -1,3 +1,28 @@
+// POST /api/users - Create a new user
+export async function POST(request) {
+  try {
+    const body = await request.json();
+    const { name, email, password, role, department } = body;
+    if (!name || !email || !password || !role) {
+      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
+    }
+    // You may want to hash the password here before saving
+    const newUser = await userOperations.create({
+      name,
+      email,
+      password, // Replace with hashed password in production
+      role: role.toUpperCase(),
+      department: department || null,
+      isActive: true,
+    });
+    // Remove password from response
+    const { password: pw, ...safeUser } = newUser;
+    return NextResponse.json({ success: true, user: safeUser });
+  } catch (error) {
+    console.error("Create user error:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
 import { NextResponse } from 'next/server';
 import { userOperations } from '@/lib/prisma';
 

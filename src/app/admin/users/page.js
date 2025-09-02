@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
+import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +30,9 @@ const AdminUsersPage = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+
+  // Confirmation popup state
+  const [confirmation, setConfirmation] = useState({ open: false, message: "", type: "success" });
 
   // Form states
   const [formData, setFormData] = useState({
@@ -122,13 +126,13 @@ const AdminUsersPage = () => {
         });
         setShowPassword(false);
         setIsCreateDialogOpen(false);
-        alert("User berhasil dibuat!");
+        setConfirmation({ open: true, message: "User created successfully!", type: "success" });
       } else {
-        alert(`Error: ${result.error}`);
+        setConfirmation({ open: true, message: `Error: ${result.error}`, type: "error" });
       }
     } catch (error) {
       console.error("Error creating user:", error);
-      alert("Gagal membuat user. Silakan coba lagi.");
+      setConfirmation({ open: true, message: "Failed to create user. Please try again.", type: "error" });
     } finally {
       setFormLoading(false);
     }
@@ -166,13 +170,13 @@ const AdminUsersPage = () => {
         setIsEditDialogOpen(false);
         setSelectedUser(null);
         setShowEditPassword(false);
-        alert("User berhasil diupdate!");
+        setConfirmation({ open: true, message: "User updated successfully!", type: "success" });
       } else {
-        alert(`Error: ${result.error}`);
+        setConfirmation({ open: true, message: `Error: ${result.error}`, type: "error" });
       }
     } catch (error) {
       console.error("Error updating user:", error);
-      alert("Gagal mengupdate user. Silakan coba lagi.");
+      setConfirmation({ open: true, message: "Failed to update user. Please try again.", type: "error" });
     } finally {
       setFormLoading(false);
     }
@@ -192,13 +196,13 @@ const AdminUsersPage = () => {
 
       if (result.success) {
         setUsers((prev) => prev.filter((u) => u.id !== userId));
-        alert("User berhasil dihapus!");
+        setConfirmation({ open: true, message: "User deleted successfully!", type: "success" });
       } else {
-        alert(`Error: ${result.error}`);
+        setConfirmation({ open: true, message: `Error: ${result.error}`, type: "error" });
       }
     } catch (error) {
       console.error("Error deleting user:", error);
-      alert("Gagal menghapus user. Silakan coba lagi.");
+      setConfirmation({ open: true, message: "Failed to delete user. Please try again.", type: "error" });
     }
   };
 
@@ -254,395 +258,411 @@ const AdminUsersPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                <Shield className="w-8 h-8 text-blue-600" />
-                Admin Panel - User Management
-              </h1>
-              <p className="text-gray-600 mt-2">Kelola semua user dan role dalam sistem</p>
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      <Navbar active="users" />
 
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Tambah User
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Buat User Baru</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleCreateUser} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nama Lengkap *</Label>
-                    <Input id="name" value={formData.name} onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))} placeholder="Masukkan nama lengkap" required />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
-                    <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))} placeholder="Masukkan email" required />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password *</Label>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        value={formData.password}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
-                        placeholder="Masukkan password"
-                        required
-                        className="pr-10"
-                      />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Role *</Label>
-                    <Select value={formData.role} onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
-                        <SelectItem value="PROJECT_OWNER">Project Owner</SelectItem>
-                        <SelectItem value="SUPERADMIN">Super Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="department">Department</Label>
-                    <Input id="department" value={formData.department} onChange={(e) => setFormData((prev) => ({ ...prev, department: e.target.value }))} placeholder="Masukkan department (opsional)" />
-                  </div>
-
-                  <DialogFooter>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setIsCreateDialogOpen(false);
-                        setShowPassword(false);
-                      }}
-                    >
-                      Batal
-                    </Button>
-                    <Button type="submit" disabled={formLoading}>
-                      {formLoading ? "Menyimpan..." : "Buat User"}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-
-        {/* Filters and Search */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input placeholder="Cari nama atau email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
-              </div>
-
-              <Select value={filterRole} onValueChange={setFilterRole}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by Role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Role</SelectItem>
-                  <SelectItem value="SUPERADMIN">Super Admin</SelectItem>
-                  <SelectItem value="PROJECT_OWNER">Project Owner</SelectItem>
-                  <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button variant="outline" className="flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                Export
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Users Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Daftar User ({filteredUsers.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="text-gray-500">Loading users...</div>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Login</TableHead>
-                    <TableHead>Projects/Tasks</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{user.name}</div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getRoleBadge(user.role)}</TableCell>
-                      <TableCell>
-                        <span className="text-sm">{user.department || "-"}</span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {user.isActive ? (
-                            <>
-                              <UserCheck className="w-4 h-4 text-green-600" />
-                              <span className="text-green-600 text-sm">Active</span>
-                            </>
-                          ) : (
-                            <>
-                              <UserX className="w-4 h-4 text-red-600" />
-                              <span className="text-red-600 text-sm">Inactive</span>
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-500">{user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString("id-ID") : "Never"}</span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div>{user._count?.ownedProjects || 0} projects</div>
-                          <div className="text-gray-500">{user._count?.assignedTasks || 0} tasks</div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openViewDialog(user)}>
-                              <Eye className="w-4 h-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openEditDialog(user)}>
-                              <Edit className="w-4 h-4 mr-2" />
-                              Edit User
-                            </DropdownMenuItem>
-                            {user.id !== user.id && (
-                              <DropdownMenuItem onClick={() => handleDeleteUser(user.id, user.name)} className="text-red-600">
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete User
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Edit User Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-md">
+      <div className="p-6">
+        {/* Confirmation Popup */}
+        <Dialog open={confirmation.open} onOpenChange={(open) => setConfirmation((prev) => ({ ...prev, open }))}>
+          <DialogContent className="max-w-sm">
             <DialogHeader>
-              <DialogTitle>Edit User</DialogTitle>
+              <DialogTitle>{confirmation.type === "success" ? "Success" : "Error"}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleEditUser} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-name">Nama Lengkap *</Label>
-                <Input id="edit-name" value={formData.name} onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))} required />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-email">Email *</Label>
-                <Input id="edit-email" type="email" value={formData.email} onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))} required />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-password">Password Baru (kosongkan jika tidak diubah)</Label>
-                <div className="relative">
-                  <Input
-                    id="edit-password"
-                    type={showEditPassword ? "text" : "password"}
-                    value={formData.password}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
-                    placeholder="Masukkan password baru atau kosongkan"
-                    className="pr-10"
-                  />
-                  <button type="button" onClick={() => setShowEditPassword(!showEditPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                    {showEditPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-role">Role *</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
-                    <SelectItem value="PROJECT_OWNER">Project Owner</SelectItem>
-                    <SelectItem value="SUPERADMIN">Super Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-department">Department</Label>
-                <Input id="edit-department" value={formData.department} onChange={(e) => setFormData((prev) => ({ ...prev, department: e.target.value }))} />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <input type="checkbox" id="edit-isActive" checked={formData.isActive} onChange={(e) => setFormData((prev) => ({ ...prev, isActive: e.target.checked }))} />
-                <Label htmlFor="edit-isActive">User Active</Label>
-              </div>
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsEditDialogOpen(false);
-                    setShowEditPassword(false);
-                  }}
-                >
-                  Batal
-                </Button>
-                <Button type="submit" disabled={formLoading}>
-                  {formLoading ? "Menyimpan..." : "Update User"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-
-        {/* View User Dialog */}
-        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Detail User</DialogTitle>
-            </DialogHeader>
-            {selectedUser && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Nama</Label>
-                    <p className="text-sm font-medium">{selectedUser.name}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Email</Label>
-                    <p className="text-sm">{selectedUser.email}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Role</Label>
-                    <div className="mt-1">{getRoleBadge(selectedUser.role)}</div>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Department</Label>
-                    <p className="text-sm">{selectedUser.department || "-"}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Status</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      {selectedUser.isActive ? (
-                        <>
-                          <UserCheck className="w-4 h-4 text-green-600" />
-                          <span className="text-green-600 text-sm">Active</span>
-                        </>
-                      ) : (
-                        <>
-                          <UserX className="w-4 h-4 text-red-600" />
-                          <span className="text-red-600 text-sm">Inactive</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Last Login</Label>
-                    <p className="text-sm">{selectedUser.lastLoginAt ? new Date(selectedUser.lastLoginAt).toLocaleDateString("id-ID") : "Never"}</p>
-                  </div>
-                </div>
-
-                <div className="border-t pt-4">
-                  <Label className="text-sm font-medium text-gray-500">Statistics</Label>
-                  <div className="grid grid-cols-3 gap-4 mt-2">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">{selectedUser._count?.ownedProjects || 0}</p>
-                      <p className="text-xs text-gray-500">Owned Projects</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-green-600">{selectedUser._count?.assignedTasks || 0}</p>
-                      <p className="text-xs text-gray-500">Assigned Tasks</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-purple-600">{selectedUser._count?.projectMemberships || 0}</p>
-                      <p className="text-xs text-gray-500">Project Memberships</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t pt-4">
-                  <Label className="text-sm font-medium text-gray-500">Account Info</Label>
-                  <div className="grid grid-cols-2 gap-4 mt-2 text-sm">
-                    <div>
-                      <span className="text-gray-500">Created:</span> {new Date(selectedUser.createdAt).toLocaleDateString("id-ID")}
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Updated:</span> {new Date(selectedUser.updatedAt).toLocaleDateString("id-ID")}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            <div className={confirmation.type === "success" ? "text-green-600" : "text-red-600"}>{confirmation.message}</div>
             <DialogFooter>
-              <Button onClick={() => setIsViewDialogOpen(false)}>Tutup</Button>
+              <Button onClick={() => setConfirmation((prev) => ({ ...prev, open: false }))}>OK</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                  <Shield className="w-8 h-8 text-blue-600" />
+                  Admin Panel - User Management
+                </h1>
+                <p className="text-gray-600 mt-2">Kelola semua user dan role dalam sistem</p>
+              </div>
+
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-blue-600 hover:bg-blue-700">
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Tambah User
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Buat User Baru</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleCreateUser} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nama Lengkap *</Label>
+                      <Input id="name" value={formData.name} onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))} placeholder="Masukkan nama lengkap" required />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email *</Label>
+                      <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))} placeholder="Masukkan email" required />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password *</Label>
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          value={formData.password}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
+                          placeholder="Masukkan password"
+                          required
+                          className="pr-10"
+                        />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="role">Role *</Label>
+                      <Select value={formData.role} onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih Role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="SUPERADMIN">Super Admin</SelectItem>
+                          <SelectItem value="PROJECT_OWNER">Project Owner</SelectItem>
+                          <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="department">Department</Label>
+                      <Input id="department" value={formData.department} onChange={(e) => setFormData((prev) => ({ ...prev, department: e.target.value }))} placeholder="Masukkan department (opsional)" />
+                    </div>
+
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setIsCreateDialogOpen(false);
+                          setShowPassword(false);
+                        }}
+                      >
+                        Batal
+                      </Button>
+                      <Button type="submit" disabled={formLoading}>
+                        {formLoading ? "Menyimpan..." : "Buat User"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+
+          {/* Filters and Search */}
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input placeholder="Cari nama atau email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                </div>
+
+                <Select value={filterRole} onValueChange={setFilterRole}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by Role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Role</SelectItem>
+                    <SelectItem value="SUPERADMIN">Super Admin</SelectItem>
+                    <SelectItem value="PROJECT_OWNER">Project Owner</SelectItem>
+                    <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Download className="w-4 h-4" />
+                  Export
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Users Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Daftar User ({filteredUsers.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <div className="text-gray-500">Loading users...</div>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Department</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Last Login</TableHead>
+                      <TableHead>Projects/Tasks</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{user.name}</div>
+                            <div className="text-sm text-gray-500">{user.email}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{getRoleBadge(user.role)}</TableCell>
+                        <TableCell>
+                          <span className="text-sm">{user.department || "-"}</span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {user.isActive ? (
+                              <>
+                                <UserCheck className="w-4 h-4 text-green-600" />
+                                <span className="text-green-600 text-sm">Active</span>
+                              </>
+                            ) : (
+                              <>
+                                <UserX className="w-4 h-4 text-red-600" />
+                                <span className="text-red-600 text-sm">Inactive</span>
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-gray-500">{user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString("id-ID") : "Never"}</span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <div>{user._count?.ownedProjects || 0} projects</div>
+                            <div className="text-gray-500">{user._count?.assignedTasks || 0} tasks</div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openViewDialog(user)}>
+                                <Eye className="w-4 h-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openEditDialog(user)}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit User
+                              </DropdownMenuItem>
+                              {user.id !== user.id && (
+                                <DropdownMenuItem onClick={() => handleDeleteUser(user.id, user.name)} className="text-red-600">
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete User
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Edit User Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Edit User</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleEditUser} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Nama Lengkap *</Label>
+                  <Input id="edit-name" value={formData.name} onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))} required />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-email">Email *</Label>
+                  <Input id="edit-email" type="email" value={formData.email} onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))} required />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-password">Password Baru (kosongkan jika tidak diubah)</Label>
+                  <div className="relative">
+                    <Input
+                      id="edit-password"
+                      type={showEditPassword ? "text" : "password"}
+                      value={formData.password}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
+                      placeholder="Masukkan password baru atau kosongkan"
+                      className="pr-10"
+                    />
+                    <button type="button" onClick={() => setShowEditPassword(!showEditPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                      {showEditPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-role">Role *</Label>
+                  <Select value={formData.role} onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
+                      <SelectItem value="PROJECT_OWNER">Project Owner</SelectItem>
+                      <SelectItem value="SUPERADMIN">Super Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-department">Department</Label>
+                  <Input id="edit-department" value={formData.department} onChange={(e) => setFormData((prev) => ({ ...prev, department: e.target.value }))} />
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" id="edit-isActive" checked={formData.isActive} onChange={(e) => setFormData((prev) => ({ ...prev, isActive: e.target.checked }))} />
+                  <Label htmlFor="edit-isActive">User Active</Label>
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditDialogOpen(false);
+                      setShowEditPassword(false);
+                    }}
+                  >
+                    Batal
+                  </Button>
+                  <Button type="submit" disabled={formLoading}>
+                    {formLoading ? "Menyimpan..." : "Update User"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          {/* View User Dialog */}
+          <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Detail User</DialogTitle>
+              </DialogHeader>
+              {selectedUser && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Nama</Label>
+                      <p className="text-sm font-medium">{selectedUser.name}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Email</Label>
+                      <p className="text-sm">{selectedUser.email}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Role</Label>
+                      <div className="mt-1">{getRoleBadge(selectedUser.role)}</div>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Department</Label>
+                      <p className="text-sm">{selectedUser.department || "-"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Status</Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        {selectedUser.isActive ? (
+                          <>
+                            <UserCheck className="w-4 h-4 text-green-600" />
+                            <span className="text-green-600 text-sm">Active</span>
+                          </>
+                        ) : (
+                          <>
+                            <UserX className="w-4 h-4 text-red-600" />
+                            <span className="text-red-600 text-sm">Inactive</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Last Login</Label>
+                      <p className="text-sm">{selectedUser.lastLoginAt ? new Date(selectedUser.lastLoginAt).toLocaleDateString("id-ID") : "Never"}</p>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <Label className="text-sm font-medium text-gray-500">Statistics</Label>
+                    <div className="grid grid-cols-3 gap-4 mt-2">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-blue-600">{selectedUser._count?.ownedProjects || 0}</p>
+                        <p className="text-xs text-gray-500">Owned Projects</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-green-600">{selectedUser._count?.assignedTasks || 0}</p>
+                        <p className="text-xs text-gray-500">Assigned Tasks</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-purple-600">{selectedUser._count?.projectMemberships || 0}</p>
+                        <p className="text-xs text-gray-500">Project Memberships</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <Label className="text-sm font-medium text-gray-500">Account Info</Label>
+                    <div className="grid grid-cols-2 gap-4 mt-2 text-sm">
+                      <div>
+                        <span className="text-gray-500">Created:</span> {new Date(selectedUser.createdAt).toLocaleDateString("id-ID")}
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Updated:</span> {new Date(selectedUser.updatedAt).toLocaleDateString("id-ID")}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <DialogFooter>
+                <Button onClick={() => setIsViewDialogOpen(false)}>Tutup</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
     </div>
   );

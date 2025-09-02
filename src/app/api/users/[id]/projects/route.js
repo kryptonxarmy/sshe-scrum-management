@@ -4,8 +4,8 @@ import { projectOperations } from '@/lib/prisma';
 // GET /api/users/[id]/projects - Get projects accessible to a user
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
-    
+    const { id } = await context.params;
+
     if (!id) {
       return NextResponse.json(
         { error: 'User ID is required' },

@@ -9,7 +9,7 @@ const CompletedTasksList = ({ tasks }) => {
   return (
     <div className="bg-white rounded-lg border border-slate-200 mt-8">
       <div className="p-4 border-b border-slate-200">
-        <h2 className="text-lg font-semibold text-slate-800">Completed Tasks</h2>
+  <h2 className="text-lg font-semibold text-slate-800">Completed Tasks</h2>
       </div>
       <div className="overflow-x-auto">
         <Table>
@@ -26,9 +26,13 @@ const CompletedTasksList = ({ tasks }) => {
             {tasks.map((task) => (
               <TableRow key={task.id}>
                 <TableCell className="font-medium">{task.title}</TableCell>
-                <TableCell>{task.assignee?.name || '-'}</TableCell>
                 <TableCell>
-                  {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '-'}
+                  {Array.isArray(task.assignees) && task.assignees.length > 0
+                    ? task.assignees.map(a => a.user?.name || a.name || a.userId).join(', ')
+                    : 'No assignee'}
+                </TableCell>
+                <TableCell>
+                  {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}
                 </TableCell>
                 <TableCell>
                   <Badge className={

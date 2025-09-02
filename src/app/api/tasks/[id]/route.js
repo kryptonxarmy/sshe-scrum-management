@@ -4,7 +4,13 @@ import { taskOperations, activityOperations, notificationOperations, prisma } fr
 // GET /api/tasks/[id] - Get task details
 export async function GET(request, { params }) {
   try {
-    const { id } = await params;
+    const id = params?.id;
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Task ID not provided' },
+        { status: 400 }
+      );
+    }
 
     const task = await taskOperations.findById(id);
 

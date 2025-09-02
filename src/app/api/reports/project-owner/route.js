@@ -206,7 +206,38 @@ export async function GET(request) {
     const projectIds = projects.map(p => p.id);
 
     // Get all tasks for these projects
-    const allTasks = await taskOperations.getByProjectIds(projectIds);
+    const rawTasks = await taskOperations.getByProjectIds(projectIds);
+    // Map tasks to always include required fields for frontend
+    const allTasks = rawTasks.map(task => {
+      // Get assignee (support assignee or assignees array)
+      let assignee = null;
+      if (task.assignee) {
+        assignee = {
+          id: task.assignee.id,
+          name: task.assignee.name || task.assignee.email,
+          avatarUrl: task.assignee.avatarUrl || '',
+        };
+      } else if (Array.isArray(task.assignees) && task.assignees.length > 0 && task.assignees[0].user) {
+        assignee = {
+          id: task.assignees[0].user.id,
+          name: task.assignees[0].user.name || task.assignees[0].user.email,
+          avatarUrl: task.assignees[0].user.avatarUrl || '',
+        };
+      }
+      return {
+        id: task.id,
+        title: task.title || '(untitled)',
+        status: task.status,
+        priority: task.priority || null,
+        assignee,
+        dueDate: task.dueDate || null,
+        completedAt: task.completedAt || null,
+        activityLog: Array.isArray(task.activityLogs) ? task.activityLogs : [],
+        project: task.project ? { name: task.project.name } : null,
+        projectId: task.projectId || (task.project && task.project.id) || null,
+        // You can add more fields if needed
+      };
+    });
 
     // Calculate project overview metrics
     const projectOverview = projects.map(project => {
@@ -214,9 +245,15 @@ export async function GET(request) {
       const completedTasks = projectTasks.filter(task => task.status === 'DONE').length;
       const inProgressTasks = projectTasks.filter(task => task.status === 'IN_PROGRESS').length;
       const todoTasks = projectTasks.filter(task => task.status === 'TODO').length;
+      const overdueTasks = projectTasks.filter(task => task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'DONE').length;
       const totalTasks = projectTasks.length;
       const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
+      // Dummy velocityData: last 3 sprints (use completedTasks for demo)
+      const velocityData = [
+        { completed: completedTasks },
+        { completed: Math.max(0, completedTasks - 1) },
+        { completed: Math.max(0, completedTasks - 2) }
+      ];
       return {
         id: project.id,
         name: project.name,
@@ -226,10 +263,13 @@ export async function GET(request) {
         completedTasks,
         inProgressTasks,
         todoTasks,
+        overdueTasks,
         completionRate,
+        velocityData,
         startDate: project.startDate,
         endDate: project.endDate,
-        department: project.department
+        department: project.department,
+        scrumMasterName: project.scrumMaster ? project.scrumMaster.name : "N/A"
       };
     });
 
@@ -350,7 +390,8 @@ export async function GET(request) {
         teamProductivity,
         priorityBreakdown,
         completionTrends,
-        assigneePerformance
+        assigneePerformance,
+        allTasks // <-- Added for frontend leaderboard
       }
     });
 

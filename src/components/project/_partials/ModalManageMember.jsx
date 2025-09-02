@@ -34,9 +34,9 @@ const ModalManageMember = ({ isOpen, onClose, project }) => {
 
   // Filter users based on search and role
   useEffect(() => {
-    let filtered = availableUsers.filter(
-      (user) => !currentMembers.some((member) => member.user.id === user.id)
-    );
+    let filtered = availableUsers
+      .filter((user) => user.role !== 'SUPERADMIN')
+      .filter((user) => !currentMembers.some((member) => member.user.id === user.id));
 
     if (searchTerm) {
       filtered = filtered.filter(

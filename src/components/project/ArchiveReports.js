@@ -80,9 +80,9 @@ const ArchiveReports = () => {
     }
 
     const totalProjects = filteredProjects.length;
-    // Remove priority count, only count short/long term
-    const shortTermCount = filteredProjects.filter((project) => project.duration === "SHORT_TERM").length;
-    const longTermCount = filteredProjects.filter((project) => project.duration === "LONG_TERM").length;
+  // Remove priority count, only count short/long period
+  const shortTermCount = filteredProjects.filter(project => project.duration === 'SHORT_TERM').length;
+  const longTermCount = filteredProjects.filter(project => project.duration === 'LONG_TERM').length;
 
     // Calculate average duration
     const durations = filteredProjects.map((project) => {
@@ -150,9 +150,9 @@ const ArchiveReports = () => {
   const getDurationLabel = (duration) => {
     switch (duration) {
       case "SHORT_TERM":
-        return "Short Term";
+  return "Short Period";
       case "LONG_TERM":
-        return "Long Term";
+  return "Long Period";
       default:
         return "All Projects";
     }
@@ -212,8 +212,8 @@ const ArchiveReports = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Projects</SelectItem>
-              <SelectItem value="SHORT_TERM">Short Term Projects</SelectItem>
-              <SelectItem value="LONG_TERM">Long Term Projects</SelectItem>
+              <SelectItem value="SHORT_TERM">Short Period Projects</SelectItem>
+              <SelectItem value="LONG_TERM">Long Period Projects</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -289,7 +289,7 @@ const ArchiveReports = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Short Term</p>
+                <p className="text-sm font-medium text-slate-600">Short Period</p>
                 <p className="text-2xl font-bold text-blue-600">{stats.shortTermCount}</p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -304,7 +304,7 @@ const ArchiveReports = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Long Term</p>
+                <p className="text-sm font-medium text-slate-600">Long Period</p>
                 <p className="text-2xl font-bold text-orange-600">{stats.longTermCount}</p>
               </div>
               <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
