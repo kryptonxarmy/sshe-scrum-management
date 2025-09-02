@@ -1,13 +1,18 @@
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import ProfilePage from "@/components/profile/Profile";
-import React from "react";
+"use client";
 
-function page() {
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import Navbar from "@/components/Navbar";
+import ProfilePage from "@/components/profile/Profile";
+
+export default function ProfilePageWrapper() {
   return (
     <ProtectedRoute>
-      <ProfilePage />
+      <div className="min-h-screen bg-gray-50">
+        <Navbar active="profile" />
+        <main className="p-6">
+          <ProfilePage />
+        </main>
+      </div>
     </ProtectedRoute>
   );
 }
-
-export default page;

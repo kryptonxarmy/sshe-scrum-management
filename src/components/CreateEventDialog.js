@@ -21,15 +21,15 @@ const CreateEventDialog = ({ projects = [], onEventCreated, event = null, onClos
   const [formData, setFormData] = useState({
     title: event?.title || "",
     description: event?.description || "",
-    startDate: event?.startDate ? event.startDate.slice(0,10) : "",
-    startTime: event?.startDate ? new Date(event.startDate).toISOString().slice(11,16) : "",
-    endDate: event?.endDate ? event.endDate.slice(0,10) : "",
-    endTime: event?.endDate ? new Date(event.endDate).toISOString().slice(11,16) : "",
+    startDate: event?.startDate ? event.startDate.slice(0, 10) : "",
+    startTime: event?.startDate ? new Date(event.startDate).toISOString().slice(11, 16) : "",
+    endDate: event?.endDate ? event.endDate.slice(0, 10) : "",
+    endTime: event?.endDate ? new Date(event.endDate).toISOString().slice(11, 16) : "",
     projectId: event?.projectId || "no-project",
     isRecurring: event?.isRecurring || false,
     recurringType: event?.recurringType || "weekly",
     recurringDayOfWeek: event?.recurringDayOfWeek ?? new Date().getDay(),
-    recurringEndDate: event?.recurringEndDate ? event.recurringEndDate.slice(0,10) : "",
+    recurringEndDate: event?.recurringEndDate ? event.recurringEndDate.slice(0, 10) : "",
     selectedUserIds: event?.selectedUserIds || [],
   });
 
@@ -73,6 +73,11 @@ const CreateEventDialog = ({ projects = [], onEventCreated, event = null, onClos
       [field]: value,
     }));
   };
+
+  // Wrap onChange in useCallback to prevent unnecessary re-renders
+  const handleUserSelection = React.useCallback((selectedIds) => {
+    handleInputChange("selectedUserIds", selectedIds);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -131,7 +136,7 @@ const CreateEventDialog = ({ projects = [], onEventCreated, event = null, onClos
       }
     } catch (error) {
       console.error("Error saving event:", error);
-  setErrorPopup({ open: true, message: "Gagal menyimpan event. Silakan coba lagi." });
+      setErrorPopup({ open: true, message: "Gagal menyimpan event. Silakan coba lagi." });
     } finally {
       setLoading(false);
     }
@@ -148,7 +153,13 @@ const CreateEventDialog = ({ projects = [], onEventCreated, event = null, onClos
   }
 
   return (
-  <Dialog open={event ? true : open} onOpenChange={(val) => { setOpen(val); if (!val && onClose) onClose(); }}>
+    <Dialog
+      open={event ? true : open}
+      onOpenChange={(val) => {
+        setOpen(val);
+        if (!val && onClose) onClose();
+      }}
+    >
       {!event && (
         <DialogTrigger asChild>
           <Button className="flex items-center gap-2 bg-gray-800 hover:bg-gray-900">
@@ -160,17 +171,19 @@ const CreateEventDialog = ({ projects = [], onEventCreated, event = null, onClos
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader className="flex items-center justify-between">
           <div className="flex items-center justify-between w-full">
-            <DialogTitle className={`flex items-center gap-2 ${event ? 'text-black' : 'text-purple-700'}`}>
+            <DialogTitle className={`flex items-center gap-2 ${event ? "text-black" : "text-purple-700"}`}>
               {event ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13zm0 0V17a2 2 0 002 2h4" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13zm0 0V17a2 2 0 002 2h4" />
+                </svg>
               ) : (
                 <CalendarPlus className="w-5 h-5" />
               )}
-              {event ? 'Edit Event Meeting' : 'Buat Event Meeting Baru'}
+              {event ? "Edit Event Meeting" : "Buat Event Meeting Baru"}
             </DialogTitle>
-            <button type="button" aria-label="Close" className="ml-2 p-2 rounded hover:bg-gray-200" onClick={() => { setOpen(false); if (onClose) onClose(); }}>
+            {/* <button type="button" aria-label="Close" className="ml-2 p-2 rounded hover:bg-gray-200" onClick={() => { setOpen(false); if (onClose) onClose(); }}>
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
+            </button> */}
           </div>
         </DialogHeader>
 
@@ -192,7 +205,17 @@ const CreateEventDialog = ({ projects = [], onEventCreated, event = null, onClos
                 <div className="space-y-2">
                   <Label htmlFor="projectId">Project yang Dibahas *</Label>
                   <div className="flex gap-2 items-center">
-                    <Select value={formData.projectId} onValueChange={(value) => handleInputChange("projectId", value)}>
+                    <Select
+                      value={formData.projectId}
+                      onValueChange={(value) => {
+                        console.log("Project changed to:", value); // Debug log
+                        handleInputChange("projectId", value);
+                        // Clear selected users when project changes
+                        if (value !== formData.projectId) {
+                          handleInputChange("selectedUserIds", []);
+                        }
+                      }}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Pilih project yang akan dibahas" />
                       </SelectTrigger>
@@ -217,7 +240,7 @@ const CreateEventDialog = ({ projects = [], onEventCreated, event = null, onClos
                     {/* User assignee selector below project dropdown for better layout */}
                   </div>
                   <div className="mt-2">
-                    <UserAssigneeSelector projectId={formData.projectId} selectedUserIds={formData.selectedUserIds || []} onChange={(ids) => handleInputChange("selectedUserIds", ids)} />
+                    <UserAssigneeSelector projectId={formData.projectId} selectedUserIds={formData.selectedUserIds || []} onChange={handleUserSelection} />
                   </div>
                 </div>
               </div>

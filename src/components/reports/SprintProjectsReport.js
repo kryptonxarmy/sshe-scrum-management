@@ -17,43 +17,92 @@ const SprintProjectsReport = ({ projectOwnerId }) => {
   // Fetch projects for the given userId (projectOwnerId)
   useEffect(() => {
     if (!projectOwnerId) return;
+    console.log(`Fetching projects for user: ${projectOwnerId}`);
     setLoading(true);
+    setError(null);
     fetch(`/api/projects?userId=${projectOwnerId}`)
       .then((res) => res.json())
       .then((data) => {
+        console.log(`Projects API response:`, data);
         const userProjects = Array.isArray(data.projects) ? data.projects : [];
+        console.log(
+          `Found ${userProjects.length} projects:`,
+          userProjects.map((p) => `"${p.name}" (${p.id})`)
+        );
         setProjects(userProjects);
-        if (userProjects.length > 0) {
-          setSelectedProjectId(userProjects[0].id);
-        }
       })
-      .catch(() => setError("Failed to fetch projects"))
+      .catch((error) => {
+        console.error("Error fetching projects:", error);
+        setError("Failed to fetch projects");
+      })
       .finally(() => setLoading(false));
   }, [projectOwnerId]);
 
-  // Fetch sprints for selected project
+  // Set default project when projects are loaded
   useEffect(() => {
-    if (!selectedProjectId) return;
+    if (projects.length > 0 && !selectedProjectId) {
+      const firstProject = projects[0];
+      console.log(`Auto-selecting first project: "${firstProject.name}" (${firstProject.id})`);
+      setSelectedProjectId(firstProject.id);
+    }
+  }, [projects, selectedProjectId]);
+
+  // Fetch sprints for selected project - only run when project is actually selected
+  useEffect(() => {
+    if (!selectedProjectId) {
+      setSprints([]);
+      return;
+    }
+
+    // Validate projectId before making API call
+    if (!selectedProjectId.trim() || selectedProjectId.length < 10) {
+      console.error("Invalid project ID:", selectedProjectId);
+      setError("Invalid project ID");
+      return;
+    }
+
+    console.log(`Fetching sprints for project: "${selectedProjectId}" (length: ${selectedProjectId.length})`);
     setLoading(true);
     setError(null);
-    fetch(`/api/projects/${selectedProjectId}/sprints`)
-      .then((res) => res.json())
-      .then((data) => {
-        setSprints(data.sprints || []);
+
+    const apiUrl = `/api/projects/${encodeURIComponent(selectedProjectId.trim())}/sprints`;
+    console.log(`API URL: ${apiUrl}`);
+
+    fetch(apiUrl)
+      .then((res) => {
+        console.log(`API Response Status: ${res.status}`);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        return res.json();
       })
-      .catch(() => setError("Failed to fetch sprints"))
+      .then((data) => {
+        console.log(`Received sprint data:`, data);
+        const filteredSprints = data.sprints || [];
+        setSprints(filteredSprints);
+      })
+      .catch((error) => {
+        console.error("Error fetching sprints:", error);
+        setError(`Failed to fetch sprints: ${error.message}`);
+        setSprints([]);
+      })
       .finally(() => setLoading(false));
   }, [selectedProjectId]);
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
+  const handleProjectChange = (projectId) => {
+    console.log(`Project changed to: "${projectId}"`);
+    setSelectedProjectId(projectId);
+  };
+
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900">Projects per Sprint</h3>
+      <h3 className="text-lg font-semibold text-gray-900">Sprint Reports by Project</h3>
       <div className="mb-4 flex items-center gap-4">
         <div>
           <label className="text-sm font-medium mr-2">Select Project:</label>
-          <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+          <Select value={selectedProjectId} onValueChange={handleProjectChange}>
             <SelectTrigger className="w-64">
               <SelectValue placeholder="Choose a project" />
             </SelectTrigger>
@@ -67,19 +116,29 @@ const SprintProjectsReport = ({ projectOwnerId }) => {
           </Select>
         </div>
         {selectedProject && (
-          <Button asChild variant="outline" size="sm" className="inline-flex self-end items-center">
-            <Link href={`/tasks?projectId=${selectedProject.id}`} target="_blank" rel="noopener noreferrer">
-              Go to Project <ArrowUpRight className="h-4 w-4" />
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Badge variant="outline" className="text-xs">
+              Project: {selectedProject.name}
+            </Badge>
+            <Button asChild variant="outline" size="sm" className="inline-flex self-end items-center">
+              <Link href={`/tasks?projectId=${selectedProject.id}`} target="_blank" rel="noopener noreferrer">
+                Go to Project <ArrowUpRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
         )}
       </div>
       {loading ? (
         <div className="text-center text-gray-500 py-8">Loading sprints...</div>
       ) : error ? (
         <div className="text-center text-red-500 py-8">{error}</div>
+      ) : !selectedProjectId ? (
+        <div className="text-center text-gray-500 py-8">Please select a project to view its sprints.</div>
       ) : sprints.length === 0 ? (
-        <div className="text-center text-gray-500 py-8">No sprints found for this project.</div>
+        <div className="text-center text-gray-500 py-8">
+          No sprints found for project &quot;{selectedProject?.name}&quot;.
+          <div className="text-xs mt-2">Create tasks to automatically generate sprints for this project.</div>
+        </div>
       ) : (
         <div className="space-y-8">
           {sprints.map((sprint) => {
@@ -87,6 +146,7 @@ const SprintProjectsReport = ({ projectOwnerId }) => {
             const completedTasks = sprint.tasks?.filter((t) => t.status === "DONE") || [];
             const inProgressTasks = sprint.tasks?.filter((t) => t.status === "IN_PROGRESS") || [];
             const todoTasks = sprint.tasks?.filter((t) => t.status === "TODO") || [];
+
             return (
               <Card key={sprint.id} className="border shadow-sm">
                 <CardHeader>

@@ -354,7 +354,7 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
                     Delete Task
                   </AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete "{task.title || 'this task'}"? This action cannot be undone and will permanently remove the task and all its associated data.
+                    Are you sure you want to delete &quot;{task.title || 'this task'}&quot;? This action cannot be undone and will permanently remove the task and all its associated data.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

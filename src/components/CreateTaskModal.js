@@ -203,12 +203,12 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
         const errorData = await response.json().catch(() => ({}));
         const errorMsg = errorData.error || "Failed to create task";
         console.error("API Error:", errorData);
-          toast({
-            title: "Error",
-            description: errorMsg,
-            variant: "destructive",
-            icon: <XCircle className="text-red-600" size={22} />,
-          });
+        toast({
+          title: "Error",
+          description: errorMsg,
+          variant: "destructive",
+          icon: <XCircle className="text-red-600" size={22} />,
+        });
         throw new Error(errorMsg);
       }
 
@@ -287,7 +287,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[525px]">
+      <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
         </DialogHeader>

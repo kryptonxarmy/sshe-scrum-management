@@ -349,15 +349,63 @@ const ProjectOwnerReports = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64">
+                <div className="h-64 flex flex-col items-center justify-center">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={taskDistribution} cx="50%" cy="50%" outerRadius={80} fill="#8884d8" dataKey="value" label={({ name, percentage }) => `${name}: ${percentage ?? 0}%`}>
-                        {taskDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color ?? "#8884d8"} />
-                        ))}
+                      <Pie data={taskDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({ name, percentage }) => `${name}: ${percentage ?? 0}%`} labelLine={false} paddingAngle={4}>
+                        {taskDistribution.map((entry, index) => {
+                          // Mapping warna berdasarkan status/nama
+                          const getColorByStatus = (statusName) => {
+                            const colorMap = {
+                              TODO: "#F59E42", // orange
+                              "To Do": "#F59E42", // orange
+                              IN_PROGRESS: "#3B82F6", // blue
+                              "In Progress": "#3B82F6", // blue
+                              DONE: "#22C55E", // green
+                              Done: "#22C55E", // green
+                              OVERDUE: "#F43F5E", // pink/red
+                              Overdue: "#F43F5E", // pink/red
+                              CANCELLED: "#6B7280", // gray
+                              Cancelled: "#6B7280", // gray
+                              ON_HOLD: "#FBBF24", // yellow
+                              "On Hold": "#FBBF24", // yellow
+                            };
+                            return (
+                              colorMap[statusName] ||
+                              [
+                                "#7C3AED", // purple
+                                "#F59E42", // orange
+                                "#22C55E", // green
+                                "#F43F5E", // pink
+                                "#3B82F6", // blue
+                                "#FBBF24", // yellow
+                                "#A21CAF", // deep purple
+                              ][index % 7]
+                            );
+                          };
+
+                          return <Cell key={`cell-${index}`} fill={entry.color ?? getColorByStatus(entry.name)} stroke="#fff" strokeWidth={2} />;
+                        })}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip
+                        contentStyle={{
+                          background: "#fff",
+                          borderRadius: "8px",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                          border: "1px solid #e5e7eb",
+                          color: "#333",
+                        }}
+                        itemStyle={{ fontWeight: "bold" }}
+                      />
+                      <Legend
+                        verticalAlign="bottom"
+                        iconType="circle"
+                        wrapperStyle={{
+                          paddingTop: 12,
+                          fontSize: 14,
+                          color: "#6B7280",
+                        }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -562,7 +610,7 @@ const ProjectOwnerReports = () => {
                     {getTopFastFinishers(reportData?.allTasks).map((m, idx) => (
                       <div key={m.id} className={`flex items-center gap-3 p-3 rounded-xl border shadow-sm ${idx === 0 ? "bg-purple-50 border-purple-300" : idx === 1 ? "bg-purple-100 border-purple-200" : "bg-white border-gray-200"}`}>
                         <span className="text-2xl font-bold">{idx === 0 ? "🥇" : idx === 1 ? "🥈" : "🥉"}</span>
-                        {m.avatarUrl && <img src={m.avatarUrl} alt={m.name} className="w-8 h-8 rounded-full border" />}
+                        {m.avatarUrl && <Image src={m.avatarUrl} alt={m.name} className="w-8 h-8 rounded-full border" />}
                         <span className="font-semibold text-lg">{m.name}</span>
                         <span className="ml-auto text-purple-700 font-semibold">{m.avgDays} days</span>
                       </div>
@@ -664,7 +712,7 @@ const ProjectOwnerReports = () => {
         </TabsContent>
 
         <TabsContent value="sprints" className="space-y-6">
-          <SprintProjectsReport projectOwnerId={user.id}/>
+          <SprintProjectsReport projectOwnerId={user.id} />
         </TabsContent>
       </Tabs>
     </div>
