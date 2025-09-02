@@ -258,33 +258,30 @@ const AdminUsersPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar active="users" />
-
-      <div className="p-6">
-        {/* Confirmation Popup */}
-        <Dialog open={confirmation.open} onOpenChange={(open) => setConfirmation((prev) => ({ ...prev, open }))}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle>{confirmation.type === "success" ? "Success" : "Error"}</DialogTitle>
-            </DialogHeader>
-            <div className={confirmation.type === "success" ? "text-green-600" : "text-red-600"}>{confirmation.message}</div>
-            <DialogFooter>
-              <Button onClick={() => setConfirmation((prev) => ({ ...prev, open: false }))}>OK</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                  <Shield className="w-8 h-8 text-blue-600" />
-                  Admin Panel - User Management
-                </h1>
-                <p className="text-gray-600 mt-2">Kelola semua user dan role dalam sistem</p>
-              </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      {/* Confirmation Popup */}
+      <Dialog open={confirmation.open} onOpenChange={(open) => setConfirmation((prev) => ({ ...prev, open }))}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{confirmation.type === "success" ? "Success" : "Error"}</DialogTitle>
+          </DialogHeader>
+          <div className={confirmation.type === "success" ? "text-green-600" : "text-red-600"}>{confirmation.message}</div>
+          <DialogFooter>
+            <Button onClick={() => setConfirmation((prev) => ({ ...prev, open: false }))}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                <Shield className="w-8 h-8 text-blue-600" />
+                Admin Panel - User Management
+              </h1>
+              <p className="text-gray-600 mt-2">Kelola semua user dan role dalam sistem</p>
+            </div>
 
               <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogTrigger asChild>
@@ -374,6 +371,14 @@ const AdminUsersPage = () => {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input placeholder="Cari nama atau email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
                 </div>
+        {/* Filters and Search */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-2 items-center">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input placeholder="Cari nama atau email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+              </div>
 
                 <Select value={filterRole} onValueChange={setFilterRole}>
                   <SelectTrigger>
