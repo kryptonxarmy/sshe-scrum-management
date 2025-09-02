@@ -29,7 +29,7 @@ async function sendTaskNotification({ to, subject, text, html }) {
     throw new Error("Recipient email(s) required");
   }
   const mailOptions = {
-    from: `SSHE Scrum Management <${GMAIL_USER}>`,
+    from: `SSHE Scrum Management Admin`,
     to: Array.isArray(to) ? to.join(",") : to,
     subject,
     text,
