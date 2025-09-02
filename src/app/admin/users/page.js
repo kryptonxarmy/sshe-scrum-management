@@ -258,10 +258,15 @@ const AdminUsersPage = () => {
   }
 
   return (
+<<<<<<< HEAD
     <div className="min-h-screen bg-gray-50">
       <Navbar active="users" />
       
       <div className="p-6">{/* Confirmation Popup */}
+=======
+    <div className="min-h-screen bg-gray-50 p-6">
+      {/* Confirmation Popup */}
+>>>>>>> add-feature-2-a
       <Dialog open={confirmation.open} onOpenChange={(open) => setConfirmation((prev) => ({ ...prev, open }))}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -284,7 +289,6 @@ const AdminUsersPage = () => {
               </h1>
               <p className="text-gray-600 mt-2">Kelola semua user dan role dalam sistem</p>
             </div>
-
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-blue-600 hover:bg-blue-700">
@@ -373,7 +377,10 @@ const AdminUsersPage = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input placeholder="Cari nama atau email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
+<<<<<<< HEAD
 
+=======
+>>>>>>> add-feature-2-a
               <Select value={filterRole} onValueChange={setFilterRole}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filter by Role" />
@@ -385,7 +392,10 @@ const AdminUsersPage = () => {
                   <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
                 </SelectContent>
               </Select>
+<<<<<<< HEAD
 
+=======
+>>>>>>> add-feature-2-a
               <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filter by Status" />
@@ -396,7 +406,10 @@ const AdminUsersPage = () => {
                   <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
+<<<<<<< HEAD
 
+=======
+>>>>>>> add-feature-2-a
               <Button variant="outline" className="flex items-center gap-2">
                 <Download className="w-4 h-4" />
                 Export
@@ -484,6 +497,10 @@ const AdminUsersPage = () => {
                               <Edit className="w-4 h-4 mr-2" />
                               Edit User
                             </DropdownMenuItem>
+<<<<<<< HEAD
+=======
+                            {/* Only show delete for other users */}
+>>>>>>> add-feature-2-a
                             {user.id !== user.id && (
                               <DropdownMenuItem onClick={() => handleDeleteUser(user.id, user.name)} className="text-red-600">
                                 <Trash2 className="w-4 h-4 mr-2" />

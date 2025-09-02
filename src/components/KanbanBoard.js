@@ -22,14 +22,18 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
   const fetchTasks = async () => {
     try {
       let url = `/api/tasks?projectId=${functionId}`;
-      if (sprintId) url += `&sprintId=${sprintId}`;
-      if (assigneeId) url += `&assigneeId=${assigneeId}`;
-      console.log('Fetching tasks for projectId:', functionId);
+      if (sprintId && sprintId !== "ALL_SPRINTS" && sprintId !== "" && sprintId !== null) {
+        url += `&sprintId=${sprintId}`;
+      }
+      if (assigneeId && assigneeId !== "ALL_ASSIGNEES" && assigneeId !== "" && assigneeId !== null) {
+        url += `&assigneeId=${assigneeId}`;
+      }
+      console.log("Fetching tasks with URL:", url);
       const response = await fetch(url);
-      console.log('Fetch response status:', response.status);
+      console.log("Fetch response status:", response.status);
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Fetch error response:', errorText);
+        console.error("Fetch error response:", errorText);
         throw new Error("Failed to fetch tasks");
       }
       const data = await response.json();
@@ -60,6 +64,7 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
       return;
     }
     fetchTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [functionId, sprintId, assigneeId]);
 
   const handleTaskUpdated = () => fetchTasks();
@@ -92,18 +97,15 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
   const isTeamMemberAndNotAssigned = (task) => {
     // Project Owner & Scrum Master always can drag any task
     if (!user) return false;
-    if (project && (user.id === project.ownerId || user.id === project.scrumMasterId)) return false;
+    if (project && (user.role === "PROJECT_OWNER" || user.id === project.ownerId || user.id === project.scrumMasterId)) return false;
     // Team member: only if assigned
-    if (user.role === "TEAM_MEMBER") {
-      if (task.assignees && Array.isArray(task.assignees)) {
-        return !task.assignees.some((assignee) => {
-          const userId = assignee.user ? assignee.user.id : assignee.userId;
-          return userId === user.id;
-        });
-      }
-      return true;
+    if (task.assignees && Array.isArray(task.assignees)) {
+      return !task.assignees.some((assignee) => {
+        const userId = assignee.user ? assignee.user.id : assignee.userId;
+        return userId === user.id;
+      });
     }
-    return false;
+    return true;
   };
 
   const handleDragEnd = async (result) => {
@@ -133,7 +135,7 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
     if (destination.droppableId === "done" && !canDragToDone()) {
       toast({
         title: "Access Denied",
-        description: "Only Project Owner or Scrum Master can move tasks to DONE.",
+        description: "Only Project Owner or appointed Scrum Master can move tasks to DONE.",
         variant: "destructive",
         className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
       });
@@ -192,16 +194,16 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
       const revertedTasks = { ...tasks };
       const originalSourceList = [...tasks[source.droppableId]];
       const originalDestList = [...tasks[destination.droppableId]];
-      
+
       // Add the task back to original position
       originalSourceList.splice(source.index, 0, movedTask);
-      
+
       setTasks({
         ...revertedTasks,
         [source.droppableId]: originalSourceList,
         [destination.droppableId]: originalDestList,
       });
-      
+
       toast({
         title: "Error",
         description: "Failed to update task status. Please try again.",
@@ -253,31 +255,17 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
         </div>
       )}
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div
-          className={`grid gap-6 mb-12 ${
-            filter === "all" ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1"
-          }`}
-        >
+        <div className={`grid gap-6 mb-12 ${filter === "all" ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1"}`}>
           {columns.map((column) => {
             const Icon = column.icon;
             return (
               <Droppable key={column.id} droppableId={column.id}>
                 {(provided, snapshot) => (
-                  <div 
-                    ref={provided.innerRef} 
-                    {...provided.droppableProps} 
-                    className={`rounded-lg border border-slate-200 overflow-hidden ${column.bgClass} ${
-                      snapshot.isDraggingOver ? "ring-2 ring-blue-400 ring-opacity-50" : ""
-                    }`}
-                  >
+                  <div ref={provided.innerRef} {...provided.droppableProps} className={`rounded-lg border border-slate-200 overflow-hidden ${column.bgClass} ${snapshot.isDraggingOver ? "ring-2 ring-blue-400 ring-opacity-50" : ""}`}>
                     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white">
-                      <h3 className={`text-lg font-semibold ${column.headerClass}`}>
-                        {column.title}
-                      </h3>
+                      <h3 className={`text-lg font-semibold ${column.headerClass}`}>{column.title}</h3>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200">
-                          {column.tasks.length}
-                        </span>
+                        <span className="text-sm font-medium text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200">{column.tasks.length}</span>
                         {/* Add button removed as requested */}
                       </div>
                     </div>
@@ -285,24 +273,10 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
                       {column.tasks.length > 0 ? (
                         <div className="space-y-3">
                           {column.tasks.map((task, index) => (
-                            <Draggable
-                              key={task.id}
-                              draggableId={String(task.id)}
-                              index={index}
-                              isDragDisabled={!hasFullControl() && isTeamMemberAndNotAssigned(task)}
-                            >
+                            <Draggable key={task.id} draggableId={String(task.id)} index={index} isDragDisabled={!hasFullControl() && isTeamMemberAndNotAssigned(task)}>
                               {(provided, snapshot) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  className={snapshot.isDragging ? "opacity-80" : ""}
-                                >
-                                  <TaskCard
-                                    task={task}
-                                    onTaskUpdated={handleTaskUpdated}
-                                    onTaskDeleted={handleTaskDeleted}
-                                  />
+                                <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className={snapshot.isDragging ? "opacity-80" : ""}>
+                                  <TaskCard task={task} onTaskUpdated={handleTaskUpdated} onTaskDeleted={handleTaskDeleted} />
                                 </div>
                               )}
                             </Draggable>

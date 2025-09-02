@@ -138,9 +138,6 @@ export default function Navbar({ active = "dashboard" }) {
               <DropdownMenuItem onClick={handleProfileClick} className="flex items-center gap-2">
                 <User size={16} /> Profile
               </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2">
-                <Settings size={16} /> Settings
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 text-red-600">
                 <LogOut size={16} /> Logout

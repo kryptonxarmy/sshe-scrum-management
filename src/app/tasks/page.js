@@ -8,6 +8,7 @@ import KanbanBoard from "@/components/KanbanBoard";
 import Navbar from "@/components/Navbar";
 import CreateTaskModal from "@/components/CreateTaskModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 function TasksPageContent() {
   const searchParams = useSearchParams();
@@ -16,8 +17,8 @@ function TasksPageContent() {
   const [project, setProject] = useState(null);
   const [filter, setFilter] = useState("all");
   const [sprints, setSprints] = useState([]);
-  const [selectedSprint, setSelectedSprint] = useState("");
-  const [selectedAssignee, setSelectedAssignee] = useState("");
+  const [selectedSprint, setSelectedSprint] = useState("ALL_SPRINTS");
+  const [selectedAssignee, setSelectedAssignee] = useState("ALL_ASSIGNEES");
   // Fetch sprints for filter
   useEffect(() => {
     if (!projectId) return;
@@ -25,9 +26,8 @@ function TasksPageContent() {
       .then((res) => res.json())
       .then((data) => {
         setSprints(data.sprints || []);
-        if (data.sprints && data.sprints.length > 0) {
-          setSelectedSprint(data.sprints[0].id);
-        }
+        // Set to "ALL_SPRINTS" as default
+        setSelectedSprint("ALL_SPRINTS");
       });
   }, [projectId]);
   const [refreshTasks, setRefreshTasks] = useState(0);
@@ -108,7 +108,7 @@ function TasksPageContent() {
     };
 
     fetchProject();
-  }, [projectId]);
+  }, [projectId, user]);
 
   if (!projectId) {
     return <div className="min-h-screen bg-slate-50 p-4">Please select a project first.</div>;
@@ -139,6 +139,20 @@ function TasksPageContent() {
                         <span className="text-sm text-slate-500">Department:</span>
                         <span className="font-medium text-slate-700">{project.department || "-"}</span>
                       </div>
+                      <span className="text-slate-300">|</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-slate-500">Owner:</span>
+                        <span className="font-medium text-slate-700">{project.owner?.name || "-"}</span>
+                      </div>
+                      {project.scrumMaster && (
+                        <>
+                          <span className="text-slate-300">|</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-slate-500">Scrum Master:</span>
+                            <span className="font-medium text-slate-700">{project.scrumMaster.name}</span>
+                          </div>
+                        </>
+                      )}
                       <span className="text-slate-300">|</span>
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-slate-500">Start:</span>
@@ -186,7 +200,8 @@ function TasksPageContent() {
                 )}
               </div>
               <div className="flex flex-col gap-2 min-w-[200px]">
-                {user?.role === "PROJECT_OWNER" || user?.role === "SCRUM_MASTER" ? (
+                {/* Check if user can create task: PROJECT_OWNER role OR appointed as Scrum Master */}
+                {user?.role === "PROJECT_OWNER" || user?.id === project?.ownerId || user?.id === project?.scrumMasterId ? (
                   <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-sm" onClick={() => setIsModalOpen(true)}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -195,7 +210,7 @@ function TasksPageContent() {
                     Create Task
                   </button>
                 ) : (
-                  <span className="text-slate-400 text-sm"></span>
+                  <span className="text-slate-400 text-sm">Only Project Owner or Scrum Master can create tasks</span>
                 )}
               </div>
             </div>
@@ -210,23 +225,34 @@ function TasksPageContent() {
                 </button>
               ))}
               {/* Sprint Filter */}
-              <select value={selectedSprint} onChange={(e) => setSelectedSprint(e.target.value)} className="ml-4 px-3 py-2 rounded border text-sm">
-                <option value="">All Sprints</option>
-                {sprints.map((sprint) => (
-                  <option key={sprint.id} value={sprint.id}>
-                    {sprint.name}
-                  </option>
-                ))}
-              </select>
+              <Select value={selectedSprint} onValueChange={(value) => setSelectedSprint(value)}>
+                <SelectTrigger className="ml-4 w-48">
+                  <SelectValue placeholder="All Sprints" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL_SPRINTS">All Sprints</SelectItem>
+                  {sprints.map((sprint) => (
+                    <SelectItem key={sprint.id} value={sprint.id}>
+                      {sprint.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               {/* Assignee Filter */}
-              <select value={selectedAssignee} onChange={(e) => setSelectedAssignee(e.target.value)} className="ml-2 px-3 py-2 rounded border text-sm">
-                <option value="">All Assignees</option>
-                {teamMembers.map((member) => (
-                  <option key={member.id || member.userId} value={member.id || member.userId}>
-                    {member.name}
-                  </option>
-                ))}
-              </select>
+              <Select value={selectedAssignee} onValueChange={(value) => setSelectedAssignee(value)}>
+                <SelectTrigger className="ml-2 w-48">
+                  <SelectValue placeholder="All Assignees" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL_ASSIGNEES">All Assignees</SelectItem>
+                  {teamMembers.map((member) => (
+                    <SelectItem key={member.id || member.userId} value={member.id || member.userId}>
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
