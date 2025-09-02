@@ -21,9 +21,11 @@ export async function GET(request) {
   try {
     const { searchParams } = url;
     const projectId = searchParams.get("projectId");
+    const projectIds = searchParams.get("projectIds");
     const userId = searchParams.get("userId");
     const status = searchParams.get("status");
     const assigneeId = searchParams.get("assigneeId");
+    const sprintId = searchParams.get("sprintId");
     const priority = searchParams.get("priority");
 
     let tasks;
@@ -31,11 +33,21 @@ export async function GET(request) {
 
     if (status) filters.status = status.toUpperCase();
     if (assigneeId) filters.assigneeId = assigneeId;
+    if (sprintId) filters.sprintId = sprintId;
     if (priority) filters.priority = priority.toUpperCase();
 
-    console.log("[API/tasks] GET called", { projectId, userId, status, assigneeId, priority, filters });
+    console.log("[API/tasks] GET called", { projectId, projectIds, userId, status, assigneeId, sprintId, priority, filters });
 
-    if (projectId) {
+    if (projectIds) {
+      // Handle multiple project IDs
+      const projectIdArray = projectIds.split(",").filter((id) => id.trim());
+      try {
+        tasks = await taskOperations.getByProjectIds(projectIdArray, filters);
+      } catch (err) {
+        console.error("Error in getByProjectIds:", err);
+        return NextResponse.json({ error: "Failed to fetch tasks for projects", details: err.message }, { status: 500 });
+      }
+    } else if (projectId) {
       try {
         tasks = await taskOperations.getByProjectId(projectId, filters);
       } catch (err) {

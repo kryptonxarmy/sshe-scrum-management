@@ -30,12 +30,21 @@ export async function PUT(request) {
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-    // Validasi password lama jika ingin ganti password
-    if (newPassword) {
-      const match = await bcrypt.compare(oldPassword || "", user.password || "");
+    
+    // Validasi password lama untuk semua perubahan
+    if (oldPassword) {
+      const match = await bcrypt.compare(oldPassword, user.password || "");
       if (!match) {
-        return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 });
+        return NextResponse.json({ error: "Invalid current password" }, { status: 400 });
       }
+    }
+    
+    // Jika ada perubahan name atau password, current password wajib
+    const isNameChanged = name !== user.name;
+    const isPasswordChanged = newPassword;
+    
+    if ((isNameChanged || isPasswordChanged) && !oldPassword) {
+      return NextResponse.json({ error: "Current password is required for profile changes" }, { status: 400 });
     }
     // Update profile
     const updatedUser = await userOperations.updateProfile({

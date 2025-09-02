@@ -117,6 +117,7 @@ export const projectOperations = {
     const include = includeDetails
       ? {
           owner: true,
+          scrumMaster: true,
           members: {
             include: {
               user: true,
@@ -151,6 +152,7 @@ export const projectOperations = {
         }
       : {
           owner: true,
+          scrumMaster: true,
           _count: {
             select: {
               tasks: true,
@@ -297,6 +299,54 @@ export const projectOperations = {
       },
     });
   },
+
+  async getUserProjects(userId) {
+    // Get projects where user is owner, scrum master, or member
+    const projects = await prisma.project.findMany({
+      where: {
+        OR: [
+          { ownerId: userId },
+          { scrumMasterId: userId },
+          {
+            members: {
+              some: {
+                userId: userId,
+              },
+            },
+          },
+        ],
+        isArchived: false,
+        deletedAt: null,
+      },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        scrumMaster: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        _count: {
+          select: {
+            tasks: true,
+            members: true,
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
+
+    return projects;
+  },
 };
 
 // Task operations
@@ -308,6 +358,7 @@ export const taskOperations = {
         project: {
           include: {
             owner: true,
+            scrumMaster: true,
           },
         },
         assignees: {
@@ -357,6 +408,10 @@ export const taskOperations = {
       };
     }
 
+    if (filters.sprintId) {
+      where.sprintId = filters.sprintId;
+    }
+
     if (filters.priority) {
       where.priority = filters.priority;
     }
@@ -372,6 +427,12 @@ export const taskOperations = {
         createdBy: true,
         function: true,
         sprint: true, // Include sprint data
+        project: {
+          include: {
+            owner: true,
+            scrumMaster: true,
+          },
+        },
         _count: {
           select: {
             comments: true,
@@ -385,37 +446,55 @@ export const taskOperations = {
     });
   },
 
-  async getByProjectIds(projectIds) {
-    return prisma.task.findMany({
-      where: {
-        projectId: {
-          in: projectIds,
-        },
-        isArchived: false,
+  async getByProjectIds(projectIds, filters = {}) {
+    const where = {
+      projectId: {
+        in: projectIds,
       },
+      isArchived: false,
+    };
+
+    if (filters.status) {
+      where.status = filters.status;
+    }
+
+    if (filters.assigneeId) {
+      where.assignees = {
+        some: {
+          userId: filters.assigneeId,
+        },
+      };
+    }
+
+    if (filters.sprintId) {
+      where.sprintId = filters.sprintId;
+    }
+
+    if (filters.priority) {
+      where.priority = filters.priority;
+    }
+
+    return prisma.task.findMany({
+      where,
       include: {
         project: {
-          select: {
-            id: true,
-            name: true,
-            department: true,
+          include: {
+            owner: true,
+            scrumMaster: true,
           },
         },
         assignees: {
           include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
+            user: true,
           },
         },
-        createdBy: {
+        createdBy: true,
+        function: true,
+        sprint: true,
+        _count: {
           select: {
-            id: true,
-            name: true,
+            comments: true,
+            taskAttachments: true,
           },
         },
       },
@@ -449,6 +528,7 @@ export const taskOperations = {
         project: {
           include: {
             owner: true,
+            scrumMaster: true,
           },
         },
         assignees: {
@@ -468,7 +548,12 @@ export const taskOperations = {
     return prisma.task.create({
       data,
       include: {
-        project: true,
+        project: {
+          include: {
+            owner: true,
+            scrumMaster: true,
+          },
+        },
         assignees: {
           include: {
             user: true,
@@ -488,7 +573,12 @@ export const taskOperations = {
         updatedAt: new Date(),
       },
       include: {
-        project: true,
+        project: {
+          include: {
+            owner: true,
+            scrumMaster: true,
+          },
+        },
         assignees: {
           include: {
             user: true,

@@ -37,23 +37,9 @@ function ProfilePage() {
   }
 
   return (
-    <>
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-slate-800">ExxonMobil SSHE</h1>
-            <Badge variant={getRoleBadgeVariant(user.role)}>{getRoleLabel(user.role)}</Badge>
-          </div>
-
-          <Button variant="ghost" onClick={() => router.push("/dashboard")} className="flex items-center gap-2">
-            <ArrowLeft size={16} />
-            Back to Dashboard
-          </Button>
-        </div>
-      </header>
-      <div>INI UNTUK HALAMAN PROFIL</div>
+    <div className="max-w-2xl mx-auto my-auto h-full bg-white p-6 rounded-lg shadow-md">
       <ProfileEditSection user={user} />
-    </>
+    </div>
   );
 }
 

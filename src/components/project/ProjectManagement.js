@@ -529,7 +529,7 @@ const ProjectManagement = () => {
         <TabsList>
           <TabsTrigger value="active">Active Projects</TabsTrigger>
           <TabsTrigger value="timeline">Timeline Project</TabsTrigger>
-          <TabsTrigger value="trash">Trash</TabsTrigger>
+          {user?.role !== "TEAM_MEMBER" && <TabsTrigger value="trash">Trash</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="active" className="space-y-6">
