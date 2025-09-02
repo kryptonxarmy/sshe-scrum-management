@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,18 @@ import { AlertCircle, Eye, EyeOff } from "lucide-react";
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  // Cek localStorage saat komponen mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberMeEmail");
+    const savedPassword = localStorage.getItem("rememberMePassword");
+    const savedRemember = localStorage.getItem("rememberMeChecked");
+    if (savedEmail && savedPassword && savedRemember === "true") {
+      setEmail(savedEmail);
+      setPassword(savedPassword);
+      setRememberMe(true);
+    }
+  }, []);
   const [showPassword, setShowPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -25,6 +37,17 @@ const LoginPage = () => {
     e.preventDefault();
     setError("");
     setLoading(true);
+
+    // Simpan ke localStorage jika rememberMe dicentang
+    if (rememberMe) {
+      localStorage.setItem("rememberMeEmail", email);
+      localStorage.setItem("rememberMePassword", password);
+      localStorage.setItem("rememberMeChecked", "true");
+    } else {
+      localStorage.removeItem("rememberMeEmail");
+      localStorage.removeItem("rememberMePassword");
+      localStorage.setItem("rememberMeChecked", "false");
+    }
 
     const result = await login(email, password);
 
@@ -120,6 +143,18 @@ const LoginPage = () => {
                 </div>
               </div>
 
+              {/* Remember Me Checkbox */}
+              <div className="flex items-center space-x-2">
+                <input
+                  id="rememberMe"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="accent-indigo-600"
+                />
+                <Label htmlFor="rememberMe" className="cursor-pointer">Remember Me</Label>
+              </div>
+
               {error && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
@@ -134,27 +169,6 @@ const LoginPage = () => {
           </CardContent>
         </Card>
 
-        {/* Demo Credentials */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Demo Credentials</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {demoUsers.map((user, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => fillDemoCredentials(user.email, user.password)}>
-                  <div>
-                    <p className="text-sm font-medium">{user.role}</p>
-                    <p className="text-xs text-gray-600">{user.email}</p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Use
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

@@ -158,10 +158,6 @@ const Dashboard = () => {
                   <User size={16} />
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem className="flex items-center gap-2">
-                  <Settings size={16} />
-                  Settings
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 text-red-600">
                   <LogOut size={16} />
