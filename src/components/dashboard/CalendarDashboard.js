@@ -434,6 +434,32 @@ const CalendarDashboard = ({ tasks }) => {
                                 <span className="text-xs text-gray-500">Created by {event.createdBy.name}</span>
                               </div>
                             )}
+
+                            {event.members && event.members.length > 0 && (
+                              <HoverCard>
+                                <HoverCardTrigger asChild>
+                                  <div className="flex items-center gap-2 mt-2 cursor-pointer">
+                                    <Users className="w-4 h-4 text-green-600" />
+                                    <span className="text-xs text-gray-600 font-medium">Members:</span>
+                                    <span className="text-xs font-medium text-gray-800">
+                                      {(() => {
+                                        const names = event.members.map(m => m.name);
+                                        if (names.length <= 2) return names.join(", ");
+                                        return `${names[0]}, ${names[1]}, ${names.length - 2}+ Others`;
+                                      })()}
+                                    </span>
+                                  </div>
+                                </HoverCardTrigger>
+                                <HoverCardContent className="w-64 p-3">
+                                  <div className="font-semibold text-xs text-gray-700 mb-2">All Members:</div>
+                                  <ul className="list-disc pl-4 text-xs text-gray-800">
+                                    {event.members.map((m, idx) => (
+                                      <li key={idx}>{m.name}</li>
+                                    ))}
+                                  </ul>
+                                </HoverCardContent>
+                              </HoverCard>
+                            )}
                           </div>
                         </HoverCardContent>
                       </HoverCard>

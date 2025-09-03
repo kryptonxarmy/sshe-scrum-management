@@ -13,11 +13,27 @@ function InfoWithTooltip() {
         </svg>
       </span>
       {show && (
-        <div style={{
-          position: 'absolute', top: '22px', left: '-10px', minWidth: '220px', background: '#f3f4f6', color: '#374151', fontSize: '12px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', padding: '10px', zIndex: 50
-        }}>
-          <div><b>Short Period:</b> Proyek dengan durasi singkat, maksimal 1 bulan.</div>
-          <div style={{ marginTop: '4px' }}><b>Long Period:</b> Proyek dengan durasi lebih dari 1 bulan.</div>
+        <div
+          style={{
+            position: "absolute",
+            top: "22px",
+            left: "-10px",
+            minWidth: "220px",
+            background: "#f3f4f6",
+            color: "#374151",
+            fontSize: "12px",
+            borderRadius: "8px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            padding: "10px",
+            zIndex: 50,
+          }}
+        >
+          <div>
+            <b>Short Period:</b> Proyek dengan durasi singkat, maksimal 1 bulan.
+          </div>
+          <div style={{ marginTop: "4px" }}>
+            <b>Long Period:</b> Proyek dengan durasi lebih dari 1 bulan.
+          </div>
         </div>
       )}
     </span>
@@ -172,12 +188,12 @@ const ProjectManagement = () => {
 
       // Remove project from active list
       setProjectList((prev) => prev.filter((p) => p.id !== project.id));
-    // Replace alert with Dialog or toast notification
-    toast.success(`Project "${project.name}" has been moved to trash successfully!`);
+      // Replace alert with Dialog or toast notification
+      toast.success(`Project "${project.name}" has been moved to trash successfully!`);
     } catch (error) {
       console.error("Error deleting project:", error);
-    // Replace alert with Dialog or toast notification
-    toast.error(`Failed to delete project: ${error.message}`);
+      // Replace alert with Dialog or toast notification
+      toast.error(`Failed to delete project: ${error.message}`);
     }
   };
 
@@ -208,12 +224,12 @@ const ProjectManagement = () => {
       setDeletedProjects((prev) => prev.filter((p) => p.id !== project.id));
       setProjectList((prev) => [...prev, data.project]);
 
-    // Replace alert with Dialog or toast notification
-    toast.success(`Project "${project.name}" has been restored successfully!`);
+      // Replace alert with Dialog or toast notification
+      toast.success(`Project "${project.name}" has been restored successfully!`);
     } catch (error) {
       console.error("Error restoring project:", error);
-    // Replace alert with Dialog or toast notification
-    toast.error(`Failed to restore project: ${error.message}`);
+      // Replace alert with Dialog or toast notification
+      toast.error(`Failed to restore project: ${error.message}`);
     }
   };
 
@@ -236,12 +252,12 @@ const ProjectManagement = () => {
 
       // Remove from deleted list
       setDeletedProjects((prev) => prev.filter((p) => p.id !== project.id));
-    // Replace alert with Dialog or toast notification
-    toast.success(`Project "${project.name}" has been permanently deleted!`);
+      // Replace alert with Dialog or toast notification
+      toast.success(`Project "${project.name}" has been permanently deleted!`);
     } catch (error) {
       console.error("Error permanently deleting project:", error);
-    // Replace alert with Dialog or toast notification
-    toast.error(`Failed to permanently delete project: ${error.message}`);
+      // Replace alert with Dialog or toast notification
+      toast.error(`Failed to permanently delete project: ${error.message}`);
     }
   };
 
@@ -295,12 +311,12 @@ const ProjectManagement = () => {
       };
 
       await fetchProjects();
-    // Replace alert with Dialog or toast notification
-    toast.success(`Project "${project.name}" has been released successfully!`);
+      // Replace alert with Dialog or toast notification
+      toast.success(`Project "${project.name}" has been released successfully!`);
     } catch (error) {
       console.error("Error releasing project:", error);
-    // Replace alert with Dialog or toast notification
-    toast.error(`Failed to release project: ${error.message}`);
+      // Replace alert with Dialog or toast notification
+      toast.error(`Failed to release project: ${error.message}`);
     }
   };
 
@@ -598,9 +614,7 @@ const ProjectManagement = () => {
                         <Calendar size={14} />
                         <span>{project.endDate ? new Date(project.endDate).toLocaleDateString() : "No end date"}</span>
                         {/* Tambahkan keterangan short/long period di samping tanggal */}
-                        <span className="ml-2 px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">
-                          {project.duration === 'LONG_TERM' ? 'Long Period' : 'Short Period'}
-                        </span>
+                        <span className="ml-2 px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">{project.duration === "LONG_TERM" ? "Long Period" : "Short Period"}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Users size={14} />
@@ -773,30 +787,18 @@ const ProjectManagement = () => {
       <ModalManageMember isOpen={isManageMembersOpen} onClose={handleCloseMembersModal} project={selectedProject} />
 
       {/* Modal for Edit Project */}
-      <EditProjectModal 
-        isOpen={isEditModalOpen} 
-        onClose={handleCloseEditModal} 
-        project={selectedProject}
-        onProjectUpdated={handleProjectUpdated}
-      />
+      <EditProjectModal isOpen={isEditModalOpen} onClose={handleCloseEditModal} project={selectedProject} onProjectUpdated={handleProjectUpdated} />
 
       {/* Render KanbanBoard or TeamMemberReports based on role */}
       {selectedProject && (
         <div className="mt-8">
           <h3 className="text-xl font-bold text-slate-800 mb-4">Project Kanban Board</h3>
-          {user?.role === "TEAM_MEMBER"
-            ? <TeamMemberReports projectId={selectedProject.id} />
-            : <KanbanBoard functionId={selectedProject.id} filter={statusFilter} project={selectedProject} />}
+          {user?.role === "TEAM_MEMBER" ? <TeamMemberReports projectId={selectedProject.id} /> : <KanbanBoard functionId={selectedProject.id} filter={statusFilter} project={selectedProject} />}
         </div>
       )}
 
       {/* Project Comments Sheet */}
-      <ProjectCommentsSheet
-        open={isCommentsSheetOpen}
-        onOpenChange={setIsCommentsSheetOpen}
-        projectId={selectedProjectForComments?.id}
-        user={user}
-      />
+      <ProjectCommentsSheet open={isCommentsSheetOpen} onOpenChange={setIsCommentsSheetOpen} projectId={selectedProjectForComments?.id} user={user} />
     </div>
   );
 };
@@ -949,11 +951,13 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
               <SelectValue placeholder="Select Scrum Master" />
             </SelectTrigger>
             <SelectContent>
-              {members.filter(member => member.role !== 'SUPERADMIN').map((member) => (
-                <SelectItem key={member.id} value={member.id}>
-                  {member.name}
-                </SelectItem>
-              ))}
+              {members
+                .filter((member) => member.role !== "SUPERADMIN")
+                .map((member) => (
+                  <SelectItem key={member.id} value={member.id}>
+                    {member.name}
+                  </SelectItem>
+                ))}
             </SelectContent>
             {/* Tambahkan style z-index agar dropdown tidak tumpang tindih */}
             <style>{`.select-content { z-index: 50 !important; }`}</style>
@@ -970,8 +974,12 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
               <SelectValue placeholder="Select duration type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="SHORT_TERM" onClick={() => handleSelectChange("duration", "SHORT_TERM")}>Short Period Project</SelectItem>
-              <SelectItem value="LONG_TERM" onClick={() => handleSelectChange("duration", "LONG_TERM")}>Long Period Project</SelectItem>
+              <SelectItem value="SHORT_TERM" onClick={() => handleSelectChange("duration", "SHORT_TERM")}>
+                Short Period Project
+              </SelectItem>
+              <SelectItem value="LONG_TERM" onClick={() => handleSelectChange("duration", "LONG_TERM")}>
+                Long Period Project
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -133,23 +133,152 @@ export async function POST(request) {
     if (assigneeEmails.length > 0) {
       try {
         const { sendTaskNotification } = require("@/lib/email");
-        const subject = `[SSHE Scrum] Event Baru: ${title}`;
+
+        const formattedStartDate = new Date(startDate).toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        const formattedEndDate = endDate
+          ? new Date(endDate).toLocaleDateString("en-US", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "Not specified";
+
+        const subject = `[SSHE Scrum] New Event Invitation - ${title} <do_not_reply>`;
         const html = `
-          <div style="font-family: Arial, sans-serif;">
-            <h2 style="color: #4B2995;">Undangan Event Baru</h2>
-            <p>Anda diundang untuk event berikut:</p>
-            <table style="border-collapse: collapse; margin-top: 10px;">
-              <tr><td><strong>Judul Event:</strong></td><td>${title}</td></tr>
-              <tr><td><strong>Deskripsi:</strong></td><td>${description || "-"}</td></tr>
-              <tr><td><strong>Waktu Mulai:</strong></td><td>${new Date(startDate).toLocaleString()}</td></tr>
-              <tr><td><strong>Waktu Selesai:</strong></td><td>${endDate ? new Date(endDate).toLocaleString() : "-"}</td></tr>
-              <tr><td><strong>Project:</strong></td><td>${event.project?.name || "-"}</td></tr>
-            </table>
-            <p style="margin-top: 16px;">Silakan cek aplikasi SSHE Scrum Management untuk detail lebih lanjut.</p>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Event Invitation</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f8fafc; line-height: 1.6;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 32px 24px; text-align: center;">
+              <div style="display: inline-block; background-color: rgba(255, 255, 255, 0.2); border-radius: 50%; padding: 12px; margin-bottom: 16px;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+              </div>
+              <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.025em;">Event Invitation</h1>
+              <p style="margin: 8px 0 0; opacity: 0.9; font-size: 16px;">SSHE Scrum Management</p>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 32px 24px;">
+              <div style="margin-bottom: 24px;">
+                <p style="margin: 0 0 16px; font-size: 16px; color: #374151;">Hello! 🎉</p>
+                <p style="margin: 0; font-size: 16px; color: #374151;">You're invited to a new event${event.project?.name ? ` in the <strong style="color: #1f2937;">${event.project.name}</strong> project` : ""}.</p>
+              </div>
+
+              <!-- Event Details Card -->
+              <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+                <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #1f2937; display: flex; align-items: center;">
+                  <span style="display: inline-block; width: 6px; height: 6px; background-color: #10b981; border-radius: 50%; margin-right: 12px;"></span>
+                  📅 ${title}
+                </h2>
+                
+                ${
+                  description
+                    ? `<div style="margin-bottom: 20px;">
+                  <h4 style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Description</h4>
+                  <p style="margin: 0; font-size: 15px; color: #374151; background-color: #ffffff; padding: 12px; border-radius: 8px; border: 1px solid #d1fae5;">${description}</p>
+                </div>`
+                    : ""
+                }
+
+                <!-- Event Schedule -->
+                <div style="background-color: #ffffff; border: 1px solid #d1fae5; border-radius: 8px; padding: 16px; margin-top: 16px;">
+                  <h4 style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #065f46; display: flex; align-items: center;">
+                    <span style="margin-right: 8px;">🕒</span>
+                    Schedule Details
+                  </h4>
+                  
+                  <div style="space-y: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #ecfdf5;">
+                      <span style="font-weight: 600; color: #065f46; font-size: 14px;">Start Time:</span>
+                      <span style="color: #374151; font-size: 14px;">${formattedStartDate}</span>
+                    </div>
+                    
+                    ${
+                      endDate
+                        ? `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                      <span style="font-weight: 600; color: #065f46; font-size: 14px;">End Time:</span>
+                      <span style="color: #374151; font-size: 14px;">${formattedEndDate}</span>
+                    </div>`
+                        : ""
+                    }
+                  </div>
+                </div>
+
+                ${
+                  event.project?.name
+                    ? `<div style="margin-top: 16px; padding: 12px; background-color: #ffffff; border: 1px solid #d1fae5; border-radius: 8px;">
+                  <div style="display: flex; align-items: center;">
+                    <span style="margin-right: 8px;">📁</span>
+                    <span style="font-size: 14px; color: #065f46; font-weight: 600;">Project:</span>
+                    <span style="margin-left: 8px; font-size: 14px; color: #374151; font-weight: 500;">${event.project.name}</span>
+                  </div>
+                </div>`
+                    : ""
+                }
+              </div>
+
+              <!-- Call to Action -->
+              <div style="text-align: center; margin-bottom: 32px;">
+                <a href="${process.env.APP_URL || "https://sshe-scrum-management.vercel.app"}/dashboard" 
+                   style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3); transition: all 0.2s;">
+                  View in Calendar →
+                </a>
+              </div>
+
+              <!-- Additional Info -->
+              <div style="background-color: #fffbeb; border: 1px solid #fed7aa; border-radius: 8px; padding: 16px;">
+                <div style="display: flex; align-items: flex-start;">
+                  <span style="display: inline-block; margin-right: 12px; margin-top: 2px;">⏰</span>
+                  <div>
+                    <h4 style="margin: 0 0 6px; font-size: 14px; font-weight: 600; color: #92400e;">Don't Forget!</h4>
+                    <p style="margin: 0; font-size: 14px; color: #92400e; line-height: 1.5;">Add this event to your calendar and set a reminder. You can view more details and manage your schedule in the SSHE Scrum Management app.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="background-color: #f8fafc; border-top: 1px solid #e5e7eb; padding: 24px; text-align: center;">
+              <p style="margin: 0 0 12px; font-size: 14px; color: #6b7280;">Best regards,<br><strong style="color: #374151;">SSHE Scrum Management Team</strong></p>
+              <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.4;">
+                This is an automated notification. Please do not reply to this email.<br>
+                If you have any questions about this event, please contact the event organizer or your project manager.
+              </p>
+            </div>
           </div>
+        </body>
+        </html>
         `;
+
+        const text = `Event Invitation: ${title}\n\n${description ? `Description: ${description}\n\n` : ""}Start: ${formattedStartDate}\n${endDate ? `End: ${formattedEndDate}\n` : ""}${
+          event.project?.name ? `Project: ${event.project.name}\n` : ""
+        }\nPlease check the SSHE Scrum Management app for more details.\n\nThis is an automated message, please do not reply.`;
+
         const to = assigneeEmails.map((u) => u.email);
-        await sendTaskNotification({ to, subject, text: `${title}\n${description || ""}`, html });
+        await sendTaskNotification({ to, subject, text, html });
       } catch (err) {
         console.error("Gagal mengirim email event ke assignees:", err);
         // Optionally, you can return a warning in the response

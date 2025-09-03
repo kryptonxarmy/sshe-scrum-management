@@ -251,17 +251,124 @@ export async function POST(request) {
       // Send email notification to assignees
       if (assigneeEmails.length > 0) {
         try {
+          const priorityColors = {
+            HIGH: { bg: "#fee2e2", text: "#dc2626", badge: "#ef4444" },
+            MEDIUM: { bg: "#fef3c7", text: "#d97706", badge: "#f59e0b" },
+            LOW: { bg: "#d1fae5", text: "#059669", badge: "#10b981" },
+          };
+
+          const priorityColor = priorityColors[priority] || priorityColors.MEDIUM;
+          const formattedDueDate = dueDate
+            ? new Date(dueDate).toLocaleDateString("en-US", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })
+            : "No due date";
+
           await sendTaskNotification({
             to: assigneeEmails,
-            subject: `New Task Assigned: ${title}`,
-            text: `You have been assigned to a new task in project "${completeTask.project.name}":\n\nTitle: ${title}\nDescription: ${description}\nPriority: ${priority}\nDue Date: ${
-              dueDate ? new Date(dueDate).toLocaleDateString() : "-"
-            }\n\nPlease check the SSHE Scrum Management app for details.`,
-            html: `<p>You have been assigned to a new task in project <b>${
-              completeTask.project.name
-            }</b>:</p><ul><li><b>Title:</b> ${title}</li><li><b>Description:</b> ${description}</li><li><b>Priority:</b> ${priority}</li><li><b>Due Date:</b> ${
-              dueDate ? new Date(dueDate).toLocaleDateString() : "-"
-            }</li></ul><p>Please check the <a href="${process.env.APP_URL || ""}/tasks/${completeTask.id}">SSHE Scrum Management app</a> for details.</p>`,
+            subject: `[SSHE SCRUM] New Task Assignment - ${title} <do_not_reply>`,
+            text: `You have been assigned to a new task in project "${completeTask.project.name}":\n\nTitle: ${title}\nDescription: ${description}\nPriority: ${priority}\nDue Date: ${formattedDueDate}\n\nPlease check the SSHE Scrum Management app for details.\n\nThis is an automated message, please do not reply.`,
+            html: `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>New Task Assignment</title>
+            </head>
+            <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f8fafc; line-height: 1.6;">
+              <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;">
+                
+                <!-- Header -->
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 32px 24px; text-align: center;">
+                  <div style="display: inline-block; background-color: rgba(255, 255, 255, 0.2); border-radius: 50%; padding: 12px; margin-bottom: 16px;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M9 12l2 2 4-4"></path>
+                      <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"></path>
+                      <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"></path>
+                    </svg>
+                  </div>
+                  <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.025em;">New Task Assignment</h1>
+                  <p style="margin: 8px 0 0; opacity: 0.9; font-size: 16px;">SSHE Scrum Management</p>
+                </div>
+
+                <!-- Content -->
+                <div style="padding: 32px 24px;">
+                  <div style="margin-bottom: 24px;">
+                    <p style="margin: 0 0 16px; font-size: 16px; color: #374151;">Hi there! 👋</p>
+                    <p style="margin: 0; font-size: 16px; color: #374151;">You've been assigned to a new task in the <strong style="color: #1f2937;">${completeTask.project.name}</strong> project.</p>
+                  </div>
+
+                  <!-- Task Details Card -->
+                  <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+                    <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #1f2937; display: flex; align-items: center;">
+                      <span style="display: inline-block; width: 6px; height: 6px; background-color: #3b82f6; border-radius: 50%; margin-right: 12px;"></span>
+                      ${title}
+                    </h2>
+                    
+                    ${
+                      description
+                        ? `<div style="margin-bottom: 20px;">
+                      <h4 style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Description</h4>
+                      <p style="margin: 0; font-size: 15px; color: #374151; background-color: #ffffff; padding: 12px; border-radius: 8px; border: 1px solid #e5e7eb;">${description}</p>
+                    </div>`
+                        : ""
+                    }
+
+                    <!-- Task Metadata -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-top: 20px;">
+                      <div style="flex: 1; min-width: 140px;">
+                        <h4 style="margin: 0 0 6px; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Priority</h4>
+                        <span style="display: inline-flex; align-items: center; padding: 6px 12px; background-color: ${priorityColor.bg}; color: ${
+              priorityColor.text
+            }; border-radius: 20px; font-size: 14px; font-weight: 600; border: 1px solid ${priorityColor.badge}20;">
+                          <span style="display: inline-block; width: 6px; height: 6px; background-color: ${priorityColor.badge}; border-radius: 50%; margin-right: 6px;"></span>
+                          ${priority}
+                        </span>
+                      </div>
+                      
+                      <div style="flex: 1; min-width: 140px;">
+                        <h4 style="margin: 0 0 6px; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Due Date</h4>
+                        <p style="margin: 0; font-size: 14px; color: #374151; font-weight: 500;">📅 ${formattedDueDate}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Call to Action -->
+                  <div style="text-align: center; margin-bottom: 32px;">
+                    <a href="${process.env.APP_URL || "https://sshe-scrum-management.vercel.app"}/tasks/${completeTask.id}" 
+                       style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3); transition: all 0.2s;">
+                      View Task Details →
+                    </a>
+                  </div>
+
+                  <!-- Additional Info -->
+                  <div style="background-color: #eff6ff; border: 1px solid #dbeafe; border-radius: 8px; padding: 16px;">
+                    <div style="display: flex; align-items: flex-start;">
+                      <span style="display: inline-block; margin-right: 12px; margin-top: 2px;">💡</span>
+                      <div>
+                        <h4 style="margin: 0 0 6px; font-size: 14px; font-weight: 600; color: #1e40af;">Quick Tip</h4>
+                        <p style="margin: 0; font-size: 14px; color: #1e40af; line-height: 1.5;">You can manage this task, update its status, and collaborate with your team directly in the SSHE Scrum Management app.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Footer -->
+                <div style="background-color: #f8fafc; border-top: 1px solid #e5e7eb; padding: 24px; text-align: center;">
+                  <p style="margin: 0 0 12px; font-size: 14px; color: #6b7280;">Best regards,<br><strong style="color: #374151;">SSHE Scrum Management Team</strong></p>
+                  <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.4;">
+                    This is an automated notification. Please do not reply to this email.<br>
+                    If you have any questions, please contact your project manager or system administrator.
+                  </p>
+                </div>
+              </div>
+            </body>
+            </html>
+            `,
           });
         } catch (emailError) {
           console.error("Failed to send task assignment email:", emailError);

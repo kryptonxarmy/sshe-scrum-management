@@ -48,6 +48,12 @@ export default function Navbar({ active = "dashboard" }) {
         label: "Dashboard", 
         icon: FolderOpen,
         href: "/dashboard"
+      },
+      {
+        key: "events",
+        label: "Events",
+        icon: Calendar,
+        href: "/events"
       }
     ];
 
