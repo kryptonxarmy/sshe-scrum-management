@@ -43,6 +43,8 @@ import ArchiveReports from "@/components/project/ArchiveReports";
 import EditProjectModal from "@/components/project/EditProjectModal";
 import KanbanBoard from "@/components/KanbanBoard";
 import TeamMemberReports from "@/components/reports/TeamMemberReports";
+import ProjectCommentsSheet from "@/components/project/ProjectCommentsSheet";
+import { toast } from "../ui/use-toast";
 
 const ProjectManagement = () => {
   const [statusFilter, setStatusFilter] = useState("all");
@@ -244,8 +246,11 @@ const ProjectManagement = () => {
   };
 
   const handleCommentsProject = (project) => {
-    setSelectedProjectForComments(project);
-    setIsCommentsSheetOpen(true);
+    document.activeElement?.blur();
+    setTimeout(() => {
+      setSelectedProjectForComments(project);
+      setIsCommentsSheetOpen(true);
+    }, 50);
   };
 
   const handleReleaseProject = async (project) => {
@@ -784,6 +789,14 @@ const ProjectManagement = () => {
             : <KanbanBoard functionId={selectedProject.id} filter={statusFilter} project={selectedProject} />}
         </div>
       )}
+
+      {/* Project Comments Sheet */}
+      <ProjectCommentsSheet
+        open={isCommentsSheetOpen}
+        onOpenChange={setIsCommentsSheetOpen}
+        projectId={selectedProjectForComments?.id}
+        user={user}
+      />
     </div>
   );
 };

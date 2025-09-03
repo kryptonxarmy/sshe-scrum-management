@@ -31,7 +31,7 @@ const ArchivePage = () => {
         <Navbar active="archive" />
 
         {/* Tab Navigation */}
-        <div className="bg-white border-b border-gray-200 px-6">
+        {/* <div className="bg-white border-b border-gray-200 px-6">
           <nav className="flex space-x-8">
             <Button
               variant={activeView === "projects" ? "default" : "ghost"}
@@ -50,23 +50,17 @@ const ArchivePage = () => {
               Release Reports
             </Button>
           </nav>
-        </div>
+        </div> */}
 
         {/* Main Content */}
         <main className="p-6">
           {activeView === "projects" && (
             <div>
-              <h2 className="text-xl font-semibold text-slate-800 mb-4">Released Projects</h2>
+              {/* <h2 className="text-xl font-semibold text-slate-800 mb-4">Released Projects</h2> */}
               <ArchiveProjects />
             </div>
           )}
-          
-          {activeView === "reports" && (
-            <div>
-              <h2 className="text-xl font-semibold text-slate-800 mb-4">Release Reports</h2>
-              <ReleaseReports userId={user?.id} />
-            </div>
-          )}
+         
         </main>
       </div>
     </ProtectedRoute>

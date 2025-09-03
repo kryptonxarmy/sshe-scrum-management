@@ -29,10 +29,10 @@ const ReportsPage = () => {
 
         {/* Main Content */}
         <main className="p-6">
-          <div className="mb-6">
+          {/* <div className="mb-6">
             <h2 className="text-xl font-semibold text-slate-800">Reports & Analytics</h2>
             <p className="text-slate-600 mt-1">Comprehensive insights and performance metrics</p>
-          </div>
+          </div> */}
           <ReportsSection />
         </main>
       </div>

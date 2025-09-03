@@ -175,6 +175,7 @@ const TaskHoverCard = ({ task, children }) => {
 
 // Event Hover Card Component
 const EventHoverCard = ({ event, children }) => {
+  const { user } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -253,28 +254,30 @@ const EventHoverCard = ({ event, children }) => {
               </div>
             )}
 
-            {/* Edit & Delete Buttons */}
-            <div className="flex gap-2 pt-2 border-t border-gray-100">
-              <button
-                className="p-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800"
-                title="Edit"
-                onClick={() => setEditOpen(true)}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13zm0 0V17a2 2 0 002 2h4" /></svg>
-              </button>
-              <button
-                className="p-2 rounded bg-red-200 hover:bg-red-300 text-red-800"
-                title="Delete"
-                onClick={() => setConfirmOpen(true)}
-                disabled={deleting}
-              >
-                {deleting ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M10 3h4a1 1 0 011 1v2H9V4a1 1 0 011-1z" /></svg>
-                )}
-              </button>
-            </div>
+            {/* Edit & Delete Buttons: Only show for event creator */}
+            {event.createdBy?.id === user?.id && (
+              <div className="flex gap-2 pt-2 border-t border-gray-100">
+                <button
+                  className="p-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800"
+                  title="Edit"
+                  onClick={() => setEditOpen(true)}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13zm0 0V17a2 2 0 002 2h4" /></svg>
+                </button>
+                <button
+                  className="p-2 rounded bg-red-200 hover:bg-red-300 text-red-800"
+                  title="Delete"
+                  onClick={() => setConfirmOpen(true)}
+                  disabled={deleting}
+                >
+                  {deleting ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M10 3h4a1 1 0 011 1v2H9V4a1 1 0 011-1z" /></svg>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </HoverCardContent>
       </HoverCard>

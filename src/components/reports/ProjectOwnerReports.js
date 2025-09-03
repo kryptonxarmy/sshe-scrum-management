@@ -297,10 +297,10 @@ const ProjectOwnerReports = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
+        {/* <div>
           <h1 className="text-2xl font-bold text-gray-900">Project Owner Dashboard</h1>
           <p className="text-gray-600">Comprehensive insights into your projects and team performance</p>
-        </div>
+        </div> */}
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />

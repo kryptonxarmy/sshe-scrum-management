@@ -28,7 +28,7 @@ export default function DashboardPage() {
           <div className="space-y-6">
             {/* Projects Section */}
             <div>
-              <h2 className="text-xl font-semibold text-slate-800 mb-4">Projects Overview</h2>
+              {/*<h2 className="text-xl font-semibold text-slate-800 mb-4">Projects Overview</h2> */}
               <ProjectManagement />
             </div>
 
