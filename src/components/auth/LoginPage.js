@@ -9,11 +9,17 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [userOptions, setUserOptions] = useState([]);
+  const [open, setOpen] = useState(false);
   // Cek localStorage saat komponen mount
   useEffect(() => {
     const savedEmail = localStorage.getItem("rememberMeEmail");
@@ -30,6 +36,28 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    // Fetch all user emails for select
+    async function fetchUsers() {
+      try {
+        console.log("Fetching users for login dropdown...");
+        const res = await fetch("/api/users");
+        if (res.ok) {
+          const data = await res.json();
+          console.log("Users fetched:", data.users);
+          setUserOptions(data.users.map((u) => ({ email: u.email, name: u.name, role: u.role })));
+        } else {
+          console.error("Failed to fetch users:", res.status);
+          setUserOptions([]);
+        }
+      } catch (err) {
+        console.error("Error fetching users:", err);
+        setUserOptions([]);
+      }
+    }
+    fetchUsers();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -59,9 +87,9 @@ const LoginPage = () => {
   };
 
   const demoUsers = [
-  { email: "superadmin@exxonmobil.com", password: "password123", role: "Super Admin" },
-  { email: "john.doe@exxonmobil.com", password: "password123", role: "Project Owner" },
-  { email: "david.johnson@exxonmobil.com", password: "password123", role: "Team Member" },
+    { email: "superadmin@exxonmobil.com", password: "password123", role: "Super Admin" },
+    { email: "john.doe@exxonmobil.com", password: "password123", role: "Project Owner" },
+    { email: "david.johnson@exxonmobil.com", password: "password123", role: "Team Member" },
   ];
 
   const fillDemoCredentials = (email, password) => {
@@ -87,45 +115,60 @@ const LoginPage = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" required />
+                <Popover open={open} onOpenChange={setOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between">
+                      {email ? userOptions.find((user) => user.email === email)?.email : "Pilih email user..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full min-w-[var(--radix-popover-trigger-width)] p-0">
+                    <Command>
+                      <CommandInput placeholder="Cari email atau nama..." />
+                      <CommandEmpty>Email tidak ditemukan.</CommandEmpty>
+                      <CommandGroup className="max-h-64 overflow-auto">
+                        {userOptions.length === 0 ? (
+                          <div className="p-2 text-sm text-gray-500">Memuat data user...</div>
+                        ) : (
+                          userOptions.map((user) => (
+                            <CommandItem
+                              key={user.email}
+                              onSelect={() => {
+                                setEmail(user.email);
+                                setOpen(false);
+                              }}
+                              className="cursor-pointer"
+                            >
+                              <Check className={`mr-2 h-4 w-4 ${email === user.email ? "opacity-100" : "opacity-0"}`} />
+                              <div className="flex flex-col flex-1">
+                                <span className="font-medium">{user.email}</span>
+                                <span className="text-xs text-gray-500">{user.name} • {user.role}</span>
+                              </div>
+                            </CommandItem>
+                          ))
+                        )}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
-                  <Input 
-                    id="password" 
-                    type={showPassword ? "text" : "password"} 
-                    value={password} 
-                    onChange={(e) => setPassword(e.target.value)} 
-                    placeholder="Enter your password" 
-                    required 
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                  <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" required className="pr-10" />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
 
               {/* Remember Me Checkbox */}
               <div className="flex items-center space-x-2">
-                <input
-                  id="rememberMe"
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="accent-indigo-600"
-                />
-                <Label htmlFor="rememberMe" className="cursor-pointer">Remember Me</Label>
+                <input id="rememberMe" type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="accent-indigo-600" />
+                <Label htmlFor="rememberMe" className="cursor-pointer">
+                  Remember Me
+                </Label>
               </div>
 
               {error && (
@@ -141,7 +184,6 @@ const LoginPage = () => {
             </form>
           </CardContent>
         </Card>
-
       </div>
     </div>
   );
