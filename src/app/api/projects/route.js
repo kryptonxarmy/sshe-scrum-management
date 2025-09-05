@@ -30,45 +30,61 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { name, description, department, scrumMasterId, startDate, endDate, ownerId } = body;
+  const { name, description, ownerId, scrumMasterId, memberIds = [], duration } = body;
 
-    // Validate required fields
     if (!name || !ownerId) {
-      return NextResponse.json({ error: "Name and owner ID are required" }, { status: 400 });
+      return NextResponse.json({ error: "Project name and owner ID are required" }, { status: 400 });
     }
 
-    if (!scrumMasterId) {
-      return NextResponse.json({ error: "Scrum Master is required" }, { status: 400 });
-    }
-
-    const projectData = {
-      name,
-      description,
-      department,
-      status: "ACTIVE",
-      scrumMasterId,
-      startDate: startDate ? new Date(startDate) : null,
-      endDate: endDate ? new Date(endDate) : null,
-    };
-
-    const project = await projectOperations.create(projectData, ownerId);
-
-    // Automatically add scrum master as project member
-    if (scrumMasterId && scrumMasterId !== ownerId) {
-      await projectOperations.addMember(project.id, scrumMasterId);
-    }
-
-    // Log activity
-    await activityOperations.create({
-      type: "PROJECT_CREATED",
-      description: `Project "${name}" was created`,
-      userId: ownerId,
-      projectId: project.id,
+    // Create the project
+    const project = await prisma.project.create({
+      data: {
+        name,
+        description: description || "",
+        ownerId,
+        scrumMasterId: scrumMasterId || null,
+        duration: duration || undefined, // Accept duration from user input, fallback to model default
+        members: {
+          create: memberIds.map((userId) => ({
+            userId,
+            role: "MEMBER",
+          })),
+        },
+      },
+      include: {
+        owner: { select: { id: true, name: true, email: true } },
+        scrumMaster: { select: { id: true, name: true, email: true } },
+        members: { include: { user: { select: { id: true, name: true, email: true, role: true } } } },
+      },
     });
 
+    // Notify all team members (excluding SUPERADMIN)
+    if (project && project.id && project.ownerId) {
+      const teamMembers = await prisma.projectMember.findMany({
+        where: { projectId: project.id },
+        include: { user: { select: { id: true, name: true, email: true, role: true } } },
+      });
+      const members = teamMembers.map((pm) => pm.user).filter((u) => u && u.role !== "SUPERADMIN");
+      const scrumMaster = members.find((u) => u.id === project.scrumMasterId);
+      const owner = members.find((u) => u.id === project.ownerId);
+      const memberNames = members.map((u) => u.name).join(", ");
+      const to = members.map((u) => u.email);
+      const subject = `[SSHE Scrum] Anda tergabung pada project baru: ${project.name}`;
+      const html = `
+        <h2>Selamat, Anda tergabung pada project <strong>${project.name}</strong></h2>
+        <p>Scrum Master: <strong>${scrumMaster ? scrumMaster.name : "-"}</strong></p>
+        <p>Project Owner: <strong>${owner ? owner.name : "-"}</strong></p>
+        <p>Team Member: <strong>${memberNames}</strong></p>
+        <p>Silakan login ke aplikasi SSHE Scrum Management untuk melihat detail project.</p>
+      `;
+      const text = `Selamat, Anda tergabung pada project ${project.name}\nScrum Master: ${scrumMaster ? scrumMaster.name : "-"}\nProject Owner: ${owner ? owner.name : "-"}\nTeam Member: ${memberNames}\nSilakan login ke aplikasi SSHE Scrum Management untuk melihat detail project.`;
+      const { sendTaskNotification } = require("@/lib/email");
+      await sendTaskNotification({ to, subject, text, html });
+    }
+
     return NextResponse.json({
+      success: true,
       project,
-      message: "Project created successfully",
     });
   } catch (error) {
     console.error("Create project error:", error);

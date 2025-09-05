@@ -6,7 +6,6 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import CompletedTasksList from "./CompletedTasksList";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
-
 const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "" }) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -22,18 +21,14 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
   const fetchTasks = async () => {
     try {
       let url = `/api/tasks?projectId=${functionId}`;
-      if (sprintId && sprintId !== "ALL_SPRINTS" && sprintId !== "" && sprintId !== null) {
-        url += `&sprintId=${sprintId}`;
-      }
-      if (assigneeId && assigneeId !== "ALL_ASSIGNEES" && assigneeId !== "" && assigneeId !== null) {
-        url += `&assigneeId=${assigneeId}`;
-      }
-      console.log("Fetching tasks with URL:", url);
+      if (sprintId) url += `&sprintId=${sprintId}`;
+      if (assigneeId) url += `&assigneeId=${assigneeId}`;
+      console.log('Fetching tasks for projectId:', functionId);
       const response = await fetch(url);
-      console.log("Fetch response status:", response.status);
+      console.log('Fetch response status:', response.status);
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Fetch error response:", errorText);
+        console.error('Fetch error response:', errorText);
         throw new Error("Failed to fetch tasks");
       }
       const data = await response.json();
@@ -64,7 +59,6 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
       return;
     }
     fetchTasks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [functionId, sprintId, assigneeId]);
 
   const handleTaskUpdated = () => fetchTasks();
@@ -97,15 +91,18 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
   const isTeamMemberAndNotAssigned = (task) => {
     // Project Owner & Scrum Master always can drag any task
     if (!user) return false;
-    if (project && (user.role === "PROJECT_OWNER" || user.id === project.ownerId || user.id === project.scrumMasterId)) return false;
+    if (project && (user.id === project.ownerId || user.id === project.scrumMasterId)) return false;
     // Team member: only if assigned
-    if (task.assignees && Array.isArray(task.assignees)) {
-      return !task.assignees.some((assignee) => {
-        const userId = assignee.user ? assignee.user.id : assignee.userId;
-        return userId === user.id;
-      });
+    if (user.role === "TEAM_MEMBER") {
+      if (task.assignees && Array.isArray(task.assignees)) {
+        return !task.assignees.some((assignee) => {
+          const userId = assignee.user ? assignee.user.id : assignee.userId;
+          return userId === user.id;
+        });
+      }
+      return true;
     }
-    return true;
+    return false;
   };
 
   const handleDragEnd = async (result) => {
@@ -135,7 +132,174 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
     if (destination.droppableId === "done" && !canDragToDone()) {
       toast({
         title: "Access Denied",
-        description: "Only Project Owner or appointed Scrum Master can move tasks to DONE.",
+        description: "Only Project Owner or Scrum Master can move tasks to DONE.",
+        variant: "destructive",
+        className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
+      });
+      return;
+    }
+
+    // Check if team member can drag this task
+    if (isTeamMemberAndNotAssigned(movedTask)) {
+      toast({
+        title: "Access Denied",
+        description: "You can only move tasks assigned to you.",
+        variant: "destructive",
+        className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
+      });
+      return;
+    }
+
+    // Update task status based on destination
+    const newStatus = destination.droppableId === "todo" ? "TODO" : destination.droppableId === "progress" ? "IN_PROGRESS" : "DONE";
+    destList.splice(destination.index, 0, { ...movedTask, status: newStatus });
+
+    // Update state (optimistic)
+    setTasks({
+      ...tasks,
+      [source.droppableId]: sourceList,
+      [destination.droppableId]: destList,
+    });
+
+    // Update task status and order in backend
+    try {
+      console.log("Updating task status:", { taskId: movedTask.id, newStatus });
+      const response = await fetch(`/api/tasks/${movedTask.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: newStatus,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Failed to update task status:", errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log("Task status updated successfully:", result);
+
+      // Refetch tasks from backend to ensure sync
+  // Fetch tasks
+  const fetchTasks = async () => {
+    try {
+      let url = `/api/tasks?projectId=${functionId}`;
+      if (sprintId) url += `&sprintId=${sprintId}`;
+      if (assigneeId) url += `&assigneeId=${assigneeId}`;
+      console.log('Fetching tasks for projectId:', functionId);
+      const response = await fetch(url);
+      console.log('Fetch response status:', response.status);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Fetch error response:', errorText);
+        throw new Error("Failed to fetch tasks");
+      }
+      const data = await response.json();
+      const organizedTasks = {
+        todo: data.tasks.filter((task) => task.status === "TODO"),
+        progress: data.tasks.filter((task) => task.status === "IN_PROGRESS"),
+        done: data.tasks.filter((task) => task.status === "DONE"),
+      };
+      setTasks(organizedTasks);
+    } catch (error) {
+      setError(error.message);
+      console.error("Error fetching tasks:", error);
+    }
+    try {
+      const response = await fetch(`/api/projects/${functionId}`);
+      if (!response.ok) throw new Error("Failed to fetch project");
+      const data = await response.json();
+      setProject(data.project);
+    } catch (error) {
+      setError(error.message);
+      console.error("Error fetching project:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!functionId) {
+      setError("Project ID not found. Unable to fetch tasks.");
+      return;
+    }
+    fetchTasks();
+  }, [functionId, sprintId, assigneeId]);
+
+  const handleTaskUpdated = () => fetchTasks();
+
+  const handleTaskDeleted = (deletedTaskId) => {
+    setTasks((prevTasks) => ({
+      todo: prevTasks.todo.filter((task) => task.id !== deletedTaskId),
+      progress: prevTasks.progress.filter((task) => task.id !== deletedTaskId),
+      done: prevTasks.done.filter((task) => task.id !== deletedTaskId),
+    }));
+  };
+
+  // Owner & Scrum Master punya full control
+  const hasFullControl = () => {
+    if (!user || !project) return false;
+    // Project Owner
+    if (user.id === project.ownerId) return true;
+    // Scrum Master (regardless of role)
+    if (user.id === project.scrumMasterId) return true;
+    return false;
+  };
+
+  // Cek apakah user boleh drag ke DONE
+  const canDragToDone = () => hasFullControl();
+
+  // Cek apakah user boleh create task
+  const canCreateTask = () => hasFullControl();
+
+  // Helper: apakah user team_member dan tidak di-assign di task
+  const isTeamMemberAndNotAssigned = (task) => {
+    // Project Owner & Scrum Master always can drag any task
+    if (!user) return false;
+    if (project && (user.id === project.ownerId || user.id === project.scrumMasterId)) return false;
+    // Team member: only if assigned
+    if (user.role === "TEAM_MEMBER") {
+      if (task.assignees && Array.isArray(task.assignees)) {
+        return !task.assignees.some((assignee) => {
+          const userId = assignee.user ? assignee.user.id : assignee.userId;
+          return userId === user.id;
+        });
+      }
+      return true;
+    }
+    return false;
+  };
+
+  const handleDragEnd = async (result) => {
+    const { source, destination } = result;
+    if (!destination) return;
+
+    // Same position
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+
+    // Get source and destination lists
+    const sourceList = [...tasks[source.droppableId]];
+    const destList = source.droppableId === destination.droppableId ? sourceList : [...tasks[destination.droppableId]];
+    const [movedTask] = sourceList.splice(source.index, 1);
+
+    // Prevent moving DONE tasks back to IN_PROGRESS or TODO
+    if (source.droppableId === "done" && destination.droppableId !== "done") {
+      toast({
+        title: "Access Denied",
+        description: "Completed (DONE) tasks cannot be moved back.",
+        variant: "destructive",
+        className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
+      });
+      return;
+    }
+
+    // Prevent moving to DONE if not owner/scrum master
+    if (destination.droppableId === "done" && !canDragToDone()) {
+      toast({
+        title: "Access Denied",
+        description: "Only Project Owner or Scrum Master can move tasks to DONE.",
         variant: "destructive",
         className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
       });
@@ -194,16 +358,40 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
       const revertedTasks = { ...tasks };
       const originalSourceList = [...tasks[source.droppableId]];
       const originalDestList = [...tasks[destination.droppableId]];
-
+      
       // Add the task back to original position
       originalSourceList.splice(source.index, 0, movedTask);
-
+      
       setTasks({
         ...revertedTasks,
         [source.droppableId]: originalSourceList,
         [destination.droppableId]: originalDestList,
       });
-
+      
+      toast({
+        title: "Error",
+        description: "Failed to update task status. Please try again.",
+        variant: "destructive",
+        className: "text-base px-6 py-5 rounded-xl bg-red-600 text-white",
+      });
+    }
+  };
+    } catch (error) {
+      console.error("Failed to update task status:", error);
+      // Revert optimistic update on error
+      const revertedTasks = { ...tasks };
+      const originalSourceList = [...tasks[source.droppableId]];
+      const originalDestList = [...tasks[destination.droppableId]];
+      
+      // Add the task back to original position
+      originalSourceList.splice(source.index, 0, movedTask);
+      
+      setTasks({
+        ...revertedTasks,
+        [source.droppableId]: originalSourceList,
+        [destination.droppableId]: originalDestList,
+      });
+      
       toast({
         title: "Error",
         description: "Failed to update task status. Please try again.",
@@ -230,7 +418,7 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
       headerClass: "text-blue-600",
       icon: Clock,
       bgClass: "bg-blue-50",
-      emptyMessage: "No tasks in progress",
+    emptyMessage: "No tasks in progress",
     },
     {
       id: "done",
@@ -245,6 +433,7 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
 
   if (filter !== "all") {
     columns = columns.filter((col) => col.id === filter);
+    columns = columns.filter((col) => col.id === filter);
   }
 
   return (
@@ -255,28 +444,55 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
         </div>
       )}
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className={`grid gap-6 mb-12 ${filter === "all" ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1"}`}>
+        <div
+          className={`grid gap-6 mb-12 ${
+            filter === "all" ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1"
+          }`}
+        >
           {columns.map((column) => {
             const Icon = column.icon;
             return (
               <Droppable key={column.id} droppableId={column.id}>
                 {(provided, snapshot) => (
-                  <div ref={provided.innerRef} {...provided.droppableProps} className={`rounded-lg border border-slate-200 overflow-hidden ${column.bgClass} ${snapshot.isDraggingOver ? "ring-2 ring-blue-400 ring-opacity-50" : ""}`}>
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={`rounded-lg border border-slate-200 overflow-hidden ${column.bgClass} ${
+                      snapshot.isDraggingOver ? "ring-2 ring-blue-400 ring-opacity-50" : ""
+                    }`}
+                  >
                     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white">
-                      <h3 className={`text-lg font-semibold ${column.headerClass}`}>{column.title}</h3>
+                      <h3 className={`text-lg font-semibold ${column.headerClass}`}>
+                        {column.title}
+                      </h3>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200">{column.tasks.length}</span>
-                        {/* Add button removed as requested */}
+                        <span className="text-sm font-medium text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200">
+                          {column.tasks.length}
+                        </span>
                       </div>
                     </div>
                     <div className="p-4">
                       {column.tasks.length > 0 ? (
                         <div className="space-y-3">
                           {column.tasks.map((task, index) => (
-                            <Draggable key={task.id} draggableId={String(task.id)} index={index} isDragDisabled={!hasFullControl() && isTeamMemberAndNotAssigned(task)}>
+                            <Draggable
+                              key={task.id}
+                              draggableId={String(task.id)}
+                              index={index}
+                              isDragDisabled={!hasFullControl() && isTeamMemberAndNotAssigned(task)}
+                            >
                               {(provided, snapshot) => (
-                                <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className={snapshot.isDragging ? "opacity-80" : ""}>
-                                  <TaskCard task={task} onTaskUpdated={handleTaskUpdated} onTaskDeleted={handleTaskDeleted} />
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  className={snapshot.isDragging ? "opacity-80" : ""}
+                                >
+                                  <TaskCard
+                                    task={task}
+                                    onTaskUpdated={handleTaskUpdated}
+                                    onTaskDeleted={handleTaskDeleted}
+                                  />
                                 </div>
                               )}
                             </Draggable>
@@ -298,7 +514,7 @@ const KanbanBoard = ({ functionId, filter = "all", sprintId = "", assigneeId = "
         </div>
       </DragDropContext>
       <CompletedTasksList tasks={tasks.done} />
-    </>
+     </>
   );
 };
 

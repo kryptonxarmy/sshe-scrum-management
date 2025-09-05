@@ -137,7 +137,40 @@ export async function POST(request, { params }) {
     }
 
     // Add member
-    const membership = await projectOperations.addMember(projectId, userId);
+    let membership;
+    try {
+      membership = await projectOperations.addMember(projectId, userId);
+    } catch (err) {
+      if (err.code === 'P2002') {
+        return NextResponse.json(
+          { error: 'User is already a member of this project' },
+          { status: 409 }
+        );
+      }
+      console.error('Add member DB error:', err);
+      return NextResponse.json(
+        { error: 'Database error', details: err.message || err },
+        { status: 500 }
+      );
+    }
+
+    // Kirim email ke member yang baru ditambahkan
+    try {
+      const member = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
+      const projectInfo = await prisma.project.findUnique({ where: { id: projectId }, select: { name: true, scrumMasterId: true, ownerId: true } });
+      const scrumMaster = projectInfo.scrumMasterId ? await prisma.user.findUnique({ where: { id: projectInfo.scrumMasterId }, select: { name: true } }) : null;
+      const owner = projectInfo.ownerId ? await prisma.user.findUnique({ where: { id: projectInfo.ownerId }, select: { name: true } }) : null;
+      const subject = `[SSHE Scrum] Anda telah ditambahkan ke project: ${projectInfo.name}`;
+      const html = `<h2>Anda telah ditambahkan ke project <strong>${projectInfo.name}</strong></h2><p>Scrum Master: <strong>${scrumMaster ? scrumMaster.name : "-"}</strong></p><p>Project Owner: <strong>${owner ? owner.name : "-"}</strong></p><p>Silakan login ke aplikasi SSHE Scrum Management untuk melihat detail project.</p>`;
+      const text = `Anda telah ditambahkan ke project ${projectInfo.name}\nScrum Master: ${scrumMaster ? scrumMaster.name : "-"}\nProject Owner: ${owner ? owner.name : "-"}\nSilakan login ke aplikasi SSHE Scrum Management untuk melihat detail project.`;
+      if (member && member.email) {
+        const { sendTaskNotification } = require("@/lib/email");
+        await sendTaskNotification({ to: [member.email], subject, text, html });
+      }
+    } catch (err) {
+      console.error('Email error:', err);
+      // Do not fail the API if email fails
+    }
 
     // Log activity
     if (addedBy) {
@@ -156,14 +189,6 @@ export async function POST(request, { params }) {
 
   } catch (error) {
     console.error('Add member error:', error);
-    
-    // Handle unique constraint violation
-    if (error.code === 'P2002') {
-      return NextResponse.json(
-        { error: 'User is already a member of this project' },
-        { status: 409 }
-      );
-    }
     
     return NextResponse.json(
       { error: 'Internal server error' },

@@ -58,8 +58,10 @@ export async function PUT(request, { params }) {
       delete processedData.scrumMasterId;
     }
 
-    // Remove duration if not in model
-    if (!('duration' in existingProject)) {
+    // Only update duration if provided in request
+    if (updateData.duration !== undefined) {
+      processedData.duration = updateData.duration;
+    } else {
       delete processedData.duration;
     }
 

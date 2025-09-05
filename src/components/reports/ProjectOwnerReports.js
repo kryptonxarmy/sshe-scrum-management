@@ -660,7 +660,42 @@ const ProjectOwnerReports = () => {
                 )}
               </CardContent>
             </Card>
-          </div>
+            </div>
+
+            {/* Average Completion Speed Chart (integrated with database) */}
+            <Card className="bg-white rounded-xl shadow-sm p-6 mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Average Task Completion Speed (Hours)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-96 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={Array.isArray(reportData?.assigneePerformance)
+                        ? reportData.assigneePerformance.map((member) => ({
+                            name: member.assignee?.name || member.assignee?.email || "Unknown",
+                            avgHours: typeof member.metrics?.avgCompletionDays === "number"
+                              ? Math.round((member.metrics.avgCompletionDays || 0) * 24)
+                              : 0,
+                          })
+                        )
+                        : []}
+                      margin={{ top: 20, right: 40, left: 20, bottom: 40 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" tick={{ fontSize: 14 }} />
+                      <YAxis label={{ value: "Avg Hours", angle: -90, position: "insideLeft" }} allowDecimals={false} tick={{ fontSize: 14 }} domain={[0, 24]} />
+                      <Tooltip />
+                      <Legend wrapperStyle={{ fontSize: 16 }} />
+                      <Line type="monotone" dataKey="avgHours" stroke="#6366f1" strokeWidth={3} dot={{ fill: "#6366f1", r: 5 }} name="Avg Hours" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
         </TabsContent>
 
         <TabsContent value="sprints" className="space-y-6">

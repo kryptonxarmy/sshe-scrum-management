@@ -556,7 +556,7 @@ const ProjectManagement = () => {
                   </CardHeader>
 
                   <CardContent className="space-y-4">
-                    <p className="text-sm text-slate-600 line-clamp-2">{project.description}</p>
+                    <p className="text-sm text-slate-600" style={{ whiteSpace: 'pre-line' }}>{project.description}</p>
 
                     {/* Owner and Scrum Master Info */}
                     <div className="space-y-1">
@@ -939,7 +939,7 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
         </div>
         <div className="space-y-2">
           <Label htmlFor="description">Description</Label>
-          <Textarea id="description" name="description" value={formData.description} onChange={handleChange} disabled={loading} rows={3} />
+          <Textarea id="description" name="description" value={formData.description} onChange={handleChange} disabled={loading} rows={3} className="whitespace-pre-line" style={{ whiteSpace: 'pre-line' }} />
         </div>
       </div>
 
