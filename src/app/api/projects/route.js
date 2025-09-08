@@ -6,18 +6,28 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
+    const scrumMasterId = searchParams.get("scrumMasterId");
+    const includeMemberProjects = searchParams.get("includeMemberProjects") === "true";
     const status = searchParams.get("status");
     const department = searchParams.get("department");
 
-    if (!userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+    if (!userId && !scrumMasterId) {
+      return NextResponse.json({ error: "User ID or Scrum Master ID is required" }, { status: 400 });
     }
 
     const filters = {};
     if (status) filters.status = status.toUpperCase();
     if (department) filters.department = department;
 
-    const projects = await projectOperations.getByUserId(userId, filters);
+    let projects;
+
+    if (scrumMasterId) {
+      // Get projects where user is scrum master
+      projects = await projectOperations.getByScrumMasterId(scrumMasterId, filters, includeMemberProjects);
+    } else {
+      // Get projects by owner
+      projects = await projectOperations.getByUserId(userId, filters);
+    }
 
     return NextResponse.json({ projects });
   } catch (error) {

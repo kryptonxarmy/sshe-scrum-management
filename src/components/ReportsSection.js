@@ -29,11 +29,8 @@ const ReportsSection = () => {
     case 'PROJECT_OWNER':
       return <ProjectOwnerReports />;
       
-    case 'SCRUM_MASTER':
-      // Scrum Master gets specialized reports for sprint management
-      return <ScrumMasterReports />;
-      
     case 'TEAM_MEMBER':
+      // Team member gets their own reports with Sprint tab added
       return <TeamMemberReports />;
       
     default:

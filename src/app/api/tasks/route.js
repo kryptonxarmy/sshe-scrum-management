@@ -118,6 +118,59 @@ export async function POST(request) {
       return NextResponse.json({ error: "Title, project ID, and creator ID are required" }, { status: 400 });
     }
 
+    // Validate sprint timeline - new sprint tasks cannot have due date before previous sprint's latest due date
+    if (sprintName && dueDate) {
+      const currentSprintNumber = parseInt(sprintName.replace('Sprint ', ''));
+      
+      // Only validate if this is Sprint 2 or higher
+      if (currentSprintNumber > 1) {
+        const previousSprintNumber = currentSprintNumber - 1;
+        const previousSprintName = `Sprint ${previousSprintNumber}`;
+        
+        try {
+          // Find previous sprint
+          const previousSprint = await prisma.sprint.findFirst({
+            where: {
+              name: previousSprintName,
+              projectId: projectId,
+            },
+          });
+          
+          if (previousSprint) {
+            // Get all tasks from previous sprint
+            const previousTasks = await prisma.task.findMany({
+              where: {
+                projectId: projectId,
+                sprintId: previousSprint.id,
+              },
+            });
+            
+            // Find the latest due date in previous sprint
+            const latestDueDateInPreviousSprint = previousTasks.reduce((latest, task) => {
+              if (!task.dueDate) return latest;
+              const taskDueDate = new Date(task.dueDate);
+              return !latest || taskDueDate > new Date(latest) ? task.dueDate : latest;
+            }, null);
+            
+            // If previous sprint has tasks with due dates, validate new task's due date
+            if (latestDueDateInPreviousSprint) {
+              const newTaskDueDate = new Date(dueDate);
+              const previousLatestDueDate = new Date(latestDueDateInPreviousSprint);
+              
+              if (newTaskDueDate < previousLatestDueDate) {
+                return NextResponse.json({ 
+                  error: `Task due date (${newTaskDueDate.toLocaleDateString()}) cannot be earlier than the latest due date in previous ${previousSprintName} (${previousLatestDueDate.toLocaleDateString()})` 
+                }, { status: 400 });
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error validating sprint timeline:", error);
+          // Continue with task creation if validation fails
+        }
+      }
+    }
+
     let finalSprintId = sprintId;
 
     // Handle sprint creation if sprintName is provided

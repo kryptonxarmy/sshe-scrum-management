@@ -181,6 +181,13 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
     e.preventDefault();
     setLoading(true);
     try {
+      // Validate sprint timeline before creating task
+      const isValid = await validateSprintTimeline(formData.sprint, formData.dueDate);
+      if (!isValid) {
+        setLoading(false);
+        return;
+      }
+
       const requestBody = {
         ...formData,
         sprintName: formData.sprint,
@@ -283,6 +290,56 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, onTaskCreated }) => {
       ...formData,
       assignees: selectedAssignees,
     });
+  };
+
+  // Validate sprint timeline - new sprint tasks cannot have due date before previous sprint's latest due date
+  const validateSprintTimeline = async (selectedSprint, dueDate) => {
+    try {
+      if (!dueDate) return true; // Allow if no due date is set
+      
+      const currentSprintNumber = parseInt(selectedSprint.replace('Sprint ', ''));
+      
+      // Only validate if this is Sprint 2 or higher
+      if (currentSprintNumber <= 1) return true;
+      
+      const previousSprintNumber = currentSprintNumber - 1;
+      const previousSprintName = `Sprint ${previousSprintNumber}`;
+      
+      // Fetch latest due date from previous sprint
+      const response = await fetch(`/api/tasks/overdue-count?projectId=${projectId}&sprintName=${encodeURIComponent(previousSprintName)}`);
+      
+      if (!response.ok) {
+        console.warn("Could not fetch previous sprint data for validation");
+        return true; // Allow creation if we can't validate
+      }
+      
+      const data = await response.json();
+      const latestDueDateInPreviousSprint = data.latestDueDate;
+      
+      // If previous sprint has no tasks with due dates, allow creation
+      if (!latestDueDateInPreviousSprint) {
+        return true;
+      }
+      
+      const newTaskDueDate = new Date(dueDate);
+      const previousLatestDueDate = new Date(latestDueDateInPreviousSprint);
+      
+      // Check if new task's due date is earlier than previous sprint's latest due date
+      if (newTaskDueDate < previousLatestDueDate) {
+        toast({
+          title: "Sprint Timeline Error",
+          description: `Task due date (${newTaskDueDate.toLocaleDateString()}) cannot be earlier than the latest due date in previous ${previousSprintName} (${previousLatestDueDate.toLocaleDateString()})`,
+          variant: "destructive",
+          icon: <AlertTriangle className="text-red-600" size={22} />,
+        });
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error validating sprint timeline:", error);
+      return true; // Allow creation if validation fails
+    }
   };
 
   return (

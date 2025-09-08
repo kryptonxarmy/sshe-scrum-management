@@ -556,7 +556,9 @@ const ProjectManagement = () => {
                   </CardHeader>
 
                   <CardContent className="space-y-4">
-                    <p className="text-sm text-slate-600" style={{ whiteSpace: 'pre-line' }}>{project.description}</p>
+                    <div className="text-sm text-slate-600" style={{ whiteSpace: 'pre-line' }}>
+                      {project.description || 'No description available'}
+                    </div>
 
                     {/* Owner and Scrum Master Info */}
                     <div className="space-y-1">

@@ -160,6 +160,7 @@ import {
   RefreshCw, Download, Filter
 } from "lucide-react";
 import dynamic from 'next/dynamic';
+import UniversalSprintReport from "@/components/reports/UniversalSprintReport";
 
 // Dynamic chart imports to avoid SSR issues
 const PieChart = dynamic(() => import('recharts').then(mod => mod.PieChart), { ssr: false });
@@ -299,10 +300,11 @@ const TeamMemberReports = () => {
 
       {/* Charts Section */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="projects">My Projects</TabsTrigger>
           <TabsTrigger value="tasks">My Assigned Tasks</TabsTrigger>
+          <TabsTrigger value="sprints">Sprints</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -470,6 +472,10 @@ const TeamMemberReports = () => {
               <div className="text-gray-500 text-center">No assigned tasks found.</div>
             )}
           </div>
+        </TabsContent>
+
+        <TabsContent value="sprints" className="space-y-6">
+          <UniversalSprintReport userId={user.id} userRole={user.role} />
         </TabsContent>
       </Tabs>
     </div>

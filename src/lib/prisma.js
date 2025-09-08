@@ -256,6 +256,67 @@ export const projectOperations = {
     });
   },
 
+  async getByScrumMasterId(scrumMasterId, filters = {}, includeMemberProjects = false) {
+    const whereConditions = {
+      deletedAt: null, // Exclude soft deleted projects
+    };
+
+    if (includeMemberProjects) {
+      // Include projects where user is scrum master OR member
+      whereConditions.OR = [
+        { scrumMasterId: scrumMasterId },
+        {
+          members: {
+            some: {
+              userId: scrumMasterId,
+              isActive: true,
+            },
+          },
+        },
+      ];
+    } else {
+      // Only projects where user is scrum master
+      whereConditions.scrumMasterId = scrumMasterId;
+    }
+
+    if (filters.status) {
+      whereConditions.status = filters.status;
+    }
+
+    if (filters.department) {
+      whereConditions.department = filters.department;
+    }
+
+    return prisma.project.findMany({
+      where: whereConditions,
+      include: {
+        owner: true,
+        scrumMaster: true,
+        tasks: {
+          select: {
+            id: true,
+            status: true,
+            priority: true,
+          },
+        },
+        members: {
+          include: {
+            user: true,
+          },
+        },
+        _count: {
+          select: {
+            tasks: true,
+            members: true,
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
+  },
+
   async create(data, ownerId) {
     return prisma.project.create({
       data: {
@@ -588,8 +649,9 @@ export const taskOperations = {
     });
   },
 
-  async getAll() {
+  async getAll(filters = {}) {
     return prisma.task.findMany({
+      where: filters.where || {},
       include: {
         assignees: {
           include: {
@@ -598,6 +660,7 @@ export const taskOperations = {
         },
         createdBy: true,
         function: true,
+        sprint: true,
         _count: {
           select: {
             comments: true,

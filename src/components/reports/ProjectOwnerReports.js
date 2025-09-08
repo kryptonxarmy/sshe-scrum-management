@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import SprintProjectsReport from "@/components/reports/SprintProjectsReport";
+import UniversalSprintReport from "@/components/reports/UniversalSprintReport";
 import { TrendingUp, TrendingDown, Users, FolderOpen, CheckCircle, Clock, AlertTriangle, BarChart3, Calendar, Target, Activity, Award, RefreshCw, Download, Filter } from "lucide-react";
 import dynamic from "next/dynamic";
 import TaskAnalysisEnhanced from "./TaskAnalysisEnhanced";
@@ -330,11 +330,14 @@ const ProjectOwnerReports = () => {
 
       {/* Charts Section */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className={`grid w-full ${user?.role === 'TEAM_MEMBER' ? 'grid-cols-4' : 'grid-cols-5'}`}>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="projects">Projects</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
+          {/* Hide Performance tab for TEAM_MEMBER */}
+          {user?.role !== 'TEAM_MEMBER' && (
+            <TabsTrigger value="performance">Performance</TabsTrigger>
+          )}
           <TabsTrigger value="sprints">Sprints</TabsTrigger>
         </TabsList>
 
@@ -699,7 +702,7 @@ const ProjectOwnerReports = () => {
         </TabsContent>
 
         <TabsContent value="sprints" className="space-y-6">
-          <SprintProjectsReport projectOwnerId={user.id}/>
+          <UniversalSprintReport userId={user.id} userRole={user.role} />
         </TabsContent>
       </Tabs>
     </div>
