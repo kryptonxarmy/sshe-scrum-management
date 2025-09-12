@@ -2,13 +2,14 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, CheckCircle, AlertTriangle, Loader2, AlertCircle } from "lucide-react";
+import { Edit, Trash2, CheckCircle, AlertTriangle, Loader2, AlertCircle, Eye } from "lucide-react";
 import { useEffect } from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import EditTaskModal from "./EditTaskModal";
 import TaskCommentsSheet from "./task/TaskCommentsSheet";
+import TaskDetailModal from "./task/TaskDetailModal";
 
 const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
   const { user } = useAuth();
@@ -18,6 +19,7 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isCommentsSheetOpen, setIsCommentsSheetOpen] = useState(false);
   const [hasUnreadComment, setHasUnreadComment] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // Track last read comment per user per task in localStorage
   useEffect(() => {
@@ -76,25 +78,16 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
     return null;
   }
 
-  // Check if user can edit/delete task
+  // Check if user can edit/delete task - Only Project Owner and Scrum Master
   const canEditTask = () => {
     if (!user) return false;
     if (user.role === "SUPERADMIN") return true;
-    if (user.role === "PROJECT_OWNER") return true;
     // User appointed as Scrum Master for this specific project
     if (task.project && task.project.scrumMasterId === user.id) return true;
     // User is the project owner (by ownership)
     if (task.project && task.project.ownerId === user.id) return true;
-    // User assigned to this task
-    if (
-      task.assignees &&
-      task.assignees.some((assignee) => {
-        const userId = assignee.user ? assignee.user.id : assignee.userId;
-        return userId === user.id;
-      })
-    )
-      return true;
-    if (task.assigneeId === user.id) return true;
+    // Only Project Owner role can edit/delete tasks (not team members)
+    if (user.role === "PROJECT_OWNER") return true;
     return false;
   };
 
@@ -326,9 +319,23 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
           {getDisplayType()}
         </Badge>
 
-        {/* Edit Button - Only visible to Scrum Master and Project Owner */}
-        {canEditTask() && (
-          <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+        {/* Action Buttons - Always show detail, conditionally show edit/delete */}
+        <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+          {/* Detail Button - Always visible */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-1"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsDetailModalOpen(true);
+            }}
+          >
+            <Eye className="h-3 w-3" />
+          </Button>
+
+          {/* Edit Button - Only visible to Scrum Master and Project Owner */}
+          {canEditTask() && (
             <Button
               variant="ghost"
               size="sm"
@@ -340,6 +347,10 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
             >
               <Edit className="h-3 w-3" />
             </Button>
+          )}
+
+          {/* Delete Button - Only visible to Scrum Master and Project Owner */}
+          {canEditTask() && (
             <AlertDialog
               open={showDeleteDialog}
               onOpenChange={(open) => {
@@ -378,8 +389,8 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </div>
-        )}
+          )}
+        </div>
 
         <CardContent className="p-4">
           {/* Task Title */}
@@ -394,28 +405,45 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
             {task.sprint && <span className="text-xs text-slate-500">Sprint: {getSprintName()}</span>}
             <span className="text-xs text-slate-500">Due: {getFormattedDueDate()}</span>
           </div>
-          <div className="flex justify-between mt-4 items-center w-full ">
-            {/* Overdue indicator moved to bottom left */}
+          <div className="flex flex-col mt-4 gap-3">
+            {/* Overdue indicator */}
             {task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "DONE" && (
-              <div className="h-fit py-2 px-4 flex items-center gap-1 bg-red-600 text-white text-xs font-bold rounded shadow z-10">
+              <div className="h-fit py-2 px-4 flex items-center gap-1 bg-red-600 text-white text-xs font-bold rounded shadow z-10 self-start">
                 <AlertCircle className="h-4 w-4 text-white" />
                 Overdue!
               </div>
             )}
 
-            {/* Comment Button & Sheet */}
-            {canComment() && (
-              <div className="mt-2 flex justify-end items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setIsCommentsSheetOpen(true)}>
-                  Comment
-                </Button>
-                {hasUnreadComment && (
-                  <span title="Komentar baru belum dibaca">
-                    <AlertCircle className="h-5 w-5 text-orange-500 animate-bounce" />
-                  </span>
-                )}
-              </div>
-            )}
+            {/* Action Buttons */}
+            <div className="flex justify-between items-center gap-2">
+              {/* Detail Button - Always visible */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsDetailModalOpen(true);
+                }}
+                className="flex items-center gap-2"
+              >
+                <Eye className="h-3 w-3" />
+                Details
+              </Button>
+
+              {/* Comment Button & Sheet */}
+              {canComment() && (
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setIsCommentsSheetOpen(true)}>
+                    Comment
+                  </Button>
+                  {hasUnreadComment && (
+                    <span title="Komentar baru belum dibaca">
+                      <AlertCircle className="h-5 w-5 text-orange-500 animate-bounce" />
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -425,6 +453,9 @@ const TaskCard = ({ task, onTaskUpdated, onTaskDeleted }) => {
 
       {/* Comments Sheet */}
       {isCommentsSheetOpen && <TaskCommentsSheet open={isCommentsSheetOpen} onOpenChange={setIsCommentsSheetOpen} user={user} taskId={task.id} taskName={task.title || "Untitled Task"} />}
+      
+      {/* Task Detail Modal */}
+      {isDetailModalOpen && <TaskDetailModal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} task={task} />}
     </>
   );
 };
