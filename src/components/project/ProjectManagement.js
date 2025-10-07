@@ -53,7 +53,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, MoreVertical, Edit, Trash2, Users, Calendar, AlertTriangle, Archive, MessageCircleMore } from "lucide-react";
+import { Plus, MoreVertical, Edit, Trash2, Users, Calendar, AlertTriangle, Archive, MessageCircleMore, ChevronDown, ChevronUp } from "lucide-react";
 import ModalManageMember from "@/components/project/_partials/ModalManageMember";
 import ArchiveReports from "@/components/project/ArchiveReports";
 import EditProjectModal from "@/components/project/EditProjectModal";
@@ -76,6 +76,7 @@ const ProjectManagement = () => {
   const [deletedProjects, setDeletedProjects] = useState([]);
   const [isCommentsSheetOpen, setIsCommentsSheetOpen] = useState(false);
   const [selectedProjectForComments, setSelectedProjectForComments] = useState(null); // Tambahkan state baru
+  const [visibleDescriptions, setVisibleDescriptions] = useState(new Set()); // State untuk tracking visible descriptions
 
   // Permission Rules:
   // - SUPERADMIN: Can manage all projects and members
@@ -383,6 +384,24 @@ const ProjectManagement = () => {
     return "Unknown";
   };
 
+  // Function to toggle description visibility
+  const toggleDescription = (projectId) => {
+    setVisibleDescriptions((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(projectId)) {
+        newSet.delete(projectId);
+      } else {
+        newSet.add(projectId);
+      }
+      return newSet;
+    });
+  };
+
+  // Function to check if description is visible
+  const isDescriptionVisible = (projectId) => {
+    return visibleDescriptions.has(projectId);
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -556,8 +575,28 @@ const ProjectManagement = () => {
                   </CardHeader>
 
                   <CardContent className="space-y-4">
-                    <div className="text-sm text-slate-600" style={{ whiteSpace: 'pre-line' }}>
-                      {project.description || 'No description available'}
+                    {/* Description with toggle visibility */}
+                    <div className="space-y-2">
+                      {isDescriptionVisible(project.id) && (
+                        <div className="text-sm text-slate-600" style={{ whiteSpace: "pre-line" }}>
+                          {project.description || "No description available"}
+                        </div>
+                      )}
+                      {project.description && (
+                        <button onClick={() => toggleDescription(project.id)} className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors">
+                          {isDescriptionVisible(project.id) ? (
+                            <>
+                              <ChevronUp size={14} />
+                              Hide description
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown size={14} />
+                              Show description
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
 
                     {/* Owner and Scrum Master Info */}
@@ -695,7 +734,29 @@ const ProjectManagement = () => {
                   </CardHeader>
 
                   <CardContent className="space-y-4">
-                    <p className="text-sm text-red-700 line-clamp-2">{project.description}</p>
+                    {/* Description with toggle visibility for deleted projects */}
+                    <div className="space-y-2">
+                      {isDescriptionVisible(project.id) && (
+                        <div className="text-sm text-red-700" style={{ whiteSpace: "pre-line" }}>
+                          {project.description || "No description available"}
+                        </div>
+                      )}
+                      {project.description && (
+                        <button onClick={() => toggleDescription(project.id)} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors">
+                          {isDescriptionVisible(project.id) ? (
+                            <>
+                              <ChevronUp size={14} />
+                              Hide description
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown size={14} />
+                              Show description
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
 
                     {/* Owner and Scrum Master Info */}
                     <div className="space-y-1">
@@ -941,7 +1002,7 @@ const CreateProjectForm = ({ onClose, onProjectCreated }) => {
         </div>
         <div className="space-y-2">
           <Label htmlFor="description">Description</Label>
-          <Textarea id="description" name="description" value={formData.description} onChange={handleChange} disabled={loading} rows={3} className="whitespace-pre-line" style={{ whiteSpace: 'pre-line' }} />
+          <Textarea id="description" name="description" value={formData.description} onChange={handleChange} disabled={loading} rows={3} className="whitespace-pre-line" style={{ whiteSpace: "pre-line" }} />
         </div>
       </div>
 

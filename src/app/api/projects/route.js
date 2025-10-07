@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { projectOperations, activityOperations } from "@/lib/prisma";
-import { prisma } from "@/lib/prisma";
 
 // GET /api/projects - Get user's projects
 export async function GET(request) {
@@ -41,7 +40,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { name, description, department, ownerId, scrumMasterId, memberIds = [], duration } = body;
+  const { name, description, ownerId, scrumMasterId, memberIds = [], duration } = body;
 
     if (!name || !ownerId) {
       return NextResponse.json({ error: "Project name and owner ID are required" }, { status: 400 });
@@ -52,7 +51,6 @@ export async function POST(request) {
       data: {
         name,
         description: description || "",
-        department: department || "DEFAULT", // Add required department field
         ownerId,
         scrumMasterId: scrumMasterId || null,
         duration: duration || undefined, // Accept duration from user input, fallback to model default
@@ -70,50 +68,28 @@ export async function POST(request) {
       },
     });
 
-    // Send email notification to team members
-    if (project && project.id) {
-      try {
-        // Collect all unique email addresses (owner, scrum master, members)
-        const emailList = [];
-        
-        // Add project owner email
-        if (project.owner?.email) {
-          emailList.push(project.owner.email);
-        }
-        
-        // Add scrum master email (if different from owner)
-        if (project.scrumMaster?.email && project.scrumMaster.email !== project.owner?.email) {
-          emailList.push(project.scrumMaster.email);
-        }
-        
-        // Add member emails (filter out duplicates)
-        project.members.forEach(member => {
-          if (member.user?.email && 
-              member.user.role !== "SUPERADMIN" && 
-              !emailList.includes(member.user.email)) {
-            emailList.push(member.user.email);
-          }
-        });
-
-        if (emailList.length > 0) {
-          const memberNames = project.members.map(m => m.user?.name).filter(Boolean).join(", ");
-          const subject = `[SSHE Scrum] Anda tergabung pada project baru: ${project.name}`;
-          const html = `
-            <h2>Selamat, Anda tergabung pada project <strong>${project.name}</strong></h2>
-            <p>Scrum Master: <strong>${project.scrumMaster?.name || "-"}</strong></p>
-            <p>Project Owner: <strong>${project.owner?.name || "-"}</strong></p>
-            <p>Team Member: <strong>${memberNames || "-"}</strong></p>
-            <p>Silakan login ke aplikasi SSHE Scrum Management untuk melihat detail project.</p>
-          `;
-          const text = `Selamat, Anda tergabung pada project ${project.name}\nScrum Master: ${project.scrumMaster?.name || "-"}\nProject Owner: ${project.owner?.name || "-"}\nTeam Member: ${memberNames || "-"}\nSilakan login ke aplikasi SSHE Scrum Management untuk melihat detail project.`;
-          
-          const { sendTaskNotification } = require("@/lib/email");
-          await sendTaskNotification({ to: emailList, subject, text, html });
-        }
-      } catch (emailError) {
-        console.error("Failed to send email notification:", emailError);
-        // Continue without failing the project creation
-      }
+    // Notify all team members (excluding SUPERADMIN)
+    if (project && project.id && project.ownerId) {
+      const teamMembers = await prisma.projectMember.findMany({
+        where: { projectId: project.id },
+        include: { user: { select: { id: true, name: true, email: true, role: true } } },
+      });
+      const members = teamMembers.map((pm) => pm.user).filter((u) => u && u.role !== "SUPERADMIN");
+      const scrumMaster = members.find((u) => u.id === project.scrumMasterId);
+      const owner = members.find((u) => u.id === project.ownerId);
+      const memberNames = members.map((u) => u.name).join(", ");
+      const to = members.map((u) => u.email);
+      const subject = `[SSHE Scrum] Anda tergabung pada project baru: ${project.name}`;
+      const html = `
+        <h2>Selamat, Anda tergabung pada project <strong>${project.name}</strong></h2>
+        <p>Scrum Master: <strong>${scrumMaster ? scrumMaster.name : "-"}</strong></p>
+        <p>Project Owner: <strong>${owner ? owner.name : "-"}</strong></p>
+        <p>Team Member: <strong>${memberNames}</strong></p>
+        <p>Silakan login ke aplikasi SSHE Scrum Management untuk melihat detail project.</p>
+      `;
+      const text = `Selamat, Anda tergabung pada project ${project.name}\nScrum Master: ${scrumMaster ? scrumMaster.name : "-"}\nProject Owner: ${owner ? owner.name : "-"}\nTeam Member: ${memberNames}\nSilakan login ke aplikasi SSHE Scrum Management untuk melihat detail project.`;
+      const { sendTaskNotification } = require("@/lib/email");
+      await sendTaskNotification({ to, subject, text, html });
     }
 
     return NextResponse.json({
