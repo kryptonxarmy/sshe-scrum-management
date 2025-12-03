@@ -132,6 +132,28 @@ function toast({ ...props }) {
   }
 }
 
+// Backwards-compatible helper methods so callers can use `toast.success(..)` / `toast.error(..)` etc.
+// Accept either a string message or a props object similar to `toast({ title, description })`.
+toast.success = (msgOrProps) => {
+  const props = typeof msgOrProps === "string" ? { title: msgOrProps } : { ...msgOrProps }
+  return toast({ ...props })
+}
+
+toast.error = (msgOrProps) => {
+  const props = typeof msgOrProps === "string" ? { title: msgOrProps } : { ...msgOrProps }
+  return toast({ ...props })
+}
+
+toast.info = (msgOrProps) => {
+  const props = typeof msgOrProps === "string" ? { title: msgOrProps } : { ...msgOrProps }
+  return toast({ ...props })
+}
+
+toast.loading = (msgOrProps) => {
+  const props = typeof msgOrProps === "string" ? { title: msgOrProps } : { ...msgOrProps }
+  return toast({ ...props })
+}
+
 function useToast() {
   const [state, setState] = React.useState(memoryState)
 

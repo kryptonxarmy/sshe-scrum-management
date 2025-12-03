@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { projectOperations, activityOperations } from "@/lib/prisma";
+import { projectOperations, activityOperations, prisma } from "@/lib/prisma";
 
 // GET /api/projects - Get user's projects
 export async function GET(request) {
@@ -43,11 +43,15 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-  const { name, description, ownerId, scrumMasterId, memberIds = [], duration } = body;
+  const { name, description, department, ownerId, scrumMasterId, memberIds = [], duration } = body;
 
     if (!name || !ownerId) {
       return NextResponse.json({ error: "Project name and owner ID are required" }, { status: 400 });
     }
+
+    // normalize and validate inputs
+    const safeDepartment = typeof department === "string" && department.trim() ? department.trim() : "Process Safety";
+    const safeMemberIds = Array.isArray(memberIds) ? memberIds.filter((id) => !!id) : [];
 
     // Create the project
     const project = await prisma.project.create({
@@ -55,10 +59,11 @@ export async function POST(request) {
         name,
         description: description || "",
         ownerId,
+        department: safeDepartment,
         scrumMasterId: scrumMasterId || null,
         duration: duration || undefined, // Accept duration from user input, fallback to model default
         members: {
-          create: memberIds.map((userId) => ({
+          create: safeMemberIds.map((userId) => ({
             userId,
             role: "MEMBER",
           })),
@@ -78,21 +83,29 @@ export async function POST(request) {
         include: { user: { select: { id: true, name: true, email: true, role: true } } },
       });
       const members = teamMembers.map((pm) => pm.user).filter((u) => u && u.role !== "SUPERADMIN");
-      const scrumMaster = members.find((u) => u.id === project.scrumMasterId);
-      const owner = members.find((u) => u.id === project.ownerId);
-      const memberNames = members.map((u) => u.name).join(", ");
-      const to = members.map((u) => u.email);
+      const scrumMaster = members.find((u) => u.id === project.scrumMasterId) || null;
+      const owner = members.find((u) => u.id === project.ownerId) || null;
+      const memberNames = members.map((u) => u.name).filter(Boolean).join(", ");
+      const emailList = members.map((u) => u.email).filter(Boolean);
       const subject = `[SSHE Scrum] Anda tergabung pada project baru: ${project.name}`;
       const html = `
         <h2>Selamat, Anda tergabung pada project <strong>${project.name}</strong></h2>
         <p>Scrum Master: <strong>${scrumMaster ? scrumMaster.name : "-"}</strong></p>
         <p>Project Owner: <strong>${owner ? owner.name : "-"}</strong></p>
-        <p>Team Member: <strong>${memberNames}</strong></p>
+        <p>Team Member: <strong>${memberNames || "-"}</strong></p>
         <p>Silakan login ke aplikasi SSHE Scrum Management untuk melihat detail project.</p>
       `;
-      const text = `Selamat, Anda tergabung pada project ${project.name}\nScrum Master: ${scrumMaster ? scrumMaster.name : "-"}\nProject Owner: ${owner ? owner.name : "-"}\nTeam Member: ${memberNames}\nSilakan login ke aplikasi SSHE Scrum Management untuk melihat detail project.`;
-      const { sendTaskNotification } = require("@/lib/email");
-      await sendTaskNotification({ to, subject, text, html });
+      const text = `Selamat, Anda tergabung pada project ${project.name}\nScrum Master: ${scrumMaster ? scrumMaster.name : "-"}\nProject Owner: ${owner ? owner.name : "-"}\nTeam Member: ${memberNames || "-"}\nSilakan login ke aplikasi SSHE Scrum Management untuk melihat detail project.`;
+      if (emailList.length > 0) {
+        const { sendTaskNotification } = require("@/lib/email");
+        try {
+          await sendTaskNotification({ to: emailList, subject, text, html });
+        } catch (e) {
+          console.error("Failed to send project notification email:", e);
+        }
+      } else {
+        console.warn("No recipient emails found for project notification; skipping email.");
+      }
     }
 
     return NextResponse.json({
