@@ -665,37 +665,222 @@ const ProjectOwnerReports = () => {
             </Card>
             </div>
 
-            {/* Average Completion Speed Chart (integrated with database) */}
+            {/* Member Leaderboard */}
             <Card className="bg-white rounded-xl shadow-sm p-6 mt-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Average Task Completion Speed (Hours)
+                  <Users className="h-5 w-5" />
+                  Member Leaderboard
                 </CardTitle>
+                <div className="text-sm text-gray-500">Complete statistics for all assigned members</div>
               </CardHeader>
               <CardContent>
-                <div className="h-96 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={Array.isArray(reportData?.assigneePerformance)
-                        ? reportData.assigneePerformance.map((member) => ({
-                            name: member.assignee?.name || member.assignee?.email || "Unknown",
-                            avgHours: typeof member.metrics?.avgCompletionDays === "number"
-                              ? Math.round((member.metrics.avgCompletionDays || 0) * 24)
-                              : 0,
-                          })
-                        )
-                        : []}
-                      margin={{ top: 20, right: 40, left: 20, bottom: 40 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" tick={{ fontSize: 14 }} />
-                      <YAxis label={{ value: "Avg Hours", angle: -90, position: "insideLeft" }} allowDecimals={false} tick={{ fontSize: 14 }} domain={[0, 24]} />
-                      <Tooltip />
-                      <Legend wrapperStyle={{ fontSize: 16 }} />
-                      <Line type="monotone" dataKey="avgHours" stroke="#6366f1" strokeWidth={3} dot={{ fill: "#6366f1", r: 5 }} name="Avg Hours" />
-                    </LineChart>
-                  </ResponsiveContainer>
+                <div className="overflow-x-auto">
+                  <table className="w-full table-auto">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">#</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Member</th>
+                        <th className="text-center py-3 px-4 font-semibold text-gray-700">Projects</th>
+                        <th className="text-center py-3 px-4 font-semibold text-gray-700">Total Tasks</th>
+                        <th className="text-center py-3 px-4 font-semibold text-gray-700">Done</th>
+                        <th className="text-center py-3 px-4 font-semibold text-gray-700">In Progress</th>
+                        <th className="text-center py-3 px-4 font-semibold text-gray-700">Overdue</th>
+                        <th className="text-center py-3 px-4 font-semibold text-gray-700">Success Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        // Get member statistics from reportData
+                        const allTasks = reportData?.allTasks || [];
+                        const memberStats = {};
+
+                        // Process all tasks to build member statistics
+                        allTasks.forEach(task => {
+                          if (!task.assignee) return;
+                          
+                          const memberId = task.assignee.id;
+                          const memberName = task.assignee.name || task.assignee.email || 'Unknown';
+                          const memberAvatar = task.assignee.avatarUrl;
+                          const projectName = task.project?.name || 'Unknown Project';
+
+                          if (!memberStats[memberId]) {
+                            memberStats[memberId] = {
+                              id: memberId,
+                              name: memberName,
+                              avatarUrl: memberAvatar,
+                              projects: new Set(),
+                              totalTasks: 0,
+                              done: 0,
+                              inProgress: 0,
+                              todo: 0,
+                              overdue: 0
+                            };
+                          }
+
+                          const member = memberStats[memberId];
+                          member.projects.add(projectName);
+                          member.totalTasks++;
+
+                          // Count by status
+                          switch (task.status) {
+                            case 'DONE':
+                              member.done++;
+                              break;
+                            case 'IN_PROGRESS':
+                              member.inProgress++;
+                              break;
+                            case 'TODO':
+                              member.todo++;
+                              break;
+                          }
+
+                          // Check if overdue
+                          if (task.dueDate && task.status !== 'DONE') {
+                            const dueDate = new Date(task.dueDate);
+                            const today = new Date();
+                            if (dueDate < today) {
+                              member.overdue++;
+                            }
+                          }
+                        });
+
+                        // Convert to array and calculate success rate
+                        const memberArray = Object.values(memberStats).map(member => ({
+                          ...member,
+                          projectCount: member.projects.size,
+                          successRate: member.totalTasks > 0 ? Math.round((member.done / member.totalTasks) * 100) : 0
+                        }));
+
+                        // Sort by total tasks (most active first), then by success rate
+                        memberArray.sort((a, b) => {
+                          if (b.totalTasks !== a.totalTasks) {
+                            return b.totalTasks - a.totalTasks;
+                          }
+                          return b.successRate - a.successRate;
+                        });
+
+                        if (memberArray.length === 0) {
+                          return (
+                            <tr>
+                              <td colSpan="8" className="text-center py-8 text-gray-500">
+                                No member data available
+                              </td>
+                            </tr>
+                          );
+                        }
+
+                        return memberArray.map((member, index) => (
+                          <tr key={member.id} className={`border-b border-gray-100 hover:bg-gray-50 ${index < 3 ? 'bg-gradient-to-r from-blue-50 to-indigo-50' : ''}`}>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                {index < 3 && (
+                                  <span className="text-xl">
+                                    {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                                  </span>
+                                )}
+                                <span className={`font-semibold ${index < 3 ? 'text-blue-700' : 'text-gray-600'}`}>
+                                  #{index + 1}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-3">
+                                {member.avatarUrl ? (
+                                  <img 
+                                    src={member.avatarUrl} 
+                                    alt={member.name} 
+                                    className="w-8 h-8 rounded-full border"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                                    <Users className="h-4 w-4 text-gray-600" />
+                                  </div>
+                                )}
+                                <span className="font-medium text-gray-900">{member.name}</span>
+                              </div>
+                            </td>
+                            <td className="text-center py-3 px-4">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                {member.projectCount}
+                              </span>
+                            </td>
+                            <td className="text-center py-3 px-4">
+                              <span className="font-semibold text-gray-900">{member.totalTasks}</span>
+                            </td>
+                            <td className="text-center py-3 px-4">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                {member.done}
+                              </span>
+                            </td>
+                            <td className="text-center py-3 px-4">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {member.inProgress}
+                              </span>
+                            </td>
+                            <td className="text-center py-3 px-4">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                member.overdue > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
+                              }`}>
+                                {member.overdue}
+                              </span>
+                            </td>
+                            <td className="text-center py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                  <div 
+                                    className={`h-2 rounded-full transition-all ${
+                                      member.successRate >= 80 ? 'bg-green-500' : 
+                                      member.successRate >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                                    }`}
+                                    style={{ width: `${member.successRate}%` }}
+                                  />
+                                </div>
+                                <span className={`text-sm font-semibold ${
+                                  member.successRate >= 80 ? 'text-green-600' : 
+                                  member.successRate >= 60 ? 'text-yellow-600' : 'text-red-600'
+                                }`}>
+                                  {member.successRate}%
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        ));
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Summary Statistics */}
+                <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {(() => {
+                    const allTasks = reportData?.allTasks || [];
+                    const totalMembers = new Set(allTasks.map(t => t.assignee?.id).filter(Boolean)).size;
+                    const totalAssignedTasks = allTasks.length;
+                    const totalProjects = new Set(allTasks.map(t => t.project?.name).filter(Boolean)).size;
+                    const avgTasksPerMember = totalMembers > 0 ? Math.round(totalAssignedTasks / totalMembers) : 0;
+
+                    return (
+                      <>
+                        <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="text-2xl font-bold text-blue-700">{totalMembers}</div>
+                          <div className="text-sm text-blue-600">Active Members</div>
+                        </div>
+                        <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
+                          <div className="text-2xl font-bold text-green-700">{totalAssignedTasks}</div>
+                          <div className="text-sm text-green-600">Total Assigned</div>
+                        </div>
+                        <div className="text-center p-3 bg-purple-50 rounded-lg border border-purple-200">
+                          <div className="text-2xl font-bold text-purple-700">{totalProjects}</div>
+                          <div className="text-sm text-purple-600">Active Projects</div>
+                        </div>
+                        <div className="text-center p-3 bg-orange-50 rounded-lg border border-orange-200">
+                          <div className="text-2xl font-bold text-orange-700">{avgTasksPerMember}</div>
+                          <div className="text-sm text-orange-600">Avg Tasks/Member</div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </CardContent>
             </Card>
