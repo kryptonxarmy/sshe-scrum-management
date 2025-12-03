@@ -226,34 +226,39 @@ export const projectOperations = {
       where.department = filters.department;
     }
 
-    return prisma.project.findMany({
-      where,
-      include: {
-        owner: true,
-        scrumMaster: true,
-        tasks: {
-          select: {
-            id: true,
-            status: true,
-            priority: true,
+    try {
+      return await prisma.project.findMany({
+        where,
+        include: {
+          owner: true,
+          scrumMaster: true,
+          tasks: {
+            select: {
+              id: true,
+              status: true,
+              priority: true,
+            },
+          },
+          members: {
+            include: {
+              user: true,
+            },
+          },
+          _count: {
+            select: {
+              tasks: true,
+              members: true,
+            },
           },
         },
-        members: {
-          include: {
-            user: true,
-          },
+        orderBy: {
+          updatedAt: "desc",
         },
-        _count: {
-          select: {
-            tasks: true,
-            members: true,
-          },
-        },
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-    });
+      });
+    } catch (e) {
+      console.error("Database query failed in projectOperations.getByUserId:", e);
+      throw new Error("Database unreachable: " + (e && e.message ? e.message : String(e)));
+    }
   },
 
   async getByScrumMasterId(scrumMasterId, filters = {}, includeMemberProjects = false) {
@@ -287,34 +292,39 @@ export const projectOperations = {
       whereConditions.department = filters.department;
     }
 
-    return prisma.project.findMany({
-      where: whereConditions,
-      include: {
-        owner: true,
-        scrumMaster: true,
-        tasks: {
-          select: {
-            id: true,
-            status: true,
-            priority: true,
+    try {
+      return await prisma.project.findMany({
+        where: whereConditions,
+        include: {
+          owner: true,
+          scrumMaster: true,
+          tasks: {
+            select: {
+              id: true,
+              status: true,
+              priority: true,
+            },
+          },
+          members: {
+            include: {
+              user: true,
+            },
+          },
+          _count: {
+            select: {
+              tasks: true,
+              members: true,
+            },
           },
         },
-        members: {
-          include: {
-            user: true,
-          },
+        orderBy: {
+          updatedAt: "desc",
         },
-        _count: {
-          select: {
-            tasks: true,
-            members: true,
-          },
-        },
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-    });
+      });
+    } catch (e) {
+      console.error("Database query failed in projectOperations.getByScrumMasterId:", e);
+      throw new Error("Database unreachable: " + (e && e.message ? e.message : String(e)));
+    }
   },
 
   async create(data, ownerId) {
@@ -363,50 +373,55 @@ export const projectOperations = {
 
   async getUserProjects(userId) {
     // Get projects where user is owner, scrum master, or member
-    const projects = await prisma.project.findMany({
-      where: {
-        OR: [
-          { ownerId: userId },
-          { scrumMasterId: userId },
-          {
-            members: {
-              some: {
-                userId: userId,
+    try {
+      const projects = await prisma.project.findMany({
+        where: {
+          OR: [
+            { ownerId: userId },
+            { scrumMasterId: userId },
+            {
+              members: {
+                some: {
+                  userId: userId,
+                },
               },
             },
+          ],
+          isArchived: false,
+          deletedAt: null,
+        },
+        include: {
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
-        ],
-        isArchived: false,
-        deletedAt: null,
-      },
-      include: {
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+          scrumMaster: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          _count: {
+            select: {
+              tasks: true,
+              members: true,
+            },
           },
         },
-        scrumMaster: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+        orderBy: {
+          updatedAt: "desc",
         },
-        _count: {
-          select: {
-            tasks: true,
-            members: true,
-          },
-        },
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-    });
+      });
 
-    return projects;
+      return projects;
+    } catch (e) {
+      console.error("Database query failed in projectOperations.getUserProjects:", e);
+      throw new Error("Database unreachable: " + (e && e.message ? e.message : String(e)));
+    }
   },
 };
 

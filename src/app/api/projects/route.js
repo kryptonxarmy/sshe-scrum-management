@@ -12,6 +12,8 @@ export async function GET(request) {
     const status = searchParams.get("status");
     const department = searchParams.get("department");
 
+    console.log("[API/projects] GET called", { userId, scrumMasterId, includeMemberProjects, status, department });
+
     if (!userId && !scrumMasterId) {
       return NextResponse.json({ error: "User ID or Scrum Master ID is required" }, { status: 400 });
     }
@@ -33,7 +35,8 @@ export async function GET(request) {
     return NextResponse.json({ projects });
   } catch (error) {
     console.error("Get projects error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const msg = process.env.NODE_ENV === "production" ? "Internal server error" : (error && error.message) || String(error);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 
@@ -122,6 +125,7 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("Create project error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const msg = process.env.NODE_ENV === "production" ? "Internal server error" : (error && error.message) || String(error);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

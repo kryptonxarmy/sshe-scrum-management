@@ -210,6 +210,7 @@ export async function GET(request) {
     });
   } catch (error) {
     console.error("Get calendar tasks error:", error);
-    return NextResponse.json({ error: "Internal server error", details: error.message }, { status: 500 });
+    const msg = process.env.NODE_ENV === "production" ? "Internal server error" : (error && error.message) || String(error);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

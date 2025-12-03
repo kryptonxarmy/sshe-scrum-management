@@ -93,7 +93,15 @@ const ProjectManagement = () => {
         const response = await fetch(`/api/projects?userId=${user.id}`);
 
         if (!response.ok) {
-          throw new Error("Failed to fetch projects");
+          // Try to parse error message from server
+          let errMsg = "Failed to fetch projects";
+          try {
+            const errJson = await response.json();
+            if (errJson && errJson.error) errMsg = errJson.error;
+          } catch (e) {
+            // ignore parse errors
+          }
+          throw new Error(errMsg);
         }
 
         const data = await response.json();
