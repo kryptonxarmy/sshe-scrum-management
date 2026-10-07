@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -9,17 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Check, ChevronsUpDown } from "lucide-react";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [userOptions, setUserOptions] = useState([]);
-  const [open, setOpen] = useState(false);
   // Cek localStorage saat komponen mount
   useEffect(() => {
     const savedEmail = localStorage.getItem("rememberMeEmail");
@@ -33,30 +28,17 @@ const LoginPage = () => {
   }, []);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [verified, setVerified] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // Fetch all user emails for select
-    async function fetchUsers() {
-      try {
-        console.log("Fetching users for login dropdown...");
-        const res = await fetch("/api/users");
-        if (res.ok) {
-          const data = await res.json();
-          console.log("Users fetched:", data.users);
-          setUserOptions(data.users.map((u) => ({ email: u.email, name: u.name, role: u.role })));
-        } else {
-          console.error("Failed to fetch users:", res.status);
-          setUserOptions([]);
-        }
-      } catch (err) {
-        console.error("Error fetching users:", err);
-        setUserOptions([]);
-      }
+    const query = new URLSearchParams(window.location.search);
+    setVerified(query.get("verified") === "1");
+    if (query.has("verification") && query.get("verification") !== "1") {
+      setError("This verification link is invalid or has expired. Please register again.");
     }
-    fetchUsers();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -113,44 +95,23 @@ const LoginPage = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {verified && (
+                <Alert>
+                  <AlertDescription>Email verified successfully. You can now sign in.</AlertDescription>
+                </Alert>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Popover open={open} onOpenChange={setOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between">
-                      {email ? userOptions.find((user) => user.email === email)?.email : "Pilih email user..."}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full min-w-[var(--radix-popover-trigger-width)] p-0">
-                    <Command>
-                      <CommandInput placeholder="Cari email atau nama..." />
-                      <CommandEmpty>Email tidak ditemukan.</CommandEmpty>
-                      <CommandGroup className="max-h-64 overflow-auto">
-                        {userOptions.length === 0 ? (
-                          <div className="p-2 text-sm text-gray-500">Memuat data user...</div>
-                        ) : (
-                          userOptions.map((user) => (
-                            <CommandItem
-                              key={user.email}
-                              onSelect={() => {
-                                setEmail(user.email);
-                                setOpen(false);
-                              }}
-                              className="cursor-pointer"
-                            >
-                              <Check className={`mr-2 h-4 w-4 ${email === user.email ? "opacity-100" : "opacity-0"}`} />
-                              <div className="flex flex-col flex-1">
-                                <span className="font-medium">{user.email}</span>
-                                <span className="text-xs text-gray-500">{user.name} • {user.role}</span>
-                              </div>
-                            </CommandItem>
-                          ))
-                        )}
-                      </CommandGroup>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="Enter your email"
+                  required
+                />
               </div>
 
               <div className="space-y-2">
@@ -182,6 +143,12 @@ const LoginPage = () => {
                 {loading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
+            <p className="mt-4 text-center text-sm text-slate-600">
+              Don&apos;t have an account?{" "}
+              <Link href="/register" className="font-medium text-indigo-600 hover:underline">
+                Register
+              </Link>
+            </p>
           </CardContent>
         </Card>
       </div>

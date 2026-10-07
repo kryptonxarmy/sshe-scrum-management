@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/.next-dev/
 /out/
 
 # production
@@ -36,6 +37,8 @@ yarn-error.log*
 # prisma
 /prisma/migrations/*
 !/prisma/migrations/migration_lock.toml
+!/prisma/migrations/20261007130000_add_email_verification/
+!/prisma/migrations/20261007130000_add_email_verification/migration.sql
 /src/generated/prisma
 
 # database

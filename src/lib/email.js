@@ -38,6 +38,17 @@ async function sendTaskNotification({ to, subject, text, html }) {
   return transporter.sendMail(mailOptions);
 }
 
+async function sendVerificationEmail({ to, verificationUrl }) {
+  return transporter.sendMail({
+    from: `SSHE Scrum Management <${GMAIL_USER}>`,
+    to,
+    subject: "Verify your SSHE Scrum Management account",
+    text: `Verify your email address by opening this link: ${verificationUrl}`,
+    html: `<p>Thanks for registering. Verify your email address to activate your account:</p><p><a href="${verificationUrl}">Verify email address</a></p><p>If you did not create this account, you can ignore this email.</p>`,
+  });
+}
+
 module.exports = {
   sendTaskNotification,
+  sendVerificationEmail,
 };

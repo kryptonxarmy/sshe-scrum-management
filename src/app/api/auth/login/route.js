@@ -15,12 +15,19 @@ export async function POST(request) {
     }
 
     // Find user
-    const user = await userOperations.findByEmail(email);
+    const user = await userOperations.findByEmail(email.trim().toLowerCase());
     
     if (!user) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: 'Account not found' },
         { status: 401 }
+      );
+    }
+
+    if (!user.emailVerified) {
+      return NextResponse.json(
+        { error: 'Please verify your email before logging in' },
+        { status: 403 }
       );
     }
 
@@ -37,7 +44,7 @@ export async function POST(request) {
     
     if (!isValidPassword) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: 'Incorrect password' },
         { status: 401 }
       );
     }

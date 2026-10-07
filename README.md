@@ -20,6 +20,10 @@ You can start editing the page by modifying `app/page.js`. The page auto-updates
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Email registration
+
+Apply the database migration with `npm run db:migrate:deploy`. Verification emails use the existing `GMAIL_USER` and `GMAIL_APP_PASSWORD` settings. Set `NEXT_PUBLIC_APP_URL` to the public application origin in deployed environments so verification links return to the correct site. Verification links expire after 24 hours.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
